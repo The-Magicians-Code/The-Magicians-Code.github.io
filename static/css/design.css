@@ -24,4 +24,5 @@ body {
     /* float: center; */
     display: none;
     position: relative;
+    pointer-events: none;
 }
