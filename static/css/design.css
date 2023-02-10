@@ -9,7 +9,8 @@ body {
 }
 
 .content {
-    border: 1px solid red;
+    /* border: 1px solid red; */
+
     /* width: 100%; */
     /* float: left; */
     /* max-width: 90%; */
@@ -18,7 +19,8 @@ body {
 }
 
 .loaded {
-    border: 1px solid red;
+    /* border: 1px solid red; */
+    
     width: 100%;
     max-width: 600px;
     /* float: center; */
