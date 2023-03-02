@@ -8,20 +8,29 @@
     <title>Document</title>
 
     <!-- Preload CSS -->
-    <link rel="stylesheet" href="">
+    <link rel="preload" href="../static/css/chosen.min.css" as="style"/>
     <!-- Preload JS -->
     <link rel="preload" href="../static/js/jquery-3.6.3.min.js" as="script"/>
     <link rel="preload" href="../static/js/main.js" as="script"/>
+    <link rel="preload" href="../static/js/chosen.jquery.min.js" as="script"/>
 
     <!-- Load CSS -->
     <link rel="stylesheet" type="text/css" href="../static/css/design.css"/>
+    <link rel="stylesheet" type="text/css" href="../static/css/chosen.min.css"/>
     <!-- Load JS -->
     <script type="text/javascript" src="../static/js/jquery-3.6.3.min.js"></script>
     <script type="text/javascript" src="../static/js/main.js"></script>
+    <script type="text/javascript" src="../static/js/chosen.jquery.min.js"></script>
 
 </head>
 <body>
     <p class="content"></p>
+    <!-- <div id="container">
+        <select class="chosen-select" multiple>
+            <option value = "1">This</option>
+            <option value = "2">That</option>
+        </select>
+    </div> -->
     <img class="loaded" alt="a circle">
 </body>
 </html>
