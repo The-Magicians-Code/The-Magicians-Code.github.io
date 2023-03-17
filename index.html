@@ -9,7 +9,8 @@
 
     <!-- Preload CSS -->
     <link rel="preload" href="../static/css/chosen.min.css" as="style"/>
-    <link rel="preload" href="../static/css/bootstrap.min.css" as="style"/>
+    <!-- <link rel="preload" href="../static/css/bootstrap.min.css" as="style"/> -->
+
     <!-- Preload JS -->
     <link rel="preload" href="../static/js/jquery-3.6.3.min.js" as="script"/>
     <link rel="preload" href="../static/js/main.js" as="script"/>
@@ -19,6 +20,7 @@
     <link rel="stylesheet" type="text/css" href="../static/css/design.css"/>
     <link rel="stylesheet" type="text/css" href="../static/css/chosen.min.css"/>
     <!-- <link rel="stylesheet" type="text/css" href="../static/css/bootstrap.min.css"> -->
+
     <!-- Load JS -->
     <script type="text/javascript" src="../static/js/jquery-3.6.3.min.js"></script>
     <script type="text/javascript" src="../static/js/main.js"></script>
@@ -27,14 +29,22 @@
 </head>
 <body>
     <p class="content"></p>
-    <!-- <div id="container">
-        <select class="chosen-select" multiple>
-            <option value = "1">This</option>
-            <option value = "2">That</option>
-        </select>
-    </div> -->
-    <!-- <div class="image"> -->
+    <span class="chosenspan">
+        <form method="post" id="queryform">
+            <div>
+                <select class="chosen-select" name="action" multiple>
+                    <option value = "1">Open</option>
+                    <option value = "2">Close</option>
+                </select>
+            </div>
+            <div>
+                <select class="chosen-select" name="subject">
+                    <option value = "3">Door</option>
+                    <option value = "4">Window</option>
+                </select>
+            </div>
+        </form>
+    </span>
     <img class="loaded" alt="a circle">
-    <!-- </div> -->
 </body>
 </html>

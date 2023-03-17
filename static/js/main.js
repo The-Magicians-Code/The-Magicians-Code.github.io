@@ -1,5 +1,5 @@
 $(window).on("load", function(e) {
-    var elements = ['content', 'loaded'];
+    var elements = ['content', 'chosenspan', 'loaded'];
     $(".content").html("Still indexing")//.fadeIn(1000)
     $(".loaded").attr("src", "static/light-mode.gif")//.fadeIn(1000)
 
@@ -19,8 +19,8 @@ $(window).on("load", function(e) {
         var thisElement = $("." + elements[i]); //Get the current element based on class
         fadeInElement(thisElement, i);          //Call our "Fade in" function
     }
-    var count = 0;
-    setInterval(function(){
+    var count = 1;
+    setInterval(function() {
         count++;
         $(".content").html("Still indexing" + new Array(count % 5).join('.'));
     }, 1000);
@@ -31,10 +31,22 @@ $(window).on("load", function(e) {
 //     var width = $("#container")[0].offsetWidth + "px";
 //     $("#container .chosen-container").css("width", width);
 // });
+
+
 $(window).resize(function () {
     if (screen.width <= 600) {
         $(".loaded").attr("src", "static/dark-mode.gif")
     } else {
         $(".loaded").attr("src", "static/light-mode.gif")
     }
-})
+});
+
+$(document).ready(function() {
+    $(document).on('change', '#queryform', function(e) {
+        // This function grabs data from form and sends it to Flask
+        e.preventDefault(); // Prevent refresh
+        form = $(this).serialize() // Converts form data to URL query form
+        // console.log(`${document.location.origin}?${form}`)
+        console.log(form)
+    });
+});
