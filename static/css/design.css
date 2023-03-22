@@ -11,8 +11,8 @@ body {
 
 @media only screen and (max-width: 600px) {
     body {
-        background-color: black;
-        color: white;
+        /* background-color: black;
+        color: white; */
         width: 100%;
     }
 }
@@ -24,8 +24,9 @@ body {
     /* float: left; */
     /* max-width: 90%; */
     /* margin: auto; */
-    text-align: center;
-    display: none;
+    /* text-align: center; */
+    visibility: hidden;
+    /* display: none; */
 }
 
 .loaded {
@@ -34,7 +35,8 @@ body {
     width: 100%;
     max-width: 800px;
     /* float: center; */
-    display: none;
+    /* display: none; */
+    visibility: hidden;
     position: relative;
     pointer-events: none;
 }
@@ -44,20 +46,29 @@ body {
     max-width: 60%;
 } */
 
-.chosenspan {
+/* .chosenspan {
     display: none;
+    visibility: hidden;
+} */
+
+form > * {
+    visibility: hidden;
+}
+
+select {
+    width: 100%;
 }
 
 .chosen-container-multi .chosen-choices {
     border-radius: 5px;
     box-shadow: inset 0px 1px 2px rgba(0,0,0,0.3);
-    border: none;
-    height: 34px !important;
-    cursor: text;
-    margin-top: 12px;
-    padding-left: 15px;
-    border-bottom: 1px solid #ddd;
-    width: 285px;
-    text-indent: 0;
-    margin-left: 30px;
+    /* border: none; */
+    /* height: 30px !important; */
+    /* cursor: text; */
+    /* margin-top: 12px; */
+    /* padding-left: 15px; */
+    /* border-bottom: 1px solid #ddd; */
+    /* width: 285px; */
+    /* text-indent: 0; */
+    /* margin-left: 30px; */
 }

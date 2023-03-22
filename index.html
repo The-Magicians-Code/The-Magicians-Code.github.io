@@ -25,26 +25,23 @@
     <script type="text/javascript" src="../static/js/jquery-3.6.3.min.js"></script>
     <script type="text/javascript" src="../static/js/main.js"></script>
     <script type="text/javascript" src="../static/js/chosen.jquery.min.js"></script>
-
 </head>
 <body>
     <p class="content"></p>
-    <span class="chosenspan">
-        <form method="post" id="queryform">
-            <div>
-                <select class="chosen-select" name="action" multiple>
-                    <option value = "1">Open</option>
-                    <option value = "2">Close</option>
-                </select>
-            </div>
-            <div>
-                <select class="chosen-select" name="subject">
-                    <option value = "3">Door</option>
-                    <option value = "4">Window</option>
-                </select>
-            </div>
-        </form>
-    </span>
+    <form method="post" id="queryform">
+        <div class="0">
+            <select class="chosen-select" name="action" multiple>
+                <option value = "1">Open</option>
+                <option value = "2">Close</option>
+            </select>
+        </div>
+        <div class="1">
+            <select class="chosen-select" name="subject">
+                <option value = "3">Door</option>
+                <option value = "4">Window</option>
+            </select>
+        </div>
+    </form>
     <img class="loaded" alt="a circle">
 </body>
 </html>
