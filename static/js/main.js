@@ -1,7 +1,7 @@
 $(window).on("load", function(e) {
-    var elements = ['content', '0', '1', 'loaded'];
-    $(".content").html("Still indexing")//.fadeIn(1000)
-    $(".loaded").attr("src", "static/light-mode.gif")//.fadeIn(1000)
+    var elements = ['s-content', 's-0', 's-1', 's-loaded'];
+    $(".s-content").html("Still indexing")//.fadeIn(1000)
+    $(".s-loaded").attr("src", "static/light-mode.gif")//.fadeIn(1000)
 
     $(".chosen-select").chosen({
         no_results_text: "Oops, nothing found!",
