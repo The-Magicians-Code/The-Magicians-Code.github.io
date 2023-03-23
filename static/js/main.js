@@ -22,7 +22,7 @@ $(window).on("load", function(e) {
     var count = 1;
     setInterval(function() {
         count++;
-        $(".content").html("Still indexing" + new Array(count % 5).join('.'));
+        $(".s-content").html("Still indexing" + new Array(count % 5).join('.'));
     }, 1000);
 });
 

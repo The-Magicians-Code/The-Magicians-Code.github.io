@@ -17,7 +17,7 @@ body {
     }
 }
 
-.s-content {
+/* .s-content { */
     /* border: 1px solid red; */
 
     /* width: 100%; */
@@ -25,9 +25,9 @@ body {
     /* max-width: 90%; */
     /* margin: auto; */
     /* text-align: center; */
-    visibility: hidden;
+    /* visibility: hidden; */
     /* display: none; */
-}
+/* } */
 
 .s-loaded {
     /* border: 1px solid red; */
@@ -36,7 +36,7 @@ body {
     max-width: 800px;
     /* float: center; */
     /* display: none; */
-    visibility: hidden;
+    /* visibility: hidden; */
     position: relative;
     pointer-events: none;
 }
