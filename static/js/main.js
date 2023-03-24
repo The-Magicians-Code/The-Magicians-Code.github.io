@@ -35,11 +35,11 @@ function paramsToObject(entries) {
     return result;
 }
 
-var animationtime = 500 // milliseconds
+var animationtime = 750 // milliseconds
 $(window).on("load", function(e) {
     url = window.location
-    params = paramsToObject(new URLSearchParams(url.search).entries())
-    console.log(params)
+    params = new URLSearchParams(url.search)
+    console.log(paramsToObject(params))
 
     var elements = ['s2a-content', 's2a-0', 's2a-1', 's2a-loaded', 's2a-aabtn'];
     $(".s2a-content").html("Still indexing")
@@ -63,16 +63,17 @@ $(window).on("load", function(e) {
         }
     })
 
-    new SlimSelect({
+    subject_selector = new SlimSelect({
         select: "#itemdrop-1",
         events: {
-            afterChange: (newVal) => {
-                console.log(newVal[0])
+            afterChange: () => {
+                console.log(subject_selector.getSelected())
             }
         },
     })
 
-    action_selector.setSelected(params["action"])
+    action_selector.setSelected(params.getAll("action"))
+    subject_selector.setSelected(params.get("subject"))
 
     function showElement(elem, time) {
         setTimeout(() => {
