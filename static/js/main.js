@@ -35,11 +35,10 @@ function paramsToObject(entries) {
     return result;
 }
 
-var sel;
-var params
+var animationtime = 1000 // milliseconds
 $(window).on("load", function(e) {
-    url = window.location.search
-    params = paramsToObject(new URLSearchParams(url).entries())
+    url = window.location
+    params = paramsToObject(new URLSearchParams(url.search).entries())
     console.log(params)
 
     var elements = ['s2a-content', 's2a-0', 's2a-1', 's2a-loaded', 's2a-aabtn'];
@@ -55,8 +54,8 @@ $(window).on("load", function(e) {
     action_selector = new SlimSelect({
         select: "#itemdrop-0",
         events: {
-            afterChange: (newVal) => {
-                console.log(newVal)
+            afterChange: () => {
+                console.log(action_selector.getSelected())
             }
         },
         settings: {
@@ -77,8 +76,8 @@ $(window).on("load", function(e) {
 
     function showElement(elem, time) {
         setTimeout(() => {
-            elem.css("visibility", "visible").hide().fadeIn(1000)
-        }, 1000 * time);
+            elem.css("visibility", "visible").hide().fadeIn(animationtime)
+        }, animationtime * time);
     }
     for (let i = 0; i < elements.length; i++) {
         var thisElement = $("." + elements[i]);
@@ -89,7 +88,7 @@ $(window).on("load", function(e) {
     setInterval(function() {
         count++;
         $(".s2a-content").html("Still indexing" + new Array(count % 5).join('.'));
-    }, 1000);
+    }, animationtime);
 });
 
 $(document).ready(function() {
