@@ -77,7 +77,7 @@ $(window).on("load", function(e) {
     function showElement(elem, time) {
         setTimeout(() => {
             elem.css("visibility", "visible").hide().fadeIn(animationtime)
-        }, 1000 * time);
+        }, animationtime * time);
     }
     for (let i = 0; i < elements.length; i++) {
         var thisElement = $("." + elements[i]);
@@ -88,7 +88,7 @@ $(window).on("load", function(e) {
     setInterval(function() {
         count++;
         $(".s2a-content").html("Still indexing" + new Array(count % 5).join('.'));
-    }, animationtime);
+    }, 1000);
 });
 
 $(document).ready(function() {
