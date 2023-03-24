@@ -35,7 +35,7 @@ function paramsToObject(entries) {
     return result;
 }
 
-var animationtime = 1000 // milliseconds
+var animationtime = 0 // milliseconds
 $(window).on("load", function(e) {
     url = window.location
     params = paramsToObject(new URLSearchParams(url.search).entries())
@@ -77,7 +77,7 @@ $(window).on("load", function(e) {
     function showElement(elem, time) {
         setTimeout(() => {
             elem.css("visibility", "visible").hide().fadeIn(animationtime)
-        }, animationtime * time);
+        }, 1000 * time);
     }
     for (let i = 0; i < elements.length; i++) {
         var thisElement = $("." + elements[i]);
