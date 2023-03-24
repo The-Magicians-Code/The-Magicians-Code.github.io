@@ -35,7 +35,7 @@ function paramsToObject(entries) {
     return result;
 }
 
-var animationtime = 0 // milliseconds
+var animationtime = 500 // milliseconds
 $(window).on("load", function(e) {
     url = window.location
     params = paramsToObject(new URLSearchParams(url.search).entries())
