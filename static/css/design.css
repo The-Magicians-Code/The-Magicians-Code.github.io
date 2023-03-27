@@ -15,9 +15,12 @@ body {
         color: white; */
         width: 100%;
     }
+    /* .row {
+        flex-direction: row;
+    } */
 }
 
-.s2a-loaded {
+.loaded {
     /* border: 1px solid red; */
     
     max-width: 800px;
@@ -28,7 +31,20 @@ body {
     pointer-events: none;
 }
 
+/* .row {
+    display: flex;
+    flex-wrap: wrap;
+} */
+
+/* .aabtn {
+    flex: 4%;
+}
+
+.0 {
+    flex: 96%;
+} */
+
 /* Regex CSS */
-[class*="s2a-"] {
+[class*="s2a"] {
     visibility: hidden;
 }

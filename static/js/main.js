@@ -35,31 +35,43 @@ function paramsToObject(entries) {
     return result;
 }
 
-var animationtime = 750 // milliseconds
+function validate_URL() {
+    console.log("Nice!")
+}
+
+var animationtime = 500 // milliseconds
 $(window).on("load", function(e) {
     url = window.location
     params = new URLSearchParams(url.search)
-    console.log(paramsToObject(params))
-
-    var elements = ['s2a-content', 's2a-0', 's2a-1', 's2a-loaded', 's2a-aabtn'];
-    $(".s2a-content").html("Still indexing")
-    $(".s2a-loaded").attr("src", "static/light-mode.gif")
-
-    // $(".chosen-select").chosen({
-    //     no_results_text: "Oops, nothing found!",
-    //     max_shown_results: "30",
-    //     width: "100%",
-    // })
+    // console.log(paramsToObject(params))
+    
+    // var actions = params.getAll("action")
+    // var subject = params.get("subject")
+    
+    // query_params = {
+    //     "action": actions.length > 0 ? actions : ["1", "2"],
+    //     "subject": subject ? subject : ["4"]
+    // }
+    // console.log(query_params)
+    query_params = {}
+    var found = document.getElementsByClassName("s2a")
+    var elements = []
+    for (var i = 0; i < found.length; i++) {
+        elements.push(found[i].className.split(" ")[1])
+    }
+    $(".content").html("Still indexing")
+    $(".loaded").attr("src", "static/light-mode.gif")
 
     action_selector = new SlimSelect({
         select: "#itemdrop-0",
         events: {
             afterChange: () => {
-                console.log(action_selector.getSelected())
+                customURL()
             }
         },
         settings: {
-            placeholderText: "Your turn"
+            placeholderText: "Your turn",
+            allowDeselect: true
         }
     })
 
@@ -68,12 +80,16 @@ $(window).on("load", function(e) {
         events: {
             afterChange: () => {
                 console.log(subject_selector.getSelected())
+                customURL()
             }
         },
     })
-
+    // action_selector.setSelected(query_params["actions"])
+    // subject_selector.setSelected(query_params["subject"])
     action_selector.setSelected(params.getAll("action"))
     subject_selector.setSelected(params.get("subject"))
+
+    customURL()
 
     function showElement(elem, time) {
         setTimeout(() => {
@@ -88,20 +104,28 @@ $(window).on("load", function(e) {
     var count = 1;
     setInterval(function() {
         count++;
-        $(".s2a-content").html("Still indexing" + new Array(count % 5).join('.'));
+        $(".content").html("Still indexing" + new Array(count % 5).join('.'));
     }, 1000);
+
+    function customURL() {
+        query_params["action"] = action_selector.getSelected()
+        query_params["subject"] = subject_selector.getSelected()
+
+        const p = new URLSearchParams();
+        for (var i = 0; i < query_params["action"].length; i++) {
+            p.append("action", query_params["action"][i]);
+        }
+        p.append("subject", query_params["subject"])
+
+        var new_url = new URL(`${url.origin}${url.pathname}?${p}`)
+        $(".page_link").text(new_url)
+    }
+    // console.log(query_params)
 });
 
 $(document).ready(function() {
-    // $(document).on('change', '#queryform', function(e) {
-    //     // This function grabs data from form and sends it to Flask
-    //     e.preventDefault(); // Prevent refresh
-    //     form = $(this).serialize() // Converts form data to URL query form
-    //     // console.log(`${document.location.origin}?${form}`)
-    //     console.log(form)
-    // });
-    
-    $(".s2a-aabtn").click(function() {
+    // console.log(query_params)
+    $(".aabtn").click(function() {
         action_selector.setSelected([])
         // action_selector.search("Open")
     })
