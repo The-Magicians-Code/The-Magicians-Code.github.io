@@ -39,6 +39,16 @@ function validate_URL() {
     console.log("Nice!")
 }
 
+function darkmode(isdark=true) {
+    if (isdark) {
+        $(".loaded").attr("src", "static/dark-mode.gif")
+        $("select").css("background", "black")
+    } else {
+        $(".loaded").attr("src", "static/dark-mode.gif")
+        $("select").css("background", "white")
+    }
+}
+
 var animationtime = 500 // milliseconds
 $(window).on("load", function(e) {
     url = window.location
@@ -60,7 +70,6 @@ $(window).on("load", function(e) {
         elements.push(found[i].className.split(" ")[1])
     }
     $(".content").html("Still indexing")
-    $(".loaded").attr("src", "static/light-mode.gif")
 
     action_selector = new SlimSelect({
         select: "#itemdrop-0",
@@ -90,6 +99,16 @@ $(window).on("load", function(e) {
     subject_selector.setSelected(params.get("subject"))
 
     customURL()
+
+    const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
+
+    if (prefersDarkScheme.matches) {
+        document.body.classList.add("dark-theme");
+        darkmode()
+    } else {
+        document.body.classList.remove("dark-theme");
+        darkmode(false)
+    }
 
     function showElement(elem, time) {
         setTimeout(() => {

@@ -31,6 +31,10 @@ body {
     pointer-events: none;
 }
 
+body.dark-theme{
+    background: #000000;
+    color: #eee;
+}
 /* .row {
     display: flex;
     flex-wrap: wrap;
