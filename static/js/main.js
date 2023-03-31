@@ -1,25 +1,3 @@
-/**
-  * Dynamically add (or remove) a "Deselect All" pseudo-option
-  */
-
-function slimSelectDeselectAll(info) {
-    var curData = this.data.data;
-    var selected_count = info.length;
-    var has_deselect_button = curData.filter(v => v.value === '' || v.value === 'Deselect all').length > 0;
-    var wants_deselect = this.selected().includes("Deselect all") || this.selected().includes("");
- 
-    if (wants_deselect) {
-       this.set([]);
-       this.setData(curData.filter(v => v.value !== '' && v.value !== 'Deselect all' ));
-       return;
-    }
- 
-    if (selected_count && !has_deselect_button) {
-       curData.unshift({value: "", text: "Deselect all"});
-       this.setData(curData);
-    }
-}
-
 function paramsToObject(entries) {
     const result = {}
     var values = []
@@ -70,6 +48,7 @@ $(window).on("load", function(e) {
         elements.push(found[i].className.split(" ")[1])
     }
     $(".content").html("Still indexing")
+    $(".clipimg").attr("src", "static/copyit.png")
 
     action_selector = new SlimSelect({
         select: "#itemdrop-0",
@@ -88,44 +67,59 @@ $(window).on("load", function(e) {
         select: "#itemdrop-1",
         events: {
             afterChange: () => {
-                console.log(subject_selector.getSelected())
+                // console.log(subject_selector.getSelected())
                 customURL()
             }
         },
     })
+
+    // Set selector values to black
+    var ssMain = $(".ss-main");
+    var ssValues = ssMain.find('.ss-values');
+    ssValues.bind("DOMNodeInserted", function () {
+        ssValues.find("div").each(function() {
+            // console.log(this.className)
+            if (this.className == "ss-value")
+            $(this).css('background-color', 'black');
+        });
+    });
+
     // action_selector.setSelected(query_params["actions"])
     // subject_selector.setSelected(query_params["subject"])
     action_selector.setSelected(params.getAll("action"))
     subject_selector.setSelected(params.get("subject"))
 
     chosen = $(".chosen-select")
-    chosen.val(params.getAll("items"))
+    chosen.val(params.getAll("items")) // Set Chosen dropdown value
     chosen.trigger("chosen:updated")
+
+
+    chosen.chosen({
+        no_results_text: "Oops, nothing found!",
+        max_shown_results: "30",
+        width: "100%"
+    })
 
     var btn = document.getElementById('clippy');
     var clipboard = new ClipboardJS(btn);
 
     clipboard.on('success', function (e) {
-        console.info('Action:', e.action);
-        console.info('Text:', e.text);
-        console.info('Trigger:', e.trigger);
+        $(".clipimg").attr("src", "static/copydone.png")
+        setTimeout(function() {
+            $(".clipimg").attr("src", "static/copyit.png")
+        }, 1000)
+        // console.info('Action:', e.action);
+        // console.info('Text:', e.text);
+        // console.info('Trigger:', e.trigger);
     });
 
     clipboard.on('error', function (e) {
-        console.info('Action:', e.action);
-        console.info('Text:', e.text);
-        console.info('Trigger:', e.trigger);
+        // console.info('Action:', e.action);
+        // console.info('Text:', e.text);
+        // console.info('Trigger:', e.trigger);
     });
 
-
     customURL()
-
-    // Creates custom dropdowns
-    $(".chosen-select").chosen({
-        no_results_text: "Oops, nothing found!",
-        max_shown_results: "30",
-        width: "100%"
-    })
 
     // const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
 
@@ -183,7 +177,7 @@ $(document).ready(function() {
         // var initialised_elements = chosen.find(":selected").text()
         // console.log(initialised_elements)
         console.log(chosen.val()) //Print out initialised values
-    }) 
+    })
 
     // $('select.chart_type').each(function() {    
     //     var chosen = $(this);
