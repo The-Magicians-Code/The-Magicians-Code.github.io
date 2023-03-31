@@ -44,7 +44,7 @@ function darkmode(isdark=true) {
         $(".loaded").attr("src", "static/dark-mode.gif")
         $("select").css("background", "black")
     } else {
-        $(".loaded").attr("src", "static/dark-mode.gif")
+        $(".loaded").attr("src", "static/light-mode.gif")
         $("select").css("background", "white")
     }
 }
@@ -98,18 +98,45 @@ $(window).on("load", function(e) {
     action_selector.setSelected(params.getAll("action"))
     subject_selector.setSelected(params.get("subject"))
 
+    chosen = $(".chosen-select")
+    chosen.val(params.getAll("items"))
+    chosen.trigger("chosen:updated")
+
+    var btn = document.getElementById('clippy');
+    var clipboard = new ClipboardJS(btn);
+
+    clipboard.on('success', function (e) {
+        console.info('Action:', e.action);
+        console.info('Text:', e.text);
+        console.info('Trigger:', e.trigger);
+    });
+
+    clipboard.on('error', function (e) {
+        console.info('Action:', e.action);
+        console.info('Text:', e.text);
+        console.info('Trigger:', e.trigger);
+    });
+
+
     customURL()
 
-    const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
+    // Creates custom dropdowns
+    $(".chosen-select").chosen({
+        no_results_text: "Oops, nothing found!",
+        max_shown_results: "30",
+        width: "100%"
+    })
 
-    if (prefersDarkScheme.matches) {
-        document.body.classList.add("dark-theme");
-        darkmode()
-    } else {
-        document.body.classList.remove("dark-theme");
-        darkmode(false)
-    }
+    // const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
 
+    // if (prefersDarkScheme.matches) {
+    //     document.body.classList.add("dark-theme");
+    //     darkmode()
+    // } else {
+    //     document.body.classList.remove("dark-theme");
+    //     darkmode(false)
+    // }
+    darkmode(false)
     function showElement(elem, time) {
         setTimeout(() => {
             elem.css("visibility", "visible").hide().fadeIn(animationtime)
@@ -147,5 +174,24 @@ $(document).ready(function() {
     $(".aabtn").click(function() {
         action_selector.setSelected([])
         // action_selector.search("Open")
+        $(".chosen-select").val("")
+        $(".chosen-select").trigger("chosen:updated")
     })
+
+    $(".chosen-select").on("change", function() {
+        var chosen = $(this);
+        // var initialised_elements = chosen.find(":selected").text()
+        // console.log(initialised_elements)
+        console.log(chosen.val()) //Print out initialised values
+    }) 
+
+    // $('select.chart_type').each(function() {    
+    //     var chosen = $(this);
+    //     var initialised_elements = chosen.find(":selected").text()
+  
+    //     if (!initialised_elements.includes(buttondata.chart_type)) {
+    //         chosen.val(buttondata.chart_type);
+    //         chosen.trigger('chosen:updated');
+    //     }
+    // });
 });

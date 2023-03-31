@@ -8,26 +8,29 @@
     <title>Document</title>
 
     <!-- Preload CSS -->
-    <!-- <link rel="preload" href="../static/css/chosen.min.css" as="style"/> -->
+    <link rel="preload" href="../static/css/chosen.min.css" as="style"/>
     <link rel="preload" href="../static/css/slimselect.css" as="style"/>
     <link rel="preload" href="../static/css/design.css" as="style"/>
     <!-- <link rel="preload" href="../static/css/bootstrap.min.css" as="style"/> -->
 
     <!-- Preload JS -->
     <link rel="preload" href="../static/js/jquery-3.6.3.min.js" as="script"/>
-    <!-- <link rel="preload" href="../static/js/chosen.jquery.min.js" as="script"/> -->
-    <link rel="preload" href="../static/js/slimselect.min.js" as="script">
+    <link rel="preload" href="../static/js/clipboard.min.js" as="script"/>
+    <link rel="preload" href="../static/js/chosen.jquery.min.js" as="script"/>
+    <link rel="preload" href="../static/js/slimselect.min.js" as="script"/>
     <link rel="preload" href="../static/js/main.js" as="script"/>
 
     <!-- Load CSS -->
-    <!-- <link rel="stylesheet" type="text/css" href="../static/css/chosen.min.css"/> -->
+    <link rel="stylesheet" type="text/css" href="../static/css/chosen.min.css"/>
     <link rel="stylesheet" type="text/css" href="../static/css/slimselect.css"/>
     <link rel="stylesheet" type="text/css" href="../static/css/design.css"/>
-    <!-- <link rel="stylesheet" type="text/css" href="../static/css/bootstrap.min.css"> -->
+    <!-- <link rel="stylesheet" type="text/css" href="../static/css/bootstrap.min.css"/> -->
+    <link rel="stylesheet" type="text/css" href="../static/css/chosen-dark.css"/>
 
     <!-- Load JS -->
     <script type="text/javascript" src="../static/js/jquery-3.6.3.min.js"></script>
-    <!-- <script type="text/javascript" src="../static/js/chosen.jquery.min.js"></script> -->
+    <script type="text/javascript" src="../static/js/clipboard.min.js"></script>
+    <script type="text/javascript" src="../static/js/chosen.jquery.min.js"></script>
     <script type="text/javascript" src="../static/js/slimselect.min.js"></script>
     <script type="text/javascript" src="../static/js/main.js"></script>
 </head>
@@ -51,8 +54,18 @@
             </select>
         </div>
     <!-- </form> -->
+    <div class="s2a chosenstuff">
+        <select class="chosen-select items" name="items" multiple>
+            <option value = "500">500 Miles</option>
+            <option value = "600">600 Miles</option>
+        </select>
+    </div>
+
     <img class="s2a loaded" alt="a circle">
     <div><button class="s2a aabtn">Clear all</button></div>
-    <p class="s2a page_link"></p>
+    <p class="s2a page_link" id="link"></p>
+    <button class="s2a clippy_board" id="clippy" data-clipboard-target="#link">
+        <img class="clipimg" src="../static/imgs.png" alt="Copy to clipboard">
+    </button>
 </body>
 </html>

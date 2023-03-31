@@ -1,3 +1,6 @@
+/* @import url(./chosen-dark.css) (prefers-color-scheme: dark); */
+/* @import url(./chosen.min.css); */
+
 * {
     box-sizing: border-box;
 }
@@ -51,4 +54,17 @@ body.dark-theme{
 /* Regex CSS */
 [class*="s2a"] {
     visibility: hidden;
+}
+
+.clippy_board {
+    height: 30px;
+}
+
+.clipimg {
+    height: 20px;
+    width: 20px;
+}
+
+.chosen-select {
+    background-color: #000000;
 }
