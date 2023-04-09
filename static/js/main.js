@@ -108,17 +108,16 @@ $(window).on("load", function(e) {
         setTimeout(function() {
             $(".clipimg").attr("src", "static/copyit.png")
         }, 1000)
-        // console.info('Action:', e.action);
-        // console.info('Text:', e.text);
-        // console.info('Trigger:', e.trigger);
     });
 
-    clipboard.on('error', function (e) {
-        // console.info('Action:', e.action);
-        // console.info('Text:', e.text);
-        // console.info('Trigger:', e.trigger);
-    });
-
+    $(".chosen-select").on("change", function() {
+        var chosen = $(this);
+        // var initialised_elements = chosen.find(":selected").text()
+        // console.log(initialised_elements)
+        // console.log(chosen.val()) //Print out initialised values
+        customURL()
+    })
+    // Create a URL instance when no interaction from the user
     customURL()
 
     // const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
@@ -141,6 +140,7 @@ $(window).on("load", function(e) {
         showElement(thisElement, i);
     }
 
+    // Display loading dots
     var count = 1;
     setInterval(function() {
         count++;
@@ -151,16 +151,25 @@ $(window).on("load", function(e) {
         query_params["action"] = action_selector.getSelected()
         query_params["subject"] = subject_selector.getSelected()
 
+        // Construct the URL
         const p = new URLSearchParams();
         for (var i = 0; i < query_params["action"].length; i++) {
             p.append("action", query_params["action"][i]);
         }
         p.append("subject", query_params["subject"])
 
+        // Append from chosen
+        if (chosen.val().length > 0) {
+            query_params["items"] = chosen.val()
+            for (var i = 0; i < query_params["items"].length; i++) {
+                p.append("items", query_params["items"][i]);
+            }
+        }
+
         var new_url = new URL(`${url.origin}${url.pathname}?${p}`)
         $(".page_link").text(new_url)
     }
-    // console.log(query_params)
+    console.log(query_params)
 });
 
 $(document).ready(function() {
@@ -170,13 +179,6 @@ $(document).ready(function() {
         // action_selector.search("Open")
         $(".chosen-select").val("")
         $(".chosen-select").trigger("chosen:updated")
-    })
-
-    $(".chosen-select").on("change", function() {
-        var chosen = $(this);
-        // var initialised_elements = chosen.find(":selected").text()
-        // console.log(initialised_elements)
-        console.log(chosen.val()) //Print out initialised values
     })
 
     // $('select.chart_type').each(function() {    
