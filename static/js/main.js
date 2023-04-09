@@ -99,7 +99,8 @@ $(window).on("load", function(e) {
     chosen.trigger("chosen:updated")
 
     // Set Chosen selector event listener
-    $(".chosen-select").on("change", function() {
+    chosen.on("change", function() {
+        console.log(chosen.val())
         customURL()
     })
 
@@ -166,24 +167,16 @@ $(window).on("load", function(e) {
         $(".page_link").text(new_url)
     }
     console.log(query_params)
-});
 
-$(document).ready(function() {
     $(".aabtn").click(function() {
         action_selector.setSelected([])
         subject_selector.setSelected([])
         // action_selector.search("Open")
-        $(".chosen-select").val("")
-        $(".chosen-select").trigger("chosen:updated")
+        chosen.val("")
+        chosen.trigger("chosen:updated")
+        customURL()
     })
-
-    // $('select.chart_type').each(function() {    
-    //     var chosen = $(this);
-    //     var initialised_elements = chosen.find(":selected").text()
-  
-    //     if (!initialised_elements.includes(buttondata.chart_type)) {
-    //         chosen.val(buttondata.chart_type);
-    //         chosen.trigger('chosen:updated');
-    //     }
-    // });
 });
+
+// $(document).ready(function() {
+// });
