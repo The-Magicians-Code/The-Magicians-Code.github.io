@@ -176,6 +176,7 @@ $(document).ready(function() {
     // console.log(query_params)
     $(".aabtn").click(function() {
         action_selector.setSelected([])
+        subject_selector.setSelected([])
         // action_selector.search("Open")
         $(".chosen-select").val("")
         $(".chosen-select").trigger("chosen:updated")
