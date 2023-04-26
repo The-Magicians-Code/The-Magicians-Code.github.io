@@ -1,22 +1,3 @@
-function paramsToObject(entries) {
-    const result = {}
-    var values = []
-    var multiples = "action" // TODO: figure out a way to deal with a list of the same values m = ["a", "b"], use m.includes(key) @L6
-    for (const [key, value] of entries) { // each 'entry' is a [key, value] tupple
-        if (key === multiples) {
-            values.push(value)
-        } else {
-            result[key] = value;
-        }            
-    }
-    result[multiples] = values
-    return result;
-}
-
-function validate_URL() {
-    console.log("Nice!")
-}
-
 function darkmode(isdark=true) {
     if (isdark) {
         $(".loaded").attr("src", "static/dark-mode.gif")
@@ -31,7 +12,6 @@ var animationtime = 500 // milliseconds
 $(window).on("load", function(e) {
     url = window.location
     params = new URLSearchParams(url.search)
-    // console.log(paramsToObject(params))
     
     // var actions = params.getAll("action")
     // var subject = params.get("subject")
@@ -177,6 +157,3 @@ $(window).on("load", function(e) {
         customURL()
     })
 });
-
-// $(document).ready(function() {
-// });
