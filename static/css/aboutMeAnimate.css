@@ -1,0 +1,27 @@
+#animated-text {
+    font-size: 50px;
+    font-weight: bold;
+    background: linear-gradient(45deg, blue, red);
+    background-size: 200% auto; /* Extend the background size */
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    display: inline-block; /* Change display to inline-block */
+    margin: 0; /* Remove any default margins */
+    padding: 0; /* Remove any default padding */
+}
+
+/* html, body {
+    height: 100%;
+} */
+
+html {
+    display: table;
+    margin: auto;
+}
+
+body {
+    display: table-cell;
+    vertical-align: middle;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+}
