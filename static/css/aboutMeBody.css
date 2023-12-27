@@ -1,7 +1,7 @@
 body {
     font-family: 'Arial', sans-serif;
-    color: #333;
-    background-color: #f4f4f4;
+    color: #000000;
+    background-color: #ffffff;
     margin: 0;
     padding: 0;
 }
@@ -27,6 +27,19 @@ body {
     width: 40px;
     height: auto;
     margin: 0 10px;
+}
+
+.skills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    padding: 10px; /* Adjust padding as needed */
+    justify-content: center;
+    background-color: #ffffff; /* Your chosen background color */
+    border-radius: 20px; /* This adds rounded corners to the section */
+    margin: auto; /* Centers the section if there's a width */
+    max-width: 960px; /* Optional: max-width for the section */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); /* Optional: adds shadow for depth */
 }
 
 .skill {
