@@ -11,3 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     animateGradient();
 });
+
+document.getElementById('nav-dropdown').addEventListener('change', function() {
+    window.location.href = this.value;
+});

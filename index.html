@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
+        <!-- <link rel="icon" href="/static/light-mode.gif" type="image/gif"> -->
+        <!-- <link rel="favicon" href="/favicon.ico"> -->
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Tanel Treuberg</title>
@@ -10,12 +12,31 @@
     </head>
     <body>
         <div class="container">
+            <div class="navbar">
+                <select id="nav-dropdown">
+                    <option value="#home"><a href="#home">Home</a></option>
+                    <option value="#about"><a href="#about">About</a></option>
+                    <option value="#projects"><a href="#projects">Projects</a></option>
+                    <option value="#experience"><a href="#experience">Experience</a></option>
+                    <option value="#contact"><a href="#contact">Contact</a></option>
+                </select>
+
+                <a href="#home">Home</a>
+                <a href="#about">About</a>
+                <a href="#projects">Projects</a>
+                <a href="#experience">Experience</a>
+                <a href="#contact">Contact</a>
+            </div>
+            <a name="home"></a>
             <header class="header">
                 <!-- <img src="https://github.com/The-Magicians-Code/The-Magicians-Code/assets/60236942/825d77d3-0e64-44c2-ac44-1a47c5cbe06e" alt="Profile Picture" class="profile-img"> -->
                 <h1>Hi 👋, I'm <div id="animated-text">Tanel</div></h1>
                 <h2>A General Purpose Software Engineer from Estonia</h2>
             </header>
 
+            <a name="contact">
+                <h3 class="header">Contact me</h3>
+            </a>
             <section class="social-links">
                 <a href="https://linkedin.com/in/taneltreuberg" target="_blank">
                     <img src="https://raw.githubusercontent.com/rahuldkjain/github-profile-readme-generator/master/src/images/icons/Social/linked-in-alt.svg" alt="LinkedIn" class="icon">

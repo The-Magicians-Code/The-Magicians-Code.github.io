@@ -1,9 +1,56 @@
+html {
+    display: table;
+    margin: auto;
+    scroll-behavior: smooth;
+}
+
 body {
-    font-family: 'Arial', sans-serif;
+    display: table-cell;
+    vertical-align: middle;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
     color: #000000;
     background-color: #ffffff;
     margin: 0;
-    padding: 0;
+    /* padding: 0; */
+    padding-top: 50px;
+}
+
+a {
+    scroll-margin-top: 50px;
+}
+
+/* Exception for resetting home */
+a[name="home"] {
+    scroll-margin-top: 90px;
+}
+
+#nav-dropdown {
+    display: none;
+}
+
+.navbar {
+    position: fixed; /* Fixed positioning */
+    top: 0;         /* Align to the top */
+    left: 0;        /* Align to the left */
+    width: 100%;    /* Take full width of the viewport */
+    z-index: 1000;  /* High z-index to stay on top of other elements */
+
+    overflow: hidden;
+    background-color: #333;
+}
+
+.navbar a {
+    float: left;
+    display: block;
+    color: white;
+    text-align: center;
+    padding: 14px 16px;
+    text-decoration: none;
+}
+
+.navbar a:hover {
+    background-color: #ddd;
+    color: black;
 }
 
 .container {
@@ -65,5 +112,13 @@ body {
 @media screen and (max-width: 768px) {
     .container {
         width: 95%;
+    }
+    
+    #nav-dropdown {
+        display: block; /* Show dropdown on smaller screens */
+    }
+
+    .navbar a {
+        display: none; /* Hide regular navbar items on smaller screens */
     }
 }
