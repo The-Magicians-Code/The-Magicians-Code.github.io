@@ -36,7 +36,16 @@ a[name="home"] {
     z-index: 1000;  /* High z-index to stay on top of other elements */
 
     overflow: hidden;
-    background-color: #333;
+    /* background-color: #333; */
+    background-color: rgba(35, 35, 35, 0.6); /* semi-transparent white background */
+    backdrop-filter: blur(10px); /* blur effect */
+    -webkit-backdrop-filter: blur(10px); /* For Safari compatibility */
+    
+    /* Additional styling for better appearance */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+
+
 }
 
 .navbar a {
