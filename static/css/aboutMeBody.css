@@ -1,19 +1,39 @@
 html {
-    display: table;
+    /* display: table;
     margin: auto;
-    scroll-behavior: smooth;
+    scroll-behavior: smooth; */
 }
 
-body {
-    display: table-cell;
-    vertical-align: middle;
+main {
     font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    margin-top: 3rem;
+    display: flex;
+    flex-direction: column;
+    /* display: table-cell;
+    vertical-align: middle;
     color: #000000;
     background-color: #ffffff;
     margin: 0;
-    /* padding: 0; */
-    padding-top: 50px;
+    /* padding: 0; 
+    padding-top: 50px; */
 }
+
+
+main > * {
+    width: 100%;
+    max-width: 500px;
+    margin-right: auto;
+    margin-left: auto;
+}
+@media screen and (max-width: 768px) {
+    main > * {
+        width: 100%;
+        max-width: 558px;
+        margin-right: auto;
+        margin-left: auto;
+    }
+}
+
 
 a {
     scroll-margin-top: 50px;
@@ -56,7 +76,6 @@ a[name="home"] {
     background-color: #ffffff; /* Your chosen background color */
     border-radius: 20px; /* This adds rounded corners to the section */
     margin: auto; /* Centers the section if there's a width */
-    max-width: 960px; /* Optional: max-width for the section */
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); /* Optional: adds shadow for depth */
 }
 
@@ -80,8 +99,8 @@ a[name="home"] {
     color: #666;
 }
 
-@media screen and (max-width: 768px) {
+/* @media screen and (max-width: 768px) {
     .container {
         width: 95%;
     }
-}
+} */
