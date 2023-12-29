@@ -4,6 +4,7 @@
     left: 0;        /* Align to the left */
     width: 100%;    /* Take full width of the viewport */
     z-index: 1000;  /* High z-index to stay on top of other elements */
+    height: 2.875rem;
 
     overflow: hidden;
     /* background-color: #333; */
@@ -41,7 +42,6 @@
     border: none;
     font-size: 30px;
     cursor: pointer;
-    position: fixed;
     top: 20px;
     right: 20px;
     z-index: 1001; /* Higher than the overlay's z-index */
@@ -93,7 +93,27 @@
         display: block;
     }
 
-    .navbar a {
-        display: none; /* Hide regular navbar items on smaller screens */
+    .fullscreen {
+        height: 100%;
+    }
+
+    .navbar .links {
+        display: none;
+    }
+
+    .fullscreen > .links {
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+        font-weight: 600;
+        font-size: 2rem;
+    }
+
+    .fixed {
+        overflow: hidden;
+    }
+
+    .fixed .main {
+        position: relative;
     }
 }
