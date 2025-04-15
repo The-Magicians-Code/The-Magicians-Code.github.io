@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tanel - Software Engineer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script>
+        // Configure Tailwind for class-based dark mode
+        tailwind.config = {
+            darkMode: 'class', // Enable class strategy
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', '"Helvetica Neue"', 'Arial', '"Noto Sans"', 'sans-serif', '"Apple Color Emoji"', '"Segoe UI Emoji"', '"Segoe UI Symbol"', '"Noto Color Emoji"'],
+                    },
+                }
+            }
+        }
+    </script>
+    <script>
+        const THEME_KEY = 'theme-preference';
+        const themes = { LIGHT: 'light', DARK: 'dark', AUTO: 'auto' };
+        const getPreference = () => localStorage.getItem(THEME_KEY) || themes.AUTO;
+        const savePreference = (theme) => {
+            if (theme === themes.AUTO) localStorage.removeItem(THEME_KEY);
+            else localStorage.setItem(THEME_KEY, theme);
+        };
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+        const applyTheme = (theme) => {
+            const useDark = (theme === themes.DARK) || (theme === themes.AUTO && prefersDark.matches);
+            document.documentElement.classList.toggle('dark', useDark);
+        };
+        let currentTheme = getPreference();
+        applyTheme(currentTheme);
+        prefersDark.addEventListener('change', (e) => {
+            if (getPreference() === themes.AUTO) {
+                applyTheme(themes.AUTO);
+                updateToggleButtonState();
+            }
+        });
+        // Updates the *desktop* button state (aria-label, title)
+        const updateToggleButtonState = () => {
+             // Use querySelector as ID might appear twice (desktop/mobile)
+             const button = document.querySelector('#theme-toggle-button:not(#mobile-menu #theme-toggle-button)'); // Target desktop button specifically if needed, or rely on visibility
+             if (!button) return;
+             const currentPref = getPreference();
+             let nextModeText;
+             if (currentPref === themes.LIGHT) nextModeText = 'Dark';
+             else if (currentPref === themes.DARK) nextModeText = 'Auto';
+             else nextModeText = prefersDark.matches ? 'Light' : 'Dark';
+             const title = `Switch to ${nextModeText} Mode`;
+             button.setAttribute('aria-label', title);
+             button.setAttribute('title', title);
+             // Also update mobile button if it exists (though less critical as it's hidden often)
+             const mobileButton = document.querySelector('#mobile-menu #theme-toggle-button');
+              if (mobileButton) {
+                 mobileButton.setAttribute('aria-label', title);
+                 mobileButton.setAttribute('title', title);
+             }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        html {
+            scroll-padding-top: 80px; /* Adjust based on navbar height */
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .bg-white, .bg-gray-50, .text-gray-600, .text-gray-700, .text-gray-800, .border-gray-200,
+        .dark\:bg-black, .dark\:bg-neutral-800, .dark\:bg-neutral-900, .dark\:text-white, .dark\:text-gray-100, .dark\:text-neutral-300, .dark\:text-neutral-400, .dark\:text-neutral-500, .dark\:border-neutral-700 {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+        .section-fade-in {
+            opacity: 0; transform: translateY(20px); animation: fadeIn 0.6s ease-out forwards;
+        }
+        @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
+        header.section-fade-in { animation-delay: 0.1s; }
+        section:nth-of-type(1) { animation-delay: 0.2s; }
+        section:nth-of-type(2) { animation-delay: 0.3s; }
+        section:nth-of-type(3) { animation-delay: 0.4s; }
+        footer { animation-delay: 0.5s; }
+
+        .name-gradient {
+            background: linear-gradient(to right, #8a2be2, #4169e1, #00ced1, #3cb371, #8a2be2);
+            background-size: 200% auto;
+            -webkit-background-clip: text; background-clip: text;
+            color: transparent; -webkit-text-fill-color: transparent;
+            display: inline-block; animation: gradient-shift 8s linear infinite;
+        }
+        @keyframes gradient-shift {
+            0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; }
+        }
+
+        /* Theme toggle button base style */
+        #theme-toggle-button { /* Applied to both desktop and mobile */
+            padding: 0.5rem; border-radius: 9999px;
+            background-color: rgba(255, 255, 255, 0.5); color: #4b5563; /* Gray-600 */
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(209, 213, 219, 0.5);
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+            line-height: 0; /* Prevent extra space */
+            cursor: pointer;
+        }
+        #theme-toggle-button:hover { background-color: rgba(255, 255, 255, 0.7); }
+        /* Theme toggle button dark mode style */
+        .dark #theme-toggle-button {
+            background-color: rgba(28, 28, 30, 0.5); color: #e5e5ea;
+            border-color: rgba(84, 84, 88, 0.65);
+        }
+        .dark #theme-toggle-button:hover { background-color: rgba(28, 28, 30, 0.7); }
+
+        /* Icon visibility for theme toggle */
+        #theme-toggle-button .icon-moon { display: none; }
+        #theme-toggle-button .icon-sun { display: inline-block; }
+        html.dark #theme-toggle-button .icon-moon { display: inline-block; }
+        html.dark #theme-toggle-button .icon-sun { display: none; }
+        #theme-toggle-button > i > svg { width: 20px; height: 20px; }
+
+        /* Nav link base style */
+        .nav-link {
+             transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out;
+        }
+        /* Mobile menu icon styling */
+        #mobile-menu-button .icon-close { display: none; }
+        #mobile-menu-button.open .icon-close { display: block; }
+        #mobile-menu-button.open .icon-menu { display: none; }
+
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 leading-relaxed dark:bg-black dark:text-gray-100 pt-16">
+    <nav class="fixed top-0 left-0 right-0 z-40 backdrop-blur-lg bg-white/60 dark:bg-neutral-900/60 border-b border-gray-200/50 dark:border-neutral-700/50 shadow-sm">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+             <div class="flex justify-between items-center h-16">
+                 <div class="flex items-center"> <a href="#" class="text-lg font-semibold name-gradient">
+                        Tanel
+                    </a>
+                </div>
+                 <div class="hidden sm:ml-6 sm:flex sm:items-center sm:space-x-4">
+                    <a href="#projects" class="nav-link text-gray-700 hover:bg-gray-100 dark:text-neutral-300 dark:hover:bg-neutral-700 px-3 py-2 rounded-md text-sm font-medium">Projects</a>
+                    <a href="#skills-tools" class="nav-link text-gray-700 hover:bg-gray-100 dark:text-neutral-300 dark:hover:bg-neutral-700 px-3 py-2 rounded-md text-sm font-medium">Skills & Tools</a>
+                    <a href="#contact" class="nav-link text-gray-700 hover:bg-gray-100 dark:text-neutral-300 dark:hover:bg-neutral-700 px-3 py-2 rounded-md text-sm font-medium">Contact</a>
+                    <button id="theme-toggle-button" type="button" aria-label="Toggle theme" class="ml-4">
+                        <i data-lucide="sun" class="icon-sun"></i>
+                        <i data-lucide="moon" class="icon-moon"></i>
+                    </button>
+                </div>
+                <div class="-mr-2 flex items-center sm:hidden">
+                    <button id="mobile-menu-button" type="button" class="inline-flex items-center justify-center p-2 rounded-md text-gray-600 dark:text-neutral-300 hover:text-gray-800 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-neutral-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500" aria-controls="mobile-menu" aria-expanded="false">
+                        <span class="sr-only">Open main menu</span>
+                        <i data-lucide="menu" class="block h-6 w-6 icon-menu"></i>
+                        <i data-lucide="x" class="hidden h-6 w-6 icon-close"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="hidden sm:hidden" id="mobile-menu">
+             <div class="px-2 pt-2 pb-4 space-y-1 border-t border-gray-200/50 dark:border-neutral-700/50">
+                <a href="#projects" class="nav-link mobile-nav-link block text-gray-700 hover:bg-gray-100 dark:text-neutral-300 dark:hover:bg-neutral-700 px-3 py-2 rounded-md text-base font-medium">Projects</a>
+                <a href="#skills-tools" class="nav-link mobile-nav-link block text-gray-700 hover:bg-gray-100 dark:text-neutral-300 dark:hover:bg-neutral-700 px-3 py-2 rounded-md text-base font-medium">Skills & Tools</a>
+                <a href="#contact" class="nav-link mobile-nav-link block text-gray-700 hover:bg-gray-100 dark:text-neutral-300 dark:hover:bg-neutral-700 px-3 py-2 rounded-md text-base font-medium">Contact</a>
+                 <div class="pt-4 pb-2 px-3">
+                     <button id="theme-toggle-button" type="button" aria-label="Toggle theme" class="w-full flex items-center justify-center">
+                         <i data-lucide="sun" class="icon-sun"></i>
+                         <i data-lucide="moon" class="icon-moon"></i>
+                         <span class="ml-3 text-base font-medium text-gray-700 dark:text-neutral-300">Toggle Theme</span>
+                     </button>
+                 </div>
+             </div>
+        </div>
+    </nav>
+
+    <div class="max-w-4xl mx-auto p-6 md:p-10 space-y-12 md:space-y-16">
+         <header class="text-center section-fade-in pt-6 md:pt-10">
+            <h1 class="text-4xl md:text-5xl font-bold mb-2 name-gradient">Tanel</h1>
+            <p class="text-xl md:text-2xl text-gray-600 dark:text-neutral-400">Software engineer, with data driven results</p>
+        </header>
+
+        <main class="space-y-12 md:space-y-16">
+            <section id="projects" class="section-fade-in">
+                <h2 class="text-2xl md:text-3xl font-semibold mb-6 flex items-center dark:text-white">
+                    <i data-lucide="folder-git-2" class="inline-block w-6 h-6 mr-3 text-blue-600 dark:text-blue-400"></i>
+                    Projects
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-300 dark:bg-neutral-800 dark:border-neutral-700">
+                        <h3 class="text-lg font-semibold mb-2 dark:text-white">Yolo-dualdev</h3>
+                        <p class="text-gray-600 mb-4 text-sm dark:text-neutral-400">Brief description of your project. What problem does it solve? What technologies were used?</p>
+                        <a href="https://github.com/The-Magicians-Code/yolo-dualdev" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium inline-flex items-center">
+                            View on GitHub
+                            <i data-lucide="arrow-up-right" class="inline-block w-4 h-4 ml-1"></i>
+                        </a>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-300 dark:bg-neutral-800 dark:border-neutral-700">
+                        <h3 class="text-lg font-semibold mb-2 dark:text-white">Strato_Pi</h3>
+                        <p class="text-gray-600 mb-4 text-sm dark:text-neutral-400">Another project description. Highlight key features or your role in its development.</p>
+                        <a href="https://github.com/The-Magicians-Code/Strato_Pi" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium inline-flex items-center">
+                            View on GitHub
+                            <i data-lucide="arrow-up-right" class="inline-block w-4 h-4 ml-1"></i>
+                        </a>
+                    </div>
+                     <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-300 md:col-span-2 text-center dark:bg-neutral-800 dark:border-neutral-700">
+                         <a href="https://github.com/The-Magicians-Code" target="_blank" rel="noopener noreferrer" class="text-gray-700 hover:text-black dark:text-neutral-300 dark:hover:text-white font-medium inline-flex items-center">
+                            <i data-lucide="github" class="inline-block w-5 h-5 mr-2"></i>
+                            See all projects on GitHub
+                        </a>
+                    </div>
+                </div>
+            </section>
+
+            <section id="skills-tools" class="section-fade-in">
+                 <h2 class="text-2xl md:text-3xl font-semibold mb-6 flex items-center dark:text-white">
+                    <i data-lucide="terminal-square" class="inline-block w-6 h-6 mr-3 text-green-600 dark:text-green-500"></i>
+                    Skills & Tools
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                    <div>
+                        <h3 class="text-lg font-semibold mb-3 text-gray-700 dark:text-neutral-300">Skills</h3>
+                        <ul class="space-y-2">
+                            <li class="flex items-center"><i data-lucide="chevron-right" class="w-4 h-4 mr-2 text-gray-400 dark:text-neutral-500"></i>Python</li>
+                            <li class="flex items-center"><i data-lucide="chevron-right" class="w-4 h-4 mr-2 text-gray-400 dark:text-neutral-500"></i>Docker</li>
+                            <li class="flex items-center"><i data-lucide="chevron-right" class="w-4 h-4 mr-2 text-gray-400 dark:text-neutral-500"></i>BASH</li>
+                            <li class="flex items-center"><i data-lucide="chevron-right" class="w-4 h-4 mr-2 text-gray-400 dark:text-neutral-500"></i>Swift</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold mb-3 text-gray-700 dark:text-neutral-300">Tools</h3>
+                         <ul class="space-y-2">
+                            <li class="flex items-center"><i data-lucide="chevron-right" class="w-4 h-4 mr-2 text-gray-400 dark:text-neutral-500"></i>VS Code</li>
+                            <li class="flex items-center"><i data-lucide="chevron-right" class="w-4 h-4 mr-2 text-gray-400 dark:text-neutral-500"></i>Git</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section id="contact" class="section-fade-in">
+                 <h2 class="text-2xl md:text-3xl font-semibold mb-6 flex items-center dark:text-white">
+                     <i data-lucide="mail" class="inline-block w-6 h-6 mr-3 text-purple-600 dark:text-purple-500"></i>
+                     Get In Touch
+                 </h2>
+                 <div class="flex flex-wrap gap-4 md:gap-6">
+                    <a href="https://www.linkedin.com/in/taneltreuberg/" target="_blank" rel="noopener noreferrer" class="inline-flex items-center text-blue-700 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 font-medium transition-colors duration-200">
+                        <i data-lucide="linkedin" class="w-5 h-5 mr-2"></i>LinkedIn
+                    </a>
+                    <a href="https://github.com/The-Magicians-Code" target="_blank" rel="noopener noreferrer" class="inline-flex items-center text-gray-800 hover:text-black dark:text-neutral-300 dark:hover:text-white font-medium transition-colors duration-200">
+                        <i data-lucide="github" class="w-5 h-5 mr-2"></i>GitHub
+                    </a>
+                 </div>
+            </section>
+        </main>
+
+        <footer class="text-center text-gray-500 dark:text-neutral-400 text-sm pt-8 border-t border-gray-200 dark:border-neutral-700 section-fade-in">
+            &copy; <script>document.write(new Date().getFullYear())</script> Tanel Treuberg. All rights reserved.
+        </footer>
+    </div>
+
+    <script>
+      // Theme Toggle Handler (Works for both buttons via ID)
+      const handleThemeToggle = () => {
+          let currentPref = getPreference();
+          let nextPref;
+          if (currentPref === themes.LIGHT) nextPref = themes.DARK;
+          else if (currentPref === themes.DARK) nextPref = themes.AUTO;
+          else nextPref = prefersDark.matches ? themes.LIGHT : themes.DARK;
+          savePreference(nextPref);
+          applyTheme(nextPref);
+          updateToggleButtonState(); // Update aria-label/title on potentially both buttons
+      };
+
+      // Mobile Menu Toggle Handler
+      const handleMobileMenuToggle = () => {
+          const menuButton = document.getElementById('mobile-menu-button');
+          const mobileMenu = document.getElementById('mobile-menu');
+          // Check if menu is currently hidden BEFORE toggling
+          const isCurrentlyHidden = mobileMenu.classList.contains('hidden');
+          mobileMenu.classList.toggle('hidden'); // Toggle visibility
+          // Set aria-expanded based on the *new* state (true if menu is now visible)
+          menuButton.setAttribute('aria-expanded', isCurrentlyHidden ? 'true' : 'false');
+           // Set .open class based on the *new* state (add if menu is now visible)
+          menuButton.classList.toggle('open', isCurrentlyHidden);
+      };
+
+      // Close mobile menu when a link is clicked
+      const handleMobileLinkClick = () => {
+          const menuButton = document.getElementById('mobile-menu-button');
+          const mobileMenu = document.getElementById('mobile-menu');
+          // Only act if the menu is actually open
+          if (!mobileMenu.classList.contains('hidden')) {
+                mobileMenu.classList.add('hidden'); // Hide menu
+                menuButton.setAttribute('aria-expanded', 'false');
+                menuButton.classList.remove('open'); // Reset button icon
+          }
+      };
+
+      window.onload = function() {
+        try {
+          if (typeof lucide !== 'undefined' && lucide.createIcons) {
+             lucide.createIcons(); // Initialize all icons first
+             console.log("Lucide icons initialized successfully.");
+
+             // Setup Desktop Theme Toggle Button Listener
+             // It's okay to query multiple elements with same ID, listener attaches to first found (desktop one)
+             // The handler itself works globally via applyTheme.
+             const toggleButtonDesktop = document.querySelector('.sm\\:flex #theme-toggle-button'); // More specific selector
+             if (toggleButtonDesktop) {
+                 updateToggleButtonState(); // Set initial state (updates both potentially)
+                 toggleButtonDesktop.addEventListener('click', handleThemeToggle);
+             } else { console.warn("Desktop theme toggle button not found."); }
+
+             // Setup Mobile Theme Toggle Button Listener
+             const toggleButtonMobile = document.querySelector('#mobile-menu #theme-toggle-button');
+              if (toggleButtonMobile) {
+                 // No need to call updateToggleButtonState again, already done
+                 toggleButtonMobile.addEventListener('click', handleThemeToggle);
+             } else { console.warn("Mobile theme toggle button not found."); }
+
+
+             // Setup Mobile Menu Button Listener
+             const menuButton = document.getElementById('mobile-menu-button');
+             if (menuButton) {
+                 menuButton.addEventListener('click', handleMobileMenuToggle);
+             } else { console.error("Mobile menu button not found."); }
+
+             // Add listeners to mobile nav links to close menu on click
+             const mobileNavLinks = document.querySelectorAll('#mobile-menu .mobile-nav-link');
+             mobileNavLinks.forEach(link => {
+                 link.addEventListener('click', handleMobileLinkClick);
+             });
+
+             // Listener for system theme changes
+             prefersDark.addEventListener('change', (e) => {
+                 if (getPreference() === themes.AUTO) {
+                     updateToggleButtonState(); // Update desktop button state text
+                 }
+             });
+          } else { console.error("Lucide library not loaded or createIcons method not found."); }
+        } catch (error) { console.error("Error during window.onload initialization:", error); }
+      };
+    </script>
+</body>
+</html>
