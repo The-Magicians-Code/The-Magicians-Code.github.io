@@ -40,25 +40,23 @@
                 updateToggleButtonState();
             }
         });
-        // Updates the *desktop* button state (aria-label, title)
         const updateToggleButtonState = () => {
-             // Use querySelector as ID might appear twice (desktop/mobile)
-             const button = document.querySelector('#theme-toggle-button:not(#mobile-menu #theme-toggle-button)'); // Target desktop button specifically if needed, or rely on visibility
-             if (!button) return;
-             const currentPref = getPreference();
-             let nextModeText;
-             if (currentPref === themes.LIGHT) nextModeText = 'Dark';
-             else if (currentPref === themes.DARK) nextModeText = 'Auto';
-             else nextModeText = prefersDark.matches ? 'Light' : 'Dark';
-             const title = `Switch to ${nextModeText} Mode`;
-             button.setAttribute('aria-label', title);
-             button.setAttribute('title', title);
-             // Also update mobile button if it exists (though less critical as it's hidden often)
-             const mobileButton = document.querySelector('#mobile-menu #theme-toggle-button');
-              if (mobileButton) {
-                 mobileButton.setAttribute('aria-label', title);
-                 mobileButton.setAttribute('title', title);
-             }
+            const currentPref = getPreference();
+            let nextModeText;
+            if (currentPref === themes.LIGHT) nextModeText = 'Dark';
+            else if (currentPref === themes.DARK) nextModeText = 'Auto';
+            else nextModeText = prefersDark.matches ? 'Light' : 'Dark';
+            const title = `Switch to ${nextModeText} Mode`;
+            const buttonDesktop = document.getElementById('theme-toggle-button');
+            if (buttonDesktop) {
+                buttonDesktop.setAttribute('aria-label', title);
+                buttonDesktop.setAttribute('title', title);
+            }
+            const buttonMobile = document.getElementById('mobile-theme-toggle-button');
+             if (buttonMobile) {
+                buttonMobile.setAttribute('aria-label', title);
+                buttonMobile.setAttribute('title', title);
+            }
         }
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -100,7 +98,7 @@
         }
 
         /* Theme toggle button base style */
-        #theme-toggle-button { /* Applied to both desktop and mobile */
+        #theme-toggle-button, #mobile-theme-toggle-button {
             padding: 0.5rem; border-radius: 9999px;
             background-color: rgba(255, 255, 255, 0.5); color: #4b5563; /* Gray-600 */
             backdrop-filter: blur(4px);
@@ -109,29 +107,65 @@
             line-height: 0; /* Prevent extra space */
             cursor: pointer;
         }
-        #theme-toggle-button:hover { background-color: rgba(255, 255, 255, 0.7); }
+        #theme-toggle-button:hover, #mobile-theme-toggle-button:hover { background-color: rgba(255, 255, 255, 0.7); }
         /* Theme toggle button dark mode style */
-        .dark #theme-toggle-button {
+        .dark #theme-toggle-button, .dark #mobile-theme-toggle-button {
             background-color: rgba(28, 28, 30, 0.5); color: #e5e5ea;
             border-color: rgba(84, 84, 88, 0.65);
         }
-        .dark #theme-toggle-button:hover { background-color: rgba(28, 28, 30, 0.7); }
+        .dark #theme-toggle-button:hover, .dark #mobile-theme-toggle-button:hover { background-color: rgba(28, 28, 30, 0.7); }
 
         /* Icon visibility for theme toggle */
-        #theme-toggle-button .icon-moon { display: none; }
-        #theme-toggle-button .icon-sun { display: inline-block; }
-        html.dark #theme-toggle-button .icon-moon { display: inline-block; }
-        html.dark #theme-toggle-button .icon-sun { display: none; }
-        #theme-toggle-button > i > svg { width: 20px; height: 20px; }
+        #theme-toggle-button .icon-moon, #mobile-theme-toggle-button .icon-moon { display: none; }
+        #theme-toggle-button .icon-sun, #mobile-theme-toggle-button .icon-sun { display: inline-block; }
+        html.dark #theme-toggle-button .icon-moon, html.dark #mobile-theme-toggle-button .icon-moon { display: inline-block; }
+        html.dark #theme-toggle-button .icon-sun, html.dark #mobile-theme-toggle-button .icon-sun { display: none; }
+        #theme-toggle-button > i > svg, #mobile-theme-toggle-button > i > svg { width: 20px; height: 20px; }
 
         /* Nav link base style */
         .nav-link {
              transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out;
         }
-        /* Mobile menu icon styling */
-        #mobile-menu-button .icon-close { display: none; }
-        #mobile-menu-button.open .icon-close { display: block; }
-        #mobile-menu-button.open .icon-menu { display: none; }
+
+        /* --- Animated Hamburger Icon Styles --- */
+        .hamburger-lines {
+            width: 24px; /* Same size as old icons */
+            height: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around; /* Adjusted for better spacing */
+            /* No need for position relative if button itself handles layout */
+        }
+        .line {
+            display: block;
+            height: 2px; /* Line thickness */
+            width: 100%;
+            background-color: currentColor; /* Inherit button text color */
+            border-radius: 1px;
+            transition: transform 0.3s ease-in-out, opacity 0.2s ease-in-out;
+            transform-origin: center; /* Rotate around the center */
+        }
+        /* Transformations for the 'X' state when button has '.open' class */
+        #mobile-menu-button.open .line1 {
+             /* Adjust Y translation based on line height and spacing */
+            transform: translateY(8px) rotate(45deg);
+        }
+        #mobile-menu-button.open .line2 {
+            opacity: 0; /* Middle line fades out */
+            transform: scaleX(0); /* Optional: shrink horizontally */
+        }
+        #mobile-menu-button.open .line3 {
+             /* Adjust Y translation based on line height and spacing */
+            transform: translateY(-8px) rotate(-45deg);
+        }
+        /* --- End Animated Hamburger Icon Styles --- */
+
+        /* Mobile theme button specific style */
+        #mobile-theme-toggle-button {
+             width: 100%; display: flex; align-items: center; justify-content: center;
+             padding: 0.5rem 1rem; border: 1px solid #d1d5db; border-radius: 0.375rem;
+        }
+         .dark #mobile-theme-toggle-button { border-color: #4b5563; }
 
     </style>
 </head>
@@ -139,10 +173,7 @@
     <nav class="fixed top-0 left-0 right-0 z-40 backdrop-blur-lg bg-white/60 dark:bg-neutral-900/60 border-b border-gray-200/50 dark:border-neutral-700/50 shadow-sm">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
              <div class="flex justify-between items-center h-16">
-                 <div class="flex items-center"> <a href="#" class="text-lg font-semibold name-gradient">
-                        Tanel
-                    </a>
-                </div>
+                 <div class="flex items-center"> <a href="#" class="text-lg font-semibold name-gradient"> Tanel </a> </div>
                  <div class="hidden sm:ml-6 sm:flex sm:items-center sm:space-x-4">
                     <a href="#projects" class="nav-link text-gray-700 hover:bg-gray-100 dark:text-neutral-300 dark:hover:bg-neutral-700 px-3 py-2 rounded-md text-sm font-medium">Projects</a>
                     <a href="#skills-tools" class="nav-link text-gray-700 hover:bg-gray-100 dark:text-neutral-300 dark:hover:bg-neutral-700 px-3 py-2 rounded-md text-sm font-medium">Skills & Tools</a>
@@ -155,9 +186,12 @@
                 <div class="-mr-2 flex items-center sm:hidden">
                     <button id="mobile-menu-button" type="button" class="inline-flex items-center justify-center p-2 rounded-md text-gray-600 dark:text-neutral-300 hover:text-gray-800 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-neutral-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500" aria-controls="mobile-menu" aria-expanded="false">
                         <span class="sr-only">Open main menu</span>
-                        <i data-lucide="menu" class="block h-6 w-6 icon-menu"></i>
-                        <i data-lucide="x" class="hidden h-6 w-6 icon-close"></i>
-                    </button>
+                        <div class="hamburger-lines" aria-hidden="true">
+                            <span class="line line1"></span>
+                            <span class="line line2"></span>
+                            <span class="line line3"></span>
+                        </div>
+                        </button>
                 </div>
             </div>
         </div>
@@ -167,7 +201,7 @@
                 <a href="#skills-tools" class="nav-link mobile-nav-link block text-gray-700 hover:bg-gray-100 dark:text-neutral-300 dark:hover:bg-neutral-700 px-3 py-2 rounded-md text-base font-medium">Skills & Tools</a>
                 <a href="#contact" class="nav-link mobile-nav-link block text-gray-700 hover:bg-gray-100 dark:text-neutral-300 dark:hover:bg-neutral-700 px-3 py-2 rounded-md text-base font-medium">Contact</a>
                  <div class="pt-4 pb-2 px-3">
-                     <button id="theme-toggle-button" type="button" aria-label="Toggle theme" class="w-full flex items-center justify-center">
+                     <button id="mobile-theme-toggle-button" type="button" aria-label="Toggle theme">
                          <i data-lucide="sun" class="icon-sun"></i>
                          <i data-lucide="moon" class="icon-moon"></i>
                          <span class="ml-3 text-base font-medium text-gray-700 dark:text-neutral-300">Toggle Theme</span>
@@ -249,7 +283,7 @@
                     <a href="https://www.linkedin.com/in/taneltreuberg/" target="_blank" rel="noopener noreferrer" class="inline-flex items-center text-blue-700 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 font-medium transition-colors duration-200">
                         <i data-lucide="linkedin" class="w-5 h-5 mr-2"></i>LinkedIn
                     </a>
-                    <a href="https://github.com/The-Magicians-Code" target="_blank" rel="noopener noreferrer" class="inline-flex items-center text-gray-800 hover:text-black dark:text-neutral-300 dark:hover:text-white font-medium transition-colors duration-200">
+                    <a href="https://github.com/The-Magicians-Code/" target="_blank" rel="noopener noreferrer" class="inline-flex items-center text-gray-800 hover:text-black dark:text-neutral-300 dark:hover:text-white font-medium transition-colors duration-200">
                         <i data-lucide="github" class="w-5 h-5 mr-2"></i>GitHub
                     </a>
                  </div>
@@ -278,12 +312,10 @@
       const handleMobileMenuToggle = () => {
           const menuButton = document.getElementById('mobile-menu-button');
           const mobileMenu = document.getElementById('mobile-menu');
-          // Check if menu is currently hidden BEFORE toggling
           const isCurrentlyHidden = mobileMenu.classList.contains('hidden');
-          mobileMenu.classList.toggle('hidden'); // Toggle visibility
-          // Set aria-expanded based on the *new* state (true if menu is now visible)
+          mobileMenu.classList.toggle('hidden');
+          // Set aria-expanded and .open class based on whether menu is now VISIBLE
           menuButton.setAttribute('aria-expanded', isCurrentlyHidden ? 'true' : 'false');
-           // Set .open class based on the *new* state (add if menu is now visible)
           menuButton.classList.toggle('open', isCurrentlyHidden);
       };
 
@@ -291,36 +323,39 @@
       const handleMobileLinkClick = () => {
           const menuButton = document.getElementById('mobile-menu-button');
           const mobileMenu = document.getElementById('mobile-menu');
-          // Only act if the menu is actually open
           if (!mobileMenu.classList.contains('hidden')) {
-                mobileMenu.classList.add('hidden'); // Hide menu
+                mobileMenu.classList.add('hidden');
                 menuButton.setAttribute('aria-expanded', 'false');
-                menuButton.classList.remove('open'); // Reset button icon
+                menuButton.classList.remove('open'); // Ensure .open class is removed to reset icon animation
           }
       };
 
       window.onload = function() {
         try {
+          // Initialize Lucide Icons for any icons potentially added *outside* the animated hamburger
+          // Note: Lucide.createIcons() might interfere if called after manual SVG injection,
+          // but here we replaced the hamburger icons with spans, so it's safe.
           if (typeof lucide !== 'undefined' && lucide.createIcons) {
-             lucide.createIcons(); // Initialize all icons first
+             lucide.createIcons();
              console.log("Lucide icons initialized successfully.");
+          } else {
+              // If Lucide fails, the theme toggle icons might not appear, but the animated hamburger will work.
+              console.warn("Lucide library not loaded or createIcons method not found. Theme toggle icons may be missing.");
+          }
 
              // Setup Desktop Theme Toggle Button Listener
-             // It's okay to query multiple elements with same ID, listener attaches to first found (desktop one)
-             // The handler itself works globally via applyTheme.
-             const toggleButtonDesktop = document.querySelector('.sm\\:flex #theme-toggle-button'); // More specific selector
+             const toggleButtonDesktop = document.getElementById('theme-toggle-button');
              if (toggleButtonDesktop) {
-                 updateToggleButtonState(); // Set initial state (updates both potentially)
+                 updateToggleButtonState(); // Set initial state
                  toggleButtonDesktop.addEventListener('click', handleThemeToggle);
              } else { console.warn("Desktop theme toggle button not found."); }
 
              // Setup Mobile Theme Toggle Button Listener
-             const toggleButtonMobile = document.querySelector('#mobile-menu #theme-toggle-button');
+             const toggleButtonMobile = document.getElementById('mobile-theme-toggle-button');
               if (toggleButtonMobile) {
-                 // No need to call updateToggleButtonState again, already done
+                 // updateToggleButtonState already called, just add listener
                  toggleButtonMobile.addEventListener('click', handleThemeToggle);
              } else { console.warn("Mobile theme toggle button not found."); }
-
 
              // Setup Mobile Menu Button Listener
              const menuButton = document.getElementById('mobile-menu-button');
@@ -337,10 +372,9 @@
              // Listener for system theme changes
              prefersDark.addEventListener('change', (e) => {
                  if (getPreference() === themes.AUTO) {
-                     updateToggleButtonState(); // Update desktop button state text
+                     updateToggleButtonState(); // Update button labels if system changes in auto
                  }
              });
-          } else { console.error("Lucide library not loaded or createIcons method not found."); }
         } catch (error) { console.error("Error during window.onload initialization:", error); }
       };
     </script>
