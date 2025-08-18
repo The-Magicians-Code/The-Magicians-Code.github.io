@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- SEO Meta Tags -->
+    <title>Tanel Treuberg - Software Engineer | Python, Docker, Swift Developer</title>
+    <meta name="description"
+        content="Software engineer specializing in Python, Docker, BASH, and Swift development. View my portfolio featuring YOLOv5 TensorRT optimization and Raspberry Pi projects.">
+    <meta name="keywords"
+        content="software engineer, python developer, docker, swift, bash, tensorrt, yolo, machine learning, portfolio">
+    <meta name="author" content="Tanel Treuberg">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://the-magicians-code.github.io/">
+
+    <!-- Open Graph Tags for Social Media -->
+    <meta property="og:title" content="Tanel Treuberg - Software Engineer Portfolio">
+    <meta property="og:description"
+        content="Software engineer with data-driven results. Specializing in Python, Docker, and machine learning projects.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://the-magicians-code.github.io/">
+    <meta property="og:site_name" content="Tanel Treuberg Portfolio">
+    <meta property="og:locale" content="en_US">
+
+    <!-- Twitter Card Tags -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Tanel Treuberg - Software Engineer">
+    <meta name="twitter:description"
+        content="Software engineer with expertise in Python, Docker, Swift, and machine learning.">
+
+    <!-- Performance Optimizations -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="dns-prefetch" href="https://cdn.tailwindcss.com">
+    <link rel="dns-prefetch" href="https://unpkg.com">
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "name": "Tanel Treuberg",
+        "jobTitle": "Software Engineer",
+        "description": "Software engineer with data driven results",
+        "url": "https://the-magicians-code.github.io/",
+        "sameAs": [
+            "https://www.linkedin.com/in/taneltreuberg/",
+            "https://github.com/The-Magicians-Code/"
+        ],
+        "knowsAbout": ["Python", "Docker", "BASH", "Swift", "Machine Learning", "TensorRT", "YOLO"],
+        "worksFor": {
+            "@type": "Organization",
+            "name": "Software Engineering"
+        }
+    }
+    </script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script>
+        // Configure Tailwind for class-based dark mode
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', '"Helvetica Neue"', 'Arial', '"Noto Sans"', 'sans-serif', '"Apple Color Emoji"', '"Segoe UI Emoji"', '"Segoe UI Symbol"', '"Noto Color Emoji"'],
+                    },
+                }
+            }
+        }
+    </script>
+    <script>
+        const THEME_KEY = 'theme-preference';
+        const themes = { LIGHT: 'light', DARK: 'dark' };
+
+        const getPreference = () => {
+            const saved = localStorage.getItem(THEME_KEY);
+            if (saved) return saved;
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? themes.DARK : themes.LIGHT;
+        };
+
+        const savePreference = (theme) => {
+            localStorage.setItem(THEME_KEY, theme);
+        };
+
+        const applyTheme = (theme) => {
+            const useDark = (theme === themes.DARK);
+            document.documentElement.classList.toggle('dark', useDark);
+        };
+
+        let currentTheme = getPreference();
+        applyTheme(currentTheme);
+
+        const updateToggleButtonState = () => {
+            const currentPref = getPreference();
+            const nextModeText = currentPref === themes.LIGHT ? 'Dark' : 'Light';
+            const title = `Switch to ${nextModeText} Mode`;
+
+            const buttonDesktop = document.getElementById('theme-toggle-button');
+            if (buttonDesktop) {
+                buttonDesktop.setAttribute('aria-label', title);
+                buttonDesktop.setAttribute('title', title);
+            }
+            const buttonMobile = document.getElementById('mobile-theme-toggle-button');
+            if (buttonMobile) {
+                buttonMobile.setAttribute('aria-label', title);
+                buttonMobile.setAttribute('title', title);
+            }
+        }
+    </script>
+    <style>
+        html {
+            scroll-padding-top: 80px;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .bg-white,
+        .bg-gray-50,
+        .text-gray-600,
+        .text-gray-700,
+        .text-gray-800,
+        .border-gray-200,
+        .dark\:bg-black,
+        .dark\:bg-neutral-800,
+        .dark\:bg-neutral-900,
+        .dark\:text-white,
+        .dark\:text-gray-100,
+        .dark\:text-neutral-300,
+        .dark\:text-neutral-400,
+        .dark\:text-neutral-500,
+        .dark\:border-neutral-700 {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+
+        .section-fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        header.section-fade-in {
+            animation-delay: 0.1s;
+        }
+
+        section:nth-of-type(1) {
+            animation-delay: 0.2s;
+        }
+
+        section:nth-of-type(2) {
+            animation-delay: 0.3s;
+        }
+
+        section:nth-of-type(3) {
+            animation-delay: 0.4s;
+        }
+
+        footer {
+            animation-delay: 0.5s;
+        }
+
+        .name-gradient {
+            background: linear-gradient(to right, #8a2be2, #4169e1, #00ced1, #3cb371, #8a2be2);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            -webkit-text-fill-color: transparent;
+            display: inline-block;
+            animation: gradient-shift 8s linear infinite;
+        }
+
+        @keyframes gradient-shift {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            100% {
+                background-position: 200% 50%;
+            }
+        }
+
+        #theme-toggle-button,
+        #mobile-theme-toggle-button {
+            padding: 0.5rem;
+            border-radius: 9999px;
+            background-color: rgba(255, 255, 255, 0.5);
+            color: #4b5563;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(209, 213, 219, 0.5);
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+            line-height: 0;
+            cursor: pointer;
+        }
+
+        #theme-toggle-button:hover,
+        #mobile-theme-toggle-button:hover {
+            background-color: rgba(255, 255, 255, 0.7);
+        }
+
+        .dark #theme-toggle-button,
+        .dark #mobile-theme-toggle-button {
+            background-color: rgba(28, 28, 30, 0.5);
+            color: #e5e5ea;
+            border-color: rgba(84, 84, 88, 0.65);
+        }
+
+        .dark #theme-toggle-button:hover,
+        .dark #mobile-theme-toggle-button:hover {
+            background-color: rgba(28, 28, 30, 0.7);
+        }
+
+        #theme-toggle-button .icon-moon,
+        #mobile-theme-toggle-button .icon-moon {
+            display: none;
+        }
+
+        #theme-toggle-button .icon-sun,
+        #mobile-theme-toggle-button .icon-sun {
+            display: inline-block;
+        }
+
+        html.dark #theme-toggle-button .icon-moon,
+        html.dark #mobile-theme-toggle-button .icon-moon {
+            display: inline-block;
+        }
+
+        html.dark #theme-toggle-button .icon-sun,
+        html.dark #mobile-theme-toggle-button .icon-sun {
+            display: none;
+        }
+
+        #theme-toggle-button>i>svg,
+        #mobile-theme-toggle-button>i>svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .nav-link {
+            transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out;
+        }
+
+        .hamburger-lines {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+        }
+
+        .line {
+            display: block;
+            height: 2px;
+            width: 100%;
+            background-color: currentColor;
+            border-radius: 1px;
+            transition: transform 0.3s ease-in-out, opacity 0.2s ease-in-out;
+            transform-origin: center;
+        }
+
+        #mobile-menu-button.open .line1 {
+            transform: translateY(8px) rotate(45deg);
+        }
+
+        #mobile-menu-button.open .line2 {
+            opacity: 0;
+            transform: scaleX(0);
+        }
+
+        #mobile-menu-button.open .line3 {
+            transform: translateY(-8px) rotate(-45deg);
+        }
+
+        #mobile-menu {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
+            opacity: 0;
+        }
+
+        #mobile-menu.show {
+            max-height: 300px;
+            opacity: 1;
+        }
+
+        #mobile-menu .mobile-menu-content {
+            transform: translateY(-10px);
+            transition: transform 0.3s ease-in-out;
+        }
+
+        #mobile-menu.show .mobile-menu-content {
+            transform: translateY(0);
+        }
+
+        #mobile-theme-toggle-button {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+        }
+
+        .dark #mobile-theme-toggle-button {
+            border-color: #4b5563;
+        }
+
+        /* ——— Liquid glass pill nav morph ——— */
+
+        #site-nav {
+            transition:
+                left .35s ease, right .35s ease, width .35s ease,
+                border-radius .35s ease, background-color .35s ease,
+                box-shadow .35s ease, border-color .35s ease,
+                backdrop-filter .35s ease, transform .35s ease, margin .35s ease;
+        }
+
+        /* Pill state (tablet/desktop only) */
+        @media (min-width: 640px) {
+            #site-nav.pill {
+                left: 50%;
+                right: auto;
+                transform: translateX(-50%);
+                width: min(1120px, 90vw);
+                margin-top: 8px;
+                border-radius: 9999px;
+
+                /* liquid glass look */
+                background: rgba(255, 255, 255, 0.28) !important;
+                -webkit-backdrop-filter: blur(14px) saturate(160%);
+                backdrop-filter: blur(14px) saturate(160%);
+                border: 1px solid rgba(255, 255, 255, 0.38) !important;
+                box-shadow: 0 12px 40px rgba(0, 0, 0, .18), inset 0 1px 0 rgba(255, 255, 255, .35);
+            }
+
+            .dark #site-nav.pill {
+                background: rgba(28, 28, 30, 0.42) !important;
+                border-color: rgba(84, 84, 88, 0.45) !important;
+                box-shadow: 0 12px 40px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .08);
+            }
+
+            /* Slightly more breathing room for contents when pill is active */
+            #site-nav.pill .max-w-4xl {
+                padding-left: 1.25rem;
+                padding-right: 1.25rem;
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 text-gray-800 leading-relaxed dark:bg-black dark:text-gray-100 pt-16">
+    <nav id="site-nav"
+        class="fixed top-0 left-0 right-0 z-40 backdrop-blur-lg bg-white/60 dark:bg-neutral-900/60 border-b border-gray-200/50 dark:border-neutral-700/50 shadow-sm">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <a href="#" class="text-lg font-semibold name-gradient" aria-label="Tanel Treuberg - Home"> Tanel
+                    </a>
+                </div>
+                <div class="hidden sm:ml-6 sm:flex sm:items-center sm:space-x-4">
+                    <a href="#projects"
+                        class="nav-link text-gray-700 hover:bg-gray-100 dark:text-neutral-300 dark:hover:bg-neutral-700 px-3 py-2 rounded-md text-sm font-medium">Projects</a>
+                    <a href="#skills-tools"
+                        class="nav-link text-gray-700 hover:bg-gray-100 dark:text-neutral-300 dark:hover:bg-neutral-700 px-3 py-2 rounded-md text-sm font-medium">Skills
+                        & Tools</a>
+                    <a href="#contact"
+                        class="nav-link text-gray-700 hover:bg-gray-100 dark:text-neutral-300 dark:hover:bg-neutral-700 px-3 py-2 rounded-md text-sm font-medium">Contact</a>
+                    <button id="theme-toggle-button" type="button" aria-label="Toggle theme" class="ml-4">
+                        <i data-lucide="sun" class="icon-sun" aria-hidden="true"></i>
+                        <i data-lucide="moon" class="icon-moon" aria-hidden="true"></i>
+                    </button>
+                </div>
+                <div class="-mr-2 flex items-center sm:hidden">
+                    <button id="mobile-menu-button" type="button"
+                        class="inline-flex items-center justify-center p-2 text-gray-600 dark:text-neutral-300 hover:text-gray-800 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
+                        aria-controls="mobile-menu" aria-expanded="false">
+                        <span class="sr-only">Open main menu</span>
+                        <div class="hamburger-lines" aria-hidden="true">
+                            <span class="line line1"></span>
+                            <span class="line line2"></span>
+                            <span class="line line3"></span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="sm:hidden" id="mobile-menu">
+            <div
+                class="mobile-menu-content px-2 pt-2 pb-4 space-y-1 border-t border-gray-200/50 dark:border-neutral-700/50">
+                <a href="#projects"
+                    class="nav-link mobile-nav-link block text-gray-700 hover:bg-gray-100 dark:text-neutral-300 dark:hover:bg-neutral-700 px-3 py-2 rounded-md text-base font-medium">Projects</a>
+                <a href="#skills-tools"
+                    class="nav-link mobile-nav-link block text-gray-700 hover:bg-gray-100 dark:text-neutral-300 dark:hover:bg-neutral-700 px-3 py-2 rounded-md text-base font-medium">Skills
+                    & Tools</a>
+                <a href="#contact"
+                    class="nav-link mobile-nav-link block text-gray-700 hover:bg-gray-100 dark:text-neutral-300 dark:hover:bg-neutral-700 px-3 py-2 rounded-md text-base font-medium">Contact</a>
+                <div class="pt-4 pb-2 px-3">
+                    <button id="mobile-theme-toggle-button" type="button" aria-label="Toggle theme">
+                        <i data-lucide="sun" class="icon-sun" aria-hidden="true"></i>
+                        <i data-lucide="moon" class="icon-moon" aria-hidden="true"></i>
+                        <span class="ml-3 text-base font-medium text-gray-700 dark:text-neutral-300">Toggle Theme</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-4xl mx-auto p-6 md:p-10 space-y-12 md:space-y-16">
+        <header class="text-center section-fade-in pt-6 md:pt-10">
+            <h1 class="text-4xl md:text-5xl font-bold mb-2 name-gradient">Tanel</h1>
+            <p class="text-xl md:text-2xl text-gray-600 dark:text-neutral-400">Software engineer, with data driven
+                results</p>
+        </header>
+
+        <section id="projects" class="section-fade-in">
+            <h2 class="text-2xl md:text-3xl font-semibold mb-6 flex items-center dark:text-white">
+                <i data-lucide="folder-git-2" class="inline-block w-6 h-6 mr-3 text-blue-600 dark:text-blue-400"
+                    aria-hidden="true"></i>
+                Projects
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <article
+                    class="bg-white p-6 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-300 dark:bg-neutral-800 dark:border-neutral-700">
+                    <h3 class="text-lg font-semibold mb-2 dark:text-white">Yolo-dualdev</h3>
+                    <p class="text-gray-600 mb-4 text-sm dark:text-neutral-400">Develop and deploy TensorRT optimised
+                        YOLOv5 models on Nvidia Jetson</p>
+                    <a href="https://github.com/The-Magicians-Code/Yolo-dualdev/" target="_blank"
+                        rel="noopener noreferrer"
+                        class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium inline-flex items-center"
+                        aria-label="View Yolo-dualdev project on GitHub">
+                        View on GitHub
+                        <i data-lucide="arrow-up-right" class="inline-block w-4 h-4 ml-1" aria-hidden="true"></i>
+                    </a>
+                </article>
+                <article
+                    class="bg-white p-6 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-300 dark:bg-neutral-800 dark:border-neutral-700">
+                    <h3 class="text-lg font-semibold mb-2 dark:text-white">Strato_Pi</h3>
+                    <p class="text-gray-600 mb-4 text-sm dark:text-neutral-400">Motor load machine controller with
+                        online interface</p>
+                    <a href="https://github.com/The-Magicians-Code/Strato_Pi/" target="_blank" rel="noopener noreferrer"
+                        class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium inline-flex items-center"
+                        aria-label="View Strato_Pi project on GitHub">
+                        View on GitHub
+                        <i data-lucide="arrow-up-right" class="inline-block w-4 h-4 ml-1" aria-hidden="true"></i>
+                    </a>
+                </article>
+                <div
+                    class="bg-white p-6 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-300 md:col-span-2 text-center dark:bg-neutral-800 dark:border-neutral-700">
+                    <a href="https://github.com/The-Magicians-Code/" target="_blank" rel="noopener noreferrer"
+                        class="text-gray-700 hover:text-black dark:text-neutral-300 dark:hover:text-white font-medium inline-flex items-center"
+                        aria-label="View all projects on GitHub">
+                        <i data-lucide="github" class="inline-block w-5 h-5 mr-2" aria-hidden="true"></i>
+                        See all projects on GitHub
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <section id="skills-tools" class="section-fade-in">
+            <h2 class="text-2xl md:text-3xl font-semibold mb-6 flex items-center dark:text-white">
+                <i data-lucide="terminal-square" class="inline-block w-6 h-6 mr-3 text-green-600 dark:text-green-500"
+                    aria-hidden="true"></i>
+                Skills & Tools
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                <div>
+                    <h3 class="text-lg font-semibold mb-3 text-gray-700 dark:text-neutral-300">Skills</h3>
+                    <ul class="space-y-2">
+                        <li class="flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 16 16"
+                                class="w-[26px] h-[26px] mr-2" aria-hidden="true">
+                                <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                    <path stroke="#89b4fa"
+                                        d="M8.5 5.5h-3m6 0V3c0-.8-.7-1.5-1.5-1.5H7c-.8 0-1.5.7-1.5 1.5v2.5H3c-.8 0-1.5.7-1.5 1.5v2c0 .8.7 1.5 1.48 1.5"
+                                        stroke-width="1.5" />
+                                    <path stroke="#f9e2af"
+                                        d="M10.5 10.5h-3m-3 0V13c0 .8.7 1.5 1.5 1.5h3c.8 0 1.5-.7 1.5-1.5v-2.5H13c.8 0 1.5-.7 1.5-1.5V7c0-.8-.7-1.5-1.48-1.5H11.5c0 1.5 0 2-1 2h-2"
+                                        stroke-width="1.5" />
+                                    <path stroke="#89b4fa" d="M2.98 10.5H4.5c0-1.5 0-2 1-2h2m0-5" stroke-width="1.5" />
+                                </g>
+                            </svg>
+                            Python
+                        </li>
+                        <li class="flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 16 16"
+                                class="w-[26px] h-[26px] mr-2" fill="none" stroke="#89b4fa" stroke-linecap="round"
+                                stroke-linejoin="round" stroke-width="1.5" aria-hidden="true">
+                                <path
+                                    d="M.5 8.5H11l.75-.5a5.35 5.35 0 0 1 0-3.5c1 .6 1 1.88 1.74 2c.77-.09 1.23.01 2 .52c0 0-.97 1.77-2.5 1.98c-1.93 3.65-4.5 5.5-6.98 5.5C0 14.5.5 8.5.5 8.5m1 0v-2m0 0h8m-6 2v-4m0 0h4m-2-2h2m-2 6v-6m2 6v-6m2 6v-2" />
+                            </svg>
+                            Docker
+                        </li>
+                        <li class="flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 16 16"
+                                class="w-[26px] h-[26px] mr-2" aria-hidden="true">
+                                <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                    <path stroke="#a6e3a1"
+                                        d="M2 15.5c-.7 0-1.5-.8-1.5-1.5V5c0-.7.8-1.5 1.5-1.5h9c.7 0 1.5.8 1.5 1.5v9c0 .7-.8 1.5-1.5 1.5z"
+                                        stroke-width="1.5" />
+                                    <path stroke="#a6e3a1"
+                                        d="m1.2 3.8l3.04-2.5S5.17.5 5.7.5h8.4c.66 0 1.4.73 1.4 1.4v7.73a2.7 2.7 0 0 1-.7 1.75l-2.68 3.51"
+                                        stroke-width="1.5" />
+                                    <path stroke="#a6e3a1"
+                                        d="M6 8.75c0-.69-.54-1.25-1.2-1.25h-.6c-.66 0-1.2.56-1.2 1.25S3.54 10 4.2 10h.6c.66 0 1.2.56 1.2 1.25s-.54 1.25-1.2 1.25h-.6c-.66 0-1.2-.56-1.2-1.25M4.5 6.5v1m0 5v1"
+                                        stroke-width="1.5" />
+                                </g>
+                            </svg>
+                            BASH
+                        </li>
+                        <li class="flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 16 16"
+                                class="w-[26px] h-[26px] mr-2" aria-hidden="true">
+                                <path fill="none" stroke="#fab387" stroke-linecap="round" stroke-linejoin="round"
+                                    d="M14.34 10.2c.34-1.08 1.1-5.07-4.45-8.62a.48.48 0 0 0-.6.07a.44.44 0 0 0-.02.6c.03.02 2.07 2.5 1.34 5.34c-1.26-.86-6.24-4.81-6.24-4.81L7.25 7.5L1.9 4.05S5.68 8.7 8 10.45c-1.12.4-3.56.82-6.78-1.18a.48.48 0 0 0-.58.06a.44.44 0 0 0-.08.56c.11.18 2.7 4.36 8.14 4.36c1.5 0 2.37-.42 3.08-.77c.43-.2.77-.37 1.14-.37c.93 0 1.54.92 1.54.93c.1.14.27.22.44.21a.46.46 0 0 0 .4-.28c.67-1.55-.49-3.2-.96-3.78h0Z"
+                                    stroke-width="1.5" />
+                            </svg>
+                            Swift
+                        </li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-3 text-gray-700 dark:text-neutral-300">Tools</h3>
+                    <ul class="space-y-2">
+                        <li class="flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 16 16"
+                                class="w-[26px] h-[26px] mr-2" aria-hidden="true">
+                                <path fill="none" stroke="#89b4fa" stroke-linecap="round" stroke-linejoin="round"
+                                    d="M10.5 11L3 4.5h-.5l-1 1V6l9 8.5l4-2v-9l-4-2v13m0-13L5.3 6.41M3.53 8.08L1.5 10v.5l.98 1.1l.52-.1l2.17-1.88m1.91-1.66L10.5 5"
+                                    stroke-width="1.5" />
+                            </svg>
+                            VS Code
+                        </li>
+                        <li class="flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 16 16"
+                                class="w-[26px] h-[26px] mr-2" aria-hidden="true">
+                                <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                    <path stroke="#cba6f7"
+                                        d="M8.5 10.5a1 1 0 0 1-1 1a1 1 0 0 1-1-1a1 1 0 0 1 1-1a1 1 0 0 1 1 1m0-6a1 1 0 0 1-1 1a1 1 0 0 1-1-1a1 1 0 0 1 1-1a1 1 0 0 1 1 1m3 3a1 1 0 0 1-1 1a1 1 0 0 1-1-1a1 1 0 0 1 1-1a1 1 0 0 1 1 1m-4-2v4m-1-6l-1-1m4 4l-1-1"
+                                        stroke-width="1.5" />
+                                    <path stroke="#fab387"
+                                        d="m9.06 1.06l5.88 5.88a1.5 1.5 0 0 1 0 2.12l-5.88 5.88a1.5 1.5 0 0 1-2.12 0L1.06 9.06a1.5 1.5 0 0 1 0-2.12l5.88-5.88a1.5 1.5 0 0 1 2.12 0"
+                                        stroke-width="1.5" />
+                                </g>
+                            </svg>
+                            Git
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section id="contact" class="section-fade-in">
+            <h2 class="text-2xl md:text-3xl font-semibold mb-6 flex items-center dark:text-white">
+                <i data-lucide="mail" class="inline-block w-6 h-6 mr-3 text-purple-600 dark:text-purple-500"
+                    aria-hidden="true"></i>
+                Get In Touch
+            </h2>
+            <div class="flex flex-wrap gap-4 md:gap-6">
+                <a href="https://www.linkedin.com/in/taneltreuberg/" target="_blank" rel="noopener noreferrer"
+                    class="inline-flex items-center text-blue-700 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 font-medium transition-colors duration-200"
+                    aria-label="Connect with Tanel on LinkedIn">
+                    <i data-lucide="linkedin" class="w-5 h-5 mr-2" aria-hidden="true"></i>LinkedIn
+                </a>
+                <a href="https://github.com/The-Magicians-Code/" target="_blank" rel="noopener noreferrer"
+                    class="inline-flex items-center text-gray-800 hover:text-black dark:text-neutral-300 dark:hover:text-white font-medium transition-colors duration-200"
+                    aria-label="View Tanel's GitHub profile">
+                    <i data-lucide="github" class="w-5 h-5 mr-2" aria-hidden="true"></i>GitHub
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <footer
+        class="text-center text-gray-500 dark:text-neutral-400 text-sm pt-8 border-t border-gray-200 dark:border-neutral-700 section-fade-in max-w-4xl mx-auto px-6">
+        &copy;
+        <script>document.write(new Date().getFullYear())</script> Tanel Treuberg. All rights reserved.
+    </footer>
+
+    <script>
+        const handleThemeToggle = () => {
+            const currentPref = getPreference();
+            const nextPref = currentPref === themes.LIGHT ? themes.DARK : themes.LIGHT;
+            savePreference(nextPref);
+            applyTheme(nextPref);
+            updateToggleButtonState();
+        };
+
+        const handleMobileMenuToggle = () => {
+            const menuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            const isCurrentlyOpen = mobileMenu.classList.contains('show');
+
+            if (isCurrentlyOpen) {
+                mobileMenu.classList.remove('show');
+                menuButton.setAttribute('aria-expanded', 'false');
+                menuButton.classList.remove('open');
+            } else {
+                mobileMenu.classList.add('show');
+                menuButton.setAttribute('aria-expanded', 'true');
+                menuButton.classList.add('open');
+            }
+        };
+
+        const handleMobileLinkClick = () => {
+            const menuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            if (mobileMenu.classList.contains('show')) {
+                mobileMenu.classList.remove('show');
+                menuButton.setAttribute('aria-expanded', 'false');
+                menuButton.classList.remove('open');
+            }
+        };
+
+        window.onload = function () {
+            try {
+                if (typeof lucide !== 'undefined' && lucide.createIcons) {
+                    lucide.createIcons();
+                } else {
+                    console.warn("Lucide library not loaded or createIcons method not found.");
+                }
+
+                const toggleButtonDesktop = document.getElementById('theme-toggle-button');
+                if (toggleButtonDesktop) {
+                    updateToggleButtonState();
+                    toggleButtonDesktop.addEventListener('click', handleThemeToggle);
+                }
+
+                const toggleButtonMobile = document.getElementById('mobile-theme-toggle-button');
+                if (toggleButtonMobile) {
+                    toggleButtonMobile.addEventListener('click', handleThemeToggle);
+                }
+
+                const menuButton = document.getElementById('mobile-menu-button');
+                if (menuButton) {
+                    menuButton.addEventListener('click', handleMobileMenuToggle);
+                }
+
+                const mobileNavLinks = document.querySelectorAll('#mobile-menu .mobile-nav-link');
+                mobileNavLinks.forEach(link => {
+                    link.addEventListener('click', handleMobileLinkClick);
+                });
+
+                // ——— Nav morph on scroll ———
+                const nav = document.getElementById('site-nav');
+                const hero = document.querySelector('main header');
+
+                const computeThreshold = () => {
+                    if (!hero) return 120; // fallback
+                    // threshold: just past the header section
+                    return hero.offsetTop + hero.offsetHeight - 16;
+                };
+
+                let threshold = computeThreshold();
+
+                const updatePillState = () => {
+                    const scrolledPast = window.scrollY > threshold;
+                    if (scrolledPast) {
+                        nav.classList.add('pill');
+                    } else {
+                        nav.classList.remove('pill');
+                    }
+                };
+
+                updatePillState();
+                window.addEventListener('scroll', updatePillState, { passive: true });
+                window.addEventListener('resize', () => { threshold = computeThreshold(); updatePillState(); });
+
+            } catch (error) {
+                console.error("Error during initialization:", error);
+            }
+        };
+    </script>
+</body>
+
+</html>
