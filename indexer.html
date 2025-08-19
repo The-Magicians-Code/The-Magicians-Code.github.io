@@ -321,52 +321,11 @@
         .dark #mobile-theme-toggle-button {
             border-color: #4b5563;
         }
-
-        /* ——— Liquid glass pill nav morph ——— */
-
-        #site-nav {
-            transition:
-                left .35s ease, right .35s ease, width .35s ease,
-                border-radius .35s ease, background-color .35s ease,
-                box-shadow .35s ease, border-color .35s ease,
-                backdrop-filter .35s ease, transform .35s ease, margin .35s ease;
-        }
-
-        /* Pill state (tablet/desktop only) */
-        @media (min-width: 640px) {
-            #site-nav.pill {
-                left: 50%;
-                right: auto;
-                transform: translateX(-50%);
-                width: min(1120px, 90vw);
-                margin-top: 8px;
-                border-radius: 9999px;
-
-                /* liquid glass look */
-                background: rgba(255, 255, 255, 0.28) !important;
-                -webkit-backdrop-filter: blur(14px) saturate(160%);
-                backdrop-filter: blur(14px) saturate(160%);
-                border: 1px solid rgba(255, 255, 255, 0.38) !important;
-                box-shadow: 0 12px 40px rgba(0, 0, 0, .18), inset 0 1px 0 rgba(255, 255, 255, .35);
-            }
-
-            .dark #site-nav.pill {
-                background: rgba(28, 28, 30, 0.42) !important;
-                border-color: rgba(84, 84, 88, 0.45) !important;
-                box-shadow: 0 12px 40px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .08);
-            }
-
-            /* Slightly more breathing room for contents when pill is active */
-            #site-nav.pill .max-w-4xl {
-                padding-left: 1.25rem;
-                padding-right: 1.25rem;
-            }
-        }
     </style>
 </head>
 
 <body class="bg-gray-50 text-gray-800 leading-relaxed dark:bg-black dark:text-gray-100 pt-16">
-    <nav id="site-nav"
+    <nav
         class="fixed top-0 left-0 right-0 z-40 backdrop-blur-lg bg-white/60 dark:bg-neutral-900/60 border-b border-gray-200/50 dark:border-neutral-700/50 shadow-sm">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
@@ -587,11 +546,13 @@
         </section>
     </main>
 
-    <footer
-        class="text-center text-gray-500 dark:text-neutral-400 text-sm pt-8 border-t border-gray-200 dark:border-neutral-700 section-fade-in max-w-4xl mx-auto px-6">
-        &copy;
-        <script>document.write(new Date().getFullYear())</script> Tanel Treuberg. All rights reserved.
-    </footer>
+    <div class="max-w-4xl mx-auto p-6 md:p-10 space-y-12 md:space-y-16">
+        <footer
+            class="text-center text-gray-500 dark:text-neutral-400 text-sm pt-8 border-t border-gray-200 dark:border-neutral-700 section-fade-in max-w-4xl mx-auto px-6">
+            &copy;
+            <script>document.write(new Date().getFullYear())</script> Tanel Treuberg. All rights reserved.
+        </footer>
+    </div>
 
     <script>
         const handleThemeToggle = () => {
@@ -656,31 +617,6 @@
                 mobileNavLinks.forEach(link => {
                     link.addEventListener('click', handleMobileLinkClick);
                 });
-
-                // ——— Nav morph on scroll ———
-                const nav = document.getElementById('site-nav');
-                const hero = document.querySelector('main header');
-
-                const computeThreshold = () => {
-                    if (!hero) return 120; // fallback
-                    // threshold: just past the header section
-                    return hero.offsetTop + hero.offsetHeight - 16;
-                };
-
-                let threshold = computeThreshold();
-
-                const updatePillState = () => {
-                    const scrolledPast = window.scrollY > threshold;
-                    if (scrolledPast) {
-                        nav.classList.add('pill');
-                    } else {
-                        nav.classList.remove('pill');
-                    }
-                };
-
-                updatePillState();
-                window.addEventListener('scroll', updatePillState, { passive: true });
-                window.addEventListener('resize', () => { threshold = computeThreshold(); updatePillState(); });
 
             } catch (error) {
                 console.error("Error during initialization:", error);
