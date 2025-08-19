@@ -216,6 +216,13 @@
             }
         }
 
+        /* ===== Nav Actions (Right Side) ===== */
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
         /* ===== Theme Toggle Button ===== */
         #theme-toggle-button {
             width: 36px;
@@ -342,37 +349,6 @@
             background: rgba(128, 128, 128, .15);
         }
 
-        #mobile-theme-toggle-button {
-            width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0.875rem 1rem;
-            border-radius: 12px;
-            font-weight: 600;
-            color: var(--ink);
-        }
-
-        #mobile-theme-toggle-button:hover {
-            background: rgba(128, 128, 128, .15);
-        }
-
-        #mobile-theme-toggle-button .icon-moon {
-            display: none;
-        }
-
-        #mobile-theme-toggle-button .icon-sun {
-            display: inline-block;
-        }
-
-        html.dark #mobile-theme-toggle-button .icon-moon {
-            display: inline-block;
-        }
-
-        html.dark #mobile-theme-toggle-button .icon-sun {
-            display: none;
-        }
-
         /* ===== Responsive Layout ===== */
         @media (max-width: 640px) {
             .nav-links {
@@ -406,6 +382,26 @@
 
             .brand-pill:hover {
                 background-color: var(--glass-bg);
+            }
+
+            .nav-actions {
+                background: var(--glass-bg);
+                -webkit-backdrop-filter: blur(18px) saturate(140%);
+                backdrop-filter: blur(18px) saturate(140%);
+                box-shadow: var(--glass-inner), var(--glass-shadow);
+                border: 1px solid var(--glass-brd);
+                border-radius: 999px;
+                padding: 4px;
+            }
+
+            #theme-toggle-button,
+            .hamburger-button {
+                background-color: transparent !important;
+            }
+
+            #theme-toggle-button:hover,
+            .hamburger-button:hover {
+                background-color: rgba(128, 128, 128, .15) !important;
             }
         }
 
@@ -464,23 +460,22 @@
 
             <div class="flex-1"></div> <!-- Spacer -->
 
-            <!-- Right: Theme Toggle (Desktop) & Hamburger (Mobile) -->
-            <div class="hidden sm:flex items-center">
+            <!-- Right: Actions -->
+            <div class="nav-actions">
                 <button id="theme-toggle-button" type="button" aria-label="Toggle theme">
                     <i data-lucide="sun" class="icon-sun" aria-hidden="true"></i>
                     <i data-lucide="moon" class="icon-moon" aria-hidden="true"></i>
                 </button>
+                <button id="hamburger-button" type="button" class="hamburger-button" aria-controls="mobile-menu"
+                    aria-expanded="false">
+                    <span class="sr-only">Open main menu</span>
+                    <div class="hamburger-lines" aria-hidden="true">
+                        <span class="line line1"></span>
+                        <span class="line line2"></span>
+                        <span class="line line3"></span>
+                    </div>
+                </button>
             </div>
-
-            <button id="hamburger-button" type="button" class="hamburger-button glass" aria-controls="mobile-menu"
-                aria-expanded="false">
-                <span class="sr-only">Open main menu</span>
-                <div class="hamburger-lines" aria-hidden="true">
-                    <span class="line line1"></span>
-                    <span class="line line2"></span>
-                    <span class="line line3"></span>
-                </div>
-            </button>
         </div>
     </nav>
 
@@ -490,13 +485,6 @@
             <a href="#projects" class="mobile-nav-link">Projects</a>
             <a href="#skills-tools" class="mobile-nav-link">Skills & Tools</a>
             <a href="#contact" class="mobile-nav-link">Contact</a>
-            <div class="pt-2">
-                <button id="mobile-theme-toggle-button" type="button" aria-label="Toggle theme">
-                    <i data-lucide="sun" class="icon-sun mr-3" aria-hidden="true"></i>
-                    <i data-lucide="moon" class="icon-moon mr-3" aria-hidden="true"></i>
-                    <span>Toggle Theme</span>
-                </button>
-            </div>
         </div>
     </div>
 
@@ -734,14 +722,9 @@
                     console.warn("Lucide library not loaded or createIcons method not found.");
                 }
 
-                const toggleButtonDesktop = document.getElementById('theme-toggle-button');
-                if (toggleButtonDesktop) {
-                    toggleButtonDesktop.addEventListener('click', handleThemeToggle);
-                }
-
-                const toggleButtonMobile = document.getElementById('mobile-theme-toggle-button');
-                if (toggleButtonMobile) {
-                    toggleButtonMobile.addEventListener('click', handleThemeToggle);
+                const toggleButton = document.getElementById('theme-toggle-button');
+                if (toggleButton) {
+                    toggleButton.addEventListener('click', handleThemeToggle);
                 }
 
                 const menuButton = document.getElementById('hamburger-button');
@@ -759,5 +742,4 @@
         };
     </script>
 </body>
-
 </html>
