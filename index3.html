@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pill Navbar Website</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        /* Pill Navbar */
+        .navbar {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 50px;
+            padding: 12px 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .navbar:hover {
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+            transform: translateX(-50%) translateY(-2px);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            list-style: none;
+            align-items: center;
+        }
+
+        .nav-links li a {
+            text-decoration: none;
+            color: #333;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-links li a:hover {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+        }
+
+        .nav-links li a.active {
+            background: #667eea;
+            color: white;
+        }
+
+        /* Main Content */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .section {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 100px 0;
+        }
+
+        .hero {
+            text-align: center;
+            color: white;
+        }
+
+        .hero h1 {
+            font-size: 4rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            opacity: 0;
+            animation: fadeInUp 1s ease forwards;
+        }
+
+        .hero p {
+            font-size: 1.5rem;
+            opacity: 0.9;
+            margin-bottom: 40px;
+            opacity: 0;
+            animation: fadeInUp 1s ease 0.3s forwards;
+        }
+
+        .cta-button {
+            display: inline-block;
+            padding: 15px 35px;
+            background: white;
+            color: #667eea;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            opacity: 0;
+            animation: fadeInUp 1s ease 0.6s forwards;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Content Sections */
+        .content-section {
+            background: white;
+            margin: 50px 0;
+            padding: 80px 0;
+            border-radius: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+        }
+
+        .content-section h2 {
+            font-size: 3rem;
+            text-align: center;
+            margin-bottom: 40px;
+            color: #333;
+        }
+
+        .content-section p {
+            font-size: 1.2rem;
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto;
+            color: #666;
+            line-height: 1.8;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+            margin-top: 60px;
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+        }
+
+        .feature-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Smooth scroll behavior */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 10px 20px;
+                top: 15px;
+            }
+
+            .nav-links {
+                gap: 20px;
+            }
+
+            .nav-links li a {
+                padding: 6px 12px;
+                font-size: 0.9rem;
+            }
+
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero p {
+                font-size: 1.2rem;
+            }
+
+            .content-section h2 {
+                font-size: 2rem;
+            }
+
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .nav-glass {
+            position: fixed;       /* or sticky if you prefer */
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: min(960px, 92vw);
+            height: 56px;
+            border-radius: 999px;
+            z-index: 1000;         /* keep it above page content */
+            padding: 0 12px;       /* inner content padding */
+        }
+
+        .nav-glass .content {
+            position: relative;
+            z-index: 3;            /* ensure links sit above the glass */
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <!-- Pill-shaped Navbar -->
+    <!-- <nav class="navbar">
+        <ul class="nav-links">
+            <li><a href="#home" class="active">Home</a></li>
+            <li><a href="#about">About</a></li>
+            <li><a href="#services">Services</a></li>
+            <li><a href="#portfolio">Portfolio</a></li>
+            <li><a href="#contact">Contact</a></li>
+        </ul>
+    </nav> -->
+    <nav class="liquidGL nav-glass">
+        <div class="content">
+            <a href="/">Home</a>
+            <a href="/work">Work</a>
+            <a href="/about">About</a>
+        </div>
+    </nav>
+
+    <!-- <div class="liquidGL"> -->
+    <!-- Content -->
+        <!-- <div class="content">
+            <p>This example text content will appear on top of the glass.</p>
+        </div>
+    </div> -->
+    <!-- Hero Section -->
+    <section id="home" class="section hero">
+        <div class="container">
+            <h1>Welcome to the Future</h1>
+            <p>Experience modern web design with smooth animations and beautiful gradients</p>
+            <a href="#about" class="cta-button">Explore More</a>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="section">
+        <div class="container">
+            <div class="content-section">
+                <h2>About Us</h2>
+                <p>We create stunning digital experiences that combine beautiful design with cutting-edge technology. Our team is passionate about crafting websites that not only look amazing but also provide exceptional user experiences. From concept to launch, we're here to bring your vision to life with modern design principles and innovative solutions.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Services Section -->
+    <section id="services" class="section">
+        <div class="container">
+            <div class="content-section">
+                <h2>Our Services</h2>
+                <p>We offer a comprehensive range of digital services designed to elevate your brand and engage your audience.</p>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h3>Web Design</h3>
+                        <p>Custom websites that capture your brand's essence and provide seamless user experiences across all devices.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>Development</h3>
+                        <p>Robust, scalable solutions built with the latest technologies to ensure optimal performance and reliability.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>Branding</h3>
+                        <p>Complete brand identity packages that help you stand out in today's competitive digital landscape.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Portfolio Section -->
+    <section id="portfolio" class="section">
+        <div class="container">
+            <div class="content-section">
+                <h2>Our Portfolio</h2>
+                <p>Discover our latest projects showcasing innovative design solutions and cutting-edge development techniques. Each project represents our commitment to excellence and our passion for creating digital experiences that make a lasting impact. From startups to enterprise solutions, we've helped brands across industries achieve their digital goals.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="section">
+        <div class="container">
+            <div class="content-section">
+                <h2>Get In Touch</h2>
+                <p>Ready to start your next project? We'd love to hear from you. Whether you have a specific vision in mind or need guidance on where to begin, our team is here to help you create something extraordinary. Let's collaborate to bring your ideas to life and make your digital presence truly shine.</p>
+                <div style="margin-top: 40px;">
+                    <a href="mailto:hello@example.com" class="cta-button">Start Your Project</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // Smooth scrolling and active nav link updates
+        document.addEventListener('DOMContentLoaded', function() {
+            const navLinks = document.querySelectorAll('.nav-links a');
+            const sections = document.querySelectorAll('.section');
+
+            // Handle nav link clicks
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href');
+                    const targetSection = document.querySelector(targetId);
+                    
+                    if (targetSection) {
+                        targetSection.scrollIntoView({ 
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+
+            // Update active nav link on scroll
+            function updateActiveLink() {
+                let current = '';
+                
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    const sectionHeight = section.clientHeight;
+                    
+                    if (window.pageYOffset >= sectionTop - 200) {
+                        current = section.getAttribute('id');
+                    }
+                });
+
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href') === '#' + current) {
+                        link.classList.add('active');
+                    }
+                });
+            }
+
+            // Update active link on scroll
+            window.addEventListener('scroll', updateActiveLink);
+            
+            // Initial call
+            updateActiveLink();
+
+            // Add scroll effect to navbar
+            window.addEventListener('scroll', function() {
+                const navbar = document.querySelector('.navbar');
+                if (window.scrollY > 100) {
+                    navbar.style.background = 'rgba(255, 255, 255, 0.98)';
+                    navbar.style.boxShadow = '0 12px 40px rgba(0, 0, 0, 0.15)';
+                } else {
+                    navbar.style.background = 'rgba(255, 255, 255, 0.95)';
+                    navbar.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.1)';
+                }
+            });
+        });
+    </script>
+
+    <!-- html2canvas – DOM snapshotter (required) -->
+    <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
+    defer
+    ></script>
+
+    <!-- liquidGL.js – the library itself -->
+    <script src="/static/js/liquidGL.js" defer></script>
+    <script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const glassEffect = liquidGL({
+        snapshot: "body", // The area used for refraction, <body> recommended and default
+        target: ".liquidGL", // CSS selector for the element(s) to glass-ify
+        resolution: 2.0, // The quality of the snapshot
+        refraction: 0.01, // Base refraction strength (0–1)
+        bevelDepth: 0.08, // Intensity of the edge bevel (0–1)
+        bevelWidth: 0.15, // Width of the bevel as a proportion of the element (0–1)
+        frost: 0, // Subtle blur radius in px. 0 = crystal clear
+        shadow: true, // Adds a soft drop-shadow under the pane
+        specular: true, // Animated light highlights (slightly more GPU)
+        reveal: "fade", // Reveal animation
+        tilt: false, // Whether tilt on hover is enabled
+        tiltFactor: 5, // If tilt is enabled, how much tilt
+        magnify: 1, // Magnification of lens content
+        on: {
+            init(instance) {
+            // The `init` callback fires once liquidGL has taken its snapshot
+            // and rendered the first frame. It's the ideal place to hide or
+            // prepare elements for reveal animations (e.g. with GSAP, ScrollTrigger)
+            // because it ensures the content is visible to the snapshot before
+            // you hide it from the user.
+            console.log("liquidGL ready!", instance);
+            },
+        },
+        });
+    });
+    </script>
+</body>
+</html>
