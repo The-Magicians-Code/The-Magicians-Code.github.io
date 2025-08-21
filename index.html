@@ -7,8 +7,7 @@
 
     <!-- SEO Meta Tags -->
     <title>Tanel Treuberg - SWE</title>
-    <meta name="description"
-        content="Software engineer specializing in Python, Docker, BASH, and Swift development.">
+    <meta name="description" content="Software engineer specializing in Python, Docker, BASH, and Swift development.">
     <meta name="keywords"
         content="software engineer, python developer, docker, swift, tensorrt, machine learning, portfolio">
     <meta name="author" content="Tanel Treuberg">
@@ -80,11 +79,6 @@
     </script>
     <style>
         /* ===== Base Styles & Transitions ===== */
-        html {
-            scroll-padding-top: 100px;
-            /* Adjust for nav height */
-        }
-
         body {
             font-family: 'Inter', sans-serif;
             -webkit-font-smoothing: antialiased;
@@ -120,6 +114,11 @@
             /* text-gray-800 */
             --ink-dim: #4b5563;
             /* text-gray-600 */
+            --glow-fade-opaque: rgba(255, 255, 255, 1);
+            /* light mode fade to white */
+            --glow-fade-transparent: rgba(255, 255, 255, 0);
+            --glow-alpha: 0.35;
+            /* rainbow strength in light */
         }
 
         html.dark {
@@ -132,6 +131,11 @@
             /* neutral-100 */
             --ink-dim: #a3a3a3;
             /* neutral-400 */
+            --glow-fade-opaque: rgba(0, 0, 0, 1);
+            /* dark mode fade to black */
+            --glow-fade-transparent: rgba(0, 0, 0, 0);
+            --glow-alpha: 0.40;
+            /* slightly stronger in dark */
         }
 
         /* ===== Glass Primitive ===== */
@@ -157,8 +161,8 @@
             gap: .75rem;
             height: 64px;
             padding: 0 1rem;
-            margin: 16px auto;
-            width: min(900px, 92%);
+            margin: 16px 0;
+            width: 100%;
             border-radius: 999px;
             transition: background-color .35s ease, border-color .35s ease, box-shadow .4s ease, transform .35s ease, padding .3s ease;
         }
@@ -198,6 +202,17 @@
             font-weight: 600;
             font-size: 1.125rem;
             color: var(--ink);
+        }
+
+        .brand-home-icon {
+            display: none;
+            width: 20px;
+            height: 20px;
+            color: var(--ink);
+        }
+
+        .brand-text {
+            display: inline;
         }
 
         .name-gradient {
@@ -373,40 +388,99 @@
                 border-radius: 0 !important;
                 height: auto !important;
                 width: 100% !important;
-                padding: 12px;
-                margin: 0;
+                padding: 0;
+                gap: 12px;
+                margin: 10px 0 0;
             }
 
             .brand-pill {
-                background: var(--glass-bg);
-                -webkit-backdrop-filter: blur(18px) saturate(140%);
-                backdrop-filter: blur(18px) saturate(140%);
-                box-shadow: var(--glass-inner), var(--glass-shadow);
-                border: 1px solid var(--glass-brd);
+                background: transparent;
+                box-shadow: none;
+                border: none;
+                width: auto;
+                height: auto;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 999px;
             }
 
             .brand-pill:hover {
-                background-color: var(--glass-bg);
+                background-color: transparent;
+            }
+
+            .brand-pill:hover .brand-home-icon {
+                color: var(--ink);
+                filter: brightness(1.05);
+            }
+
+            .brand-text {
+                display: none;
+            }
+
+            .brand-home-icon {
+                display: inline-block;
+                color: var(--ink-dim);
+                transition: color 0.2s ease, filter 0.2s ease;
             }
 
             .nav-actions {
+                background: none !important;
+                -webkit-backdrop-filter: none !important;
+                backdrop-filter: none !important;
+                box-shadow: none !important;
+                border: none !important;
+                border-radius: 0;
+                padding: 0;
+                gap: 8px;
+            }
+
+            #theme-toggle-button,
+            .hamburger-button {
+                background-color: transparent !important;
+                color: var(--ink-dim);
+                /* NEW: dimmer base color */
+                opacity: .85;
+                /* NEW: slightly dimmed by default */
+            }
+
+            #theme-toggle-button:hover,
+            .hamburger-button:hover {
+                background-color: transparent !important;
+                color: var(--ink) !important;
+                filter: brightness(1.03);
+                /* subtler highlight */
+                opacity: 1;
+                /* NEW: remove the dim on hover */
+            }
+
+            .side-wrap {
                 background: var(--glass-bg);
                 -webkit-backdrop-filter: blur(18px) saturate(140%);
                 backdrop-filter: blur(18px) saturate(140%);
                 box-shadow: var(--glass-inner), var(--glass-shadow);
                 border: 1px solid var(--glass-brd);
                 border-radius: 999px;
-                padding: 4px;
+                padding: 6px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                height: 52px;
             }
 
-            #theme-toggle-button,
-            .hamburger-button {
-                background-color: transparent !important;
-            }
-
-            #theme-toggle-button:hover,
-            .hamburger-button:hover {
-                background-color: rgba(128, 128, 128, .15) !important;
+            .brand-wrap {
+                padding: 0;
+                /* remove inner padding that offset the icon */
+                width: 52px;
+                /* circle diameter */
+                height: 52px;
+                /* circle diameter */
+                display: flex;
+                /* center the inner anchor */
+                align-items: center;
+                /* vertical center */
+                justify-content: center;
+                /* horizontal center */
             }
         }
 
@@ -443,43 +517,88 @@
         footer {
             animation-delay: 0.5s;
         }
+
+        /* Rainbow glow at top */
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 12vh;
+            /* a bit taller for a smoother fade */
+
+            /* Only the rainbow layer; vertical fade handled by mask to avoid seams */
+            background: linear-gradient(90deg,
+                    rgba(255, 0, 0, var(--glow-alpha)),
+                    rgba(255, 140, 0, var(--glow-alpha)),
+                    rgba(255, 255, 0, var(--glow-alpha)),
+                    rgba(0, 255, 0, var(--glow-alpha)),
+                    rgba(0, 207, 255, var(--glow-alpha)),
+                    rgba(123, 0, 255, var(--glow-alpha)),
+                    rgba(255, 0, 0, var(--glow-alpha)));
+
+            /* Smooth vertical fade to transparent; prevents a hard line regardless of page bg */
+            -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%);
+            mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%);
+
+            background-size: 800% 100%;
+            animation: rainbowFlow 15s linear infinite alternate;
+            pointer-events: none;
+        }
+
+        @keyframes rainbowFlow {
+            from {
+                background-position: 0% 0;
+            }
+
+            to {
+                background-position: 100% 0;
+            }
+        }
     </style>
 </head>
 
 <body class="bg-gray-50 text-gray-800 leading-relaxed dark:bg-black dark:text-gray-100 pt-28">
-
     <!-- ===== Liquid Glass Navigation ===== -->
     <nav id="site-nav">
-        <div id="nav-pill" class="glass">
-            <!-- Left: Brand -->
-            <a href="#" class="brand-pill" aria-label="Tanel Treuberg - Home">
-                <span class="brand-name name-gradient">Tanel</span>
-            </a>
+        <div class="nav-shell max-w-4xl mx-auto px-6 md:px-10">
+            <div id="nav-pill" class="glass">
+                <!-- Left: Brand -->
+                <div class="side-wrap brand-wrap">
+                    <a href="#" class="brand-pill" aria-label="Home">
+                        <span class="brand-name brand-text">Home</span>
+                        <i data-lucide="home" class="brand-home-icon" aria-hidden="true"></i>
+                    </a>
+                </div>
 
-            <!-- Middle: Links (Desktop) -->
-            <div class="nav-links">
-                <a href="#projects">Projects</a>
-                <a href="#skills-tools">Skills & Tools</a>
-                <a href="#contact">Contact</a>
-            </div>
+                <!-- Middle: Links (Desktop) -->
+                <div class="nav-links">
+                    <a href="#projects">Projects</a>
+                    <a href="#skills-tools">Skills & Tools</a>
+                    <a href="#contact">Contact</a>
+                </div>
 
-            <div class="flex-1"></div> <!-- Spacer -->
+                <div class="flex-1"></div> <!-- Spacer -->
 
-            <!-- Right: Actions -->
-            <div class="nav-actions">
-                <button id="theme-toggle-button" type="button" aria-label="Toggle theme">
-                    <i data-lucide="sun" class="icon-sun" aria-hidden="true"></i>
-                    <i data-lucide="moon" class="icon-moon" aria-hidden="true"></i>
-                </button>
-                <button id="hamburger-button" type="button" class="hamburger-button" aria-controls="mobile-menu"
-                    aria-expanded="false">
-                    <span class="sr-only">Open main menu</span>
-                    <div class="hamburger-lines" aria-hidden="true">
-                        <span class="line line1"></span>
-                        <span class="line line2"></span>
-                        <span class="line line3"></span>
+                <!-- Right: Actions -->
+                <div class="side-wrap actions-wrap">
+                    <div class="nav-actions">
+                        <button id="theme-toggle-button" type="button" aria-label="Toggle theme">
+                            <i data-lucide="sun" class="icon-sun" aria-hidden="true"></i>
+                            <i data-lucide="moon" class="icon-moon" aria-hidden="true"></i>
+                        </button>
+                        <button id="hamburger-button" type="button" class="hamburger-button" aria-controls="mobile-menu"
+                            aria-expanded="false">
+                            <span class="sr-only">Open main menu</span>
+                            <div class="hamburger-lines" aria-hidden="true">
+                                <span class="line line1"></span>
+                                <span class="line line2"></span>
+                                <span class="line line3"></span>
+                            </div>
+                        </button>
                     </div>
-                </button>
+                </div>
             </div>
         </div>
     </nav>
@@ -661,7 +780,7 @@
 
     <div class="max-w-4xl mx-auto p-6 md:p-10 space-y-12 md:space-y-16">
         <footer
-            class="text-center text-gray-500 dark:text-neutral-400 text-sm pt-8 border-t border-gray-200 dark:border-neutral-700 section-fade-in max-w-4xl mx-auto px-6">
+            class="text-center text-gray-500 dark:text-neutral-400 text-sm pt-8 border-t border-gray-200 dark:border-neutral-700 section-fade-in px-6">
             &copy;
             <script>document.write(new Date().getFullYear())</script> Tanel Treuberg. All rights reserved.
         </footer>
