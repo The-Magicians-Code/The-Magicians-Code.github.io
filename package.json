@@ -4,7 +4,7 @@
   "description": "Software engineer portfolio website",
   "main": "index.html",
   "scripts": {
-    "dev": "python -m http.server 3000",
+    "dev": "http-server . -p 3000 -o",
     "start": "python -m http.server 3000",
     "build": "echo 'Static site - no build required'",
     "preview": "python -m http.server 4173"
