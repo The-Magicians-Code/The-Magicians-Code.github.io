@@ -26,13 +26,13 @@ const isDev = import.meta.env.DEV;
     <feGaussianBlur in="rawMap" stdDeviation="0.6" result="map" />
 
     <feDisplacementMap color-interpolation-filters="sRGB"
-                       in="SourceGraphic" in2="map" scale="10"
+                       in="SourceGraphic" in2="map" scale="9"
                        xChannelSelector="R" yChannelSelector="G" result="dispR" />
     <feDisplacementMap color-interpolation-filters="sRGB"
                        in="SourceGraphic" in2="map" scale="12"
                        xChannelSelector="R" yChannelSelector="G" result="dispG" />
     <feDisplacementMap color-interpolation-filters="sRGB"
-                       in="SourceGraphic" in2="map" scale="14"
+                       in="SourceGraphic" in2="map" scale="15"
                        xChannelSelector="R" yChannelSelector="G" result="dispB" />
 
     <feColorMatrix in="dispR" type="matrix" result="rOnly" values="
@@ -184,14 +184,14 @@ const isDev = import.meta.env.DEV;
           <small class="nav-tuner__hint">How strongly the lens bends light. 1 = stock (Apple-subtle); 0 = no bend; 2 = exaggerated. Inversion-safe across the whole slider range at the current scales — push individual chromatic scales high in Advanced to trigger inversion intentionally.</small>
         </label>
         <label data-mode="simple">
-          <span>Chromatic Spread <output data-out="chromaticSpread">2</output></span>
-          <input type="range" min="0" max="10" step="1" value="2" data-tune="chromaticSpread" />
+          <span>Chromatic Spread <output data-out="chromaticSpread">3</output></span>
+          <input type="range" min="0" max="10" step="1" value="3" data-tune="chromaticSpread" />
           <small class="nav-tuner__hint">Width of the rainbow halo at the rim. 0 = clean lens, no fringe. Higher = stronger color fringing. Independent of overall strength.</small>
         </label>
 
         <label data-mode="both">
-          <span>Specular Opacity <output data-out="sheen">0.20</output></span>
-          <input type="range" min="0" max="0.6" step="0.02" value="0.20" data-tune="sheen" />
+          <span>Specular Opacity <output data-out="sheen">0.30</output></span>
+          <input type="range" min="0" max="0.6" step="0.02" value="0.30" data-tune="sheen" />
           <small class="nav-tuner__hint">Brightness of the white glint along the top edge — the "light hitting glass" highlight.</small>
         </label>
         <label data-mode="both">
@@ -200,8 +200,8 @@ const isDev = import.meta.env.DEV;
           <small class="nav-tuner__hint">How vivid the highlight's tint is. 0 = pure grayscale; 1 = neutral; higher = picks up subtle warm/cool color in the glint.</small>
         </label>
         <label data-mode="both">
-          <span>Blur Level <output data-out="backdropBlur">2.25</output>px</span>
-          <input type="range" min="0" max="10" step="0.25" value="2.25" data-tune="backdropBlur" />
+          <span>Blur Level <output data-out="backdropBlur">7</output>px</span>
+          <input type="range" min="0" max="10" step="0.25" value="7" data-tune="backdropBlur" />
           <small class="nav-tuner__hint">Frosts the background behind the pill. 0 = sharp; higher = misty. Heavy blur smears the rainbow halo.</small>
         </label>
         <label data-mode="both">
@@ -221,8 +221,8 @@ const isDev = import.meta.env.DEV;
           <small class="nav-tuner__hint">Where the bending happens. High = sharp rim, mirror-flat middle. Low = soft bowl that bends light all over.</small>
         </label>
         <label data-mode="advanced">
-          <span>Chromatic R scale <output data-out="scaleR">10</output></span>
-          <input type="range" min="0" max="60" step="1" value="10" data-tune="scaleR" />
+          <span>Chromatic R scale <output data-out="scaleR">9</output></span>
+          <input type="range" min="0" max="60" step="1" value="9" data-tune="scaleR" />
           <small class="nav-tuner__hint">How far red light is pulled at the rim.</small>
         </label>
         <label data-mode="advanced">
@@ -231,8 +231,8 @@ const isDev = import.meta.env.DEV;
           <small class="nav-tuner__hint">How far green light is pulled at the rim.</small>
         </label>
         <label data-mode="advanced">
-          <span>Chromatic B scale <output data-out="scaleB">14</output></span>
-          <input type="range" min="0" max="60" step="1" value="14" data-tune="scaleB" />
+          <span>Chromatic B scale <output data-out="scaleB">15</output></span>
+          <input type="range" min="0" max="60" step="1" value="15" data-tune="scaleB" />
           <small class="nav-tuner__hint">How far blue light is pulled. Mismatch R/G/B → rainbow halo; match → clean lens.</small>
         </label>
         <label data-mode="advanced">
@@ -426,21 +426,21 @@ const isDev = import.meta.env.DEV;
           const defaults = {
             // Advanced underlying state
             clamp: 0.97,
-            scaleR: 10,
+            scaleR: 9,
             scaleG: 12,
-            scaleB: 14,
+            scaleB: 15,
             mapBlur: 1.4,
             saturate: 125,
             // Both-mode state
-            sheen: 0.20,
+            sheen: 0.30,
             specularSat: 2.5,
-            backdropBlur: 2.25,
+            backdropBlur: 7,
             progBlur: 0.5,
             glassBg: 0.16,
             // Simplified-mode derived view: center = BASE_CENTER * refractionLevel,
             // R/B = center ∓ chromaticSpread.
             refractionLevel: 1.00,
-            chromaticSpread: 2,
+            chromaticSpread: 3,
           };
           const state = { ...defaults };
 
