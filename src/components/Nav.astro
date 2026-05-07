@@ -3,6 +3,13 @@ import { Icon } from 'astro-icon/components';
 import ThemeToggle from './ThemeToggle.astro';
 ---
 
+<svg class="liquid-glass-defs" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+  <filter id="liquid-glass-distort" x="-10%" y="-10%" width="120%" height="120%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.018 0.024" numOctaves="2" seed="7" result="noise" />
+    <feDisplacementMap in="SourceGraphic" in2="noise" scale="14" xChannelSelector="R" yChannelSelector="G" />
+  </filter>
+</svg>
+
 <nav id="site-nav">
   <div class="nav-shell max-w-4xl mx-auto px-6 md:px-10">
     <div id="nav-pill" class="glass">

@@ -73,6 +73,56 @@ html.dark {
   transition: background-color .35s ease, border-color .35s ease, box-shadow .4s ease, transform .35s ease, padding .3s ease;
 }
 
+/* SVG filter definition lives off-canvas; the filter itself is invisible. */
+.liquid-glass-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Liquid-glass upgrade for the desktop nav pill (Chromium-first).
+   - SVG feDisplacementMap chained into backdrop-filter creates real refraction
+     of content scrolling behind the pill (Atlas Pup pattern from
+     https://frontendmasters.com/blog/liquid-glass-on-the-web/).
+   - ::before adds a top-edge specular sheen between the glass tint and the
+     children, anchored by `isolation: isolate` so its z-index stays local.
+   - Safari/Firefox without SVG-backdrop support fall back to the plain
+     blur+saturate from `.glass`. */
+@media (min-width: 641px) {
+  #nav-pill {
+    position: relative;
+    isolation: isolate;
+    -webkit-backdrop-filter: blur(14px) saturate(180%) url(#liquid-glass-distort);
+    backdrop-filter: blur(14px) saturate(180%) url(#liquid-glass-distort);
+  }
+
+  #nav-pill::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.30) 0%,
+      rgba(255, 255, 255, 0.06) 40%,
+      transparent 70%
+    );
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  html.dark #nav-pill::before {
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.16) 0%,
+      rgba(255, 255, 255, 0.03) 40%,
+      transparent 70%
+    );
+  }
+}
+
 .nav-links {
   display: flex;
   align-items: center;
