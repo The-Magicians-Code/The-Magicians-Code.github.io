@@ -1,0 +1,44 @@
+---
+import { Icon } from 'astro-icon/components';
+import ThemeToggle from './ThemeToggle.astro';
+---
+
+<nav id="site-nav">
+  <div class="nav-shell max-w-4xl mx-auto px-6 md:px-10">
+    <div id="nav-pill" class="glass">
+      <div class="side-wrap brand-wrap">
+        <a href="/" class="brand-pill" aria-label="Home">
+          <span class="brand-name brand-text">Home</span>
+          <Icon name="lucide:home" class="brand-home-icon" aria-hidden="true" />
+        </a>
+      </div>
+
+      <div class="nav-links">
+        <a href="/#projects">Projects</a>
+        <a href="/#skills-tools">Skills & Tools</a>
+        <a href="/#contact">Contact</a>
+      </div>
+
+      <div class="flex-1"></div>
+      <div class="side-wrap actions-wrap">
+        <div class="nav-actions">
+          <ThemeToggle />
+          <button
+            id="hamburger-button"
+            type="button"
+            class="hamburger-button"
+            aria-controls="mobile-menu"
+            aria-expanded="false"
+          >
+            <span class="sr-only">Open main menu</span>
+            <div class="hamburger-lines" aria-hidden="true">
+              <span class="line line1"></span>
+              <span class="line line2"></span>
+              <span class="line line3"></span>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
