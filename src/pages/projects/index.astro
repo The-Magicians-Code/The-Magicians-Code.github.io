@@ -1,0 +1,33 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ProjectCard from '../../components/ProjectCard.astro';
+import { getCollection } from 'astro:content';
+
+const projects = (await getCollection('projects'))
+  .filter((p) => !p.data.draft)
+  .sort((a, b) => a.data.order - b.data.order);
+---
+
+<BaseLayout
+  title="Projects · Tanel Treuberg"
+  description="Software engineering projects by Tanel Treuberg, including TensorRT-optimised computer vision and embedded controllers."
+  canonicalPath="/projects/"
+>
+  <main class="max-w-4xl mx-auto p-6 md:p-10 space-y-8">
+    <header class="text-center section-fade-in pt-6 md:pt-10" style="--delay: 0.1s">
+      <h1 class="text-4xl md:text-5xl font-bold mb-2 dark:text-white">Projects</h1>
+    </header>
+    <section class="section-fade-in" style="--delay: 0.2s">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {projects.map((project) => (
+          <ProjectCard
+            title={project.data.title}
+            description={project.data.description}
+            repoUrl={project.data.repoUrl}
+            slug={project.id}
+          />
+        ))}
+      </div>
+    </section>
+  </main>
+</BaseLayout>
