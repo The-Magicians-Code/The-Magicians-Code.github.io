@@ -1,9 +1,11 @@
 ---
 import { Icon } from 'astro-icon/components';
 import ThemeToggle from './ThemeToggle.astro';
+
+const isDev = import.meta.env.DEV;
 ---
 
-<svg class="liquid-glass-defs" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+<svg class="liquid-glass-defs" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" color-interpolation-filters="sRGB">
   <!--
     Liquid glass with chromatic aberration. Per Frontend Masters' "Liquid
     Glass on the Web" pattern (Chromium-only — Safari/Firefox don't chain
@@ -55,52 +57,65 @@ import ThemeToggle from './ThemeToggle.astro';
   // into the SVG filter. Encodes inward refraction at the rim, no displacement
   // at the center — simulates real glass curvature.
   (function () {
-    const W = 512;
-    const H = 96;
-    const canvas = document.createElement('canvas');
-    canvas.width = W;
-    canvas.height = H;
-    const ctx = canvas.getContext('2d');
-    const img = ctx.createImageData(W, H);
-    const data = img.data;
-
     // Squircle profile (Apple's preferred curve, per kube.io/blog/liquid-glass-css-svg).
     // Surface y = ⁴√(1 − (1 − x)⁴) where x = distance-from-edge. Snell's-law
     // refraction is proportional to the surface slope; in terms of t =
     // distance-from-center: |dy/dx| = t³ / (1 − t⁴)^¾. Slope diverges at the
     // rim, so clamp t before the singularity and normalize so the clamped
     // peak maps to 1.
-    const SQUIRCLE_CLAMP = 0.97;
-    const squircleSlope = (t) => {
-      const tc = Math.min(t, SQUIRCLE_CLAMP);
-      return Math.pow(tc, 3) / Math.pow(1 - Math.pow(tc, 4), 0.75);
-    };
-    const maxSlope = squircleSlope(SQUIRCLE_CLAMP);
+    let SQUIRCLE_CLAMP = 0.97;
 
-    // Vertical-only lens — a wide horizontal pill is best modelled as a
-    // cylindrical lens. R channel stays at 128 (no horizontal shift) so text
-    // passing under the pill doesn't compress horizontally. Only Y refracts.
-    for (let y = 0; y < H; y++) {
-      for (let x = 0; x < W; x++) {
-        const fy = (y / (H - 1)) * 2 - 1;
-        const shiftY = -Math.sign(fy) * (squircleSlope(Math.abs(fy)) / maxSlope);
+    function generateLensMap() {
+      const W = 512;
+      const H = 96;
+      const canvas = document.createElement('canvas');
+      canvas.width = W;
+      canvas.height = H;
+      const ctx = canvas.getContext('2d');
+      const img = ctx.createImageData(W, H);
+      const data = img.data;
 
-        const i = (y * W + x) * 4;
-        data[i] = 128;                                // R = 128 (no X shift)
-        data[i + 1] = Math.round(128 + shiftY * 127); // G = Y displacement
-        data[i + 2] = 0;
-        data[i + 3] = 255;
+      const squircleSlope = (t) => {
+        const tc = Math.min(t, SQUIRCLE_CLAMP);
+        return Math.pow(tc, 3) / Math.pow(1 - Math.pow(tc, 4), 0.75);
+      };
+      const maxSlope = squircleSlope(SQUIRCLE_CLAMP);
+
+      // Vertical-only lens — a wide horizontal pill is best modelled as a
+      // cylindrical lens. R channel stays at 128 (no horizontal shift) so text
+      // passing under the pill doesn't compress horizontally. Only Y refracts.
+      for (let y = 0; y < H; y++) {
+        for (let x = 0; x < W; x++) {
+          const fy = (y / (H - 1)) * 2 - 1;
+          const shiftY = -Math.sign(fy) * (squircleSlope(Math.abs(fy)) / maxSlope);
+
+          const i = (y * W + x) * 4;
+          data[i] = 128;                                // R = 128 (no X shift)
+          data[i + 1] = Math.round(128 + shiftY * 127); // G = Y displacement
+          data[i + 2] = 0;
+          data[i + 3] = 255;
+        }
+      }
+
+      ctx.putImageData(img, 0, 0);
+      const url = canvas.toDataURL('image/png');
+
+      const feImg = document.getElementById('liquid-glass-map');
+      if (feImg) {
+        feImg.setAttribute('href', url);
+        feImg.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', url);
       }
     }
 
-    ctx.putImageData(img, 0, 0);
-    const url = canvas.toDataURL('image/png');
+    generateLensMap();
 
-    const feImg = document.getElementById('liquid-glass-map');
-    if (feImg) {
-      feImg.setAttribute('href', url);
-      feImg.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', url);
-    }
+    // Dev tuner hook — listens for clamp updates from NavTuner and regenerates.
+    window.addEventListener('navlens:setClamp', (e) => {
+      if (e.detail && typeof e.detail.value === 'number') {
+        SQUIRCLE_CLAMP = e.detail.value;
+        generateLensMap();
+      }
+    });
   })();
 </script>
 
@@ -143,3 +158,284 @@ import ThemeToggle from './ThemeToggle.astro';
     </div>
   </div>
 </nav>
+
+{isDev && (
+  <Fragment>
+    <aside id="nav-tuner-panel" class="nav-tuner" aria-label="Liquid glass tuner">
+      <header class="nav-tuner__head">
+        <span>Nav glass tuner</span>
+        <button type="button" id="nav-tuner-toggle" aria-label="Collapse tuner">−</button>
+      </header>
+      <div class="nav-tuner__body">
+        <label>
+          <span>SQUIRCLE_CLAMP <output data-out="clamp">0.97</output></span>
+          <input type="range" min="0.85" max="0.995" step="0.005" value="0.97" data-tune="clamp" />
+        </label>
+        <label>
+          <span>Chromatic R scale <output data-out="scaleR">9</output></span>
+          <input type="range" min="0" max="30" step="1" value="9" data-tune="scaleR" />
+        </label>
+        <label>
+          <span>Chromatic G scale <output data-out="scaleG">11</output></span>
+          <input type="range" min="0" max="30" step="1" value="11" data-tune="scaleG" />
+        </label>
+        <label>
+          <span>Chromatic B scale <output data-out="scaleB">13</output></span>
+          <input type="range" min="0" max="30" step="1" value="13" data-tune="scaleB" />
+        </label>
+        <label>
+          <span>Map blur (stdDeviation) <output data-out="mapBlur">0.6</output></span>
+          <input type="range" min="0" max="2" step="0.05" value="0.6" data-tune="mapBlur" />
+        </label>
+        <label>
+          <span>Backdrop blur <output data-out="backdropBlur">1</output>px</span>
+          <input type="range" min="0" max="10" step="0.25" value="1" data-tune="backdropBlur" />
+        </label>
+        <label>
+          <span>Backdrop saturate <output data-out="saturate">180</output>%</span>
+          <input type="range" min="50" max="300" step="5" value="180" data-tune="saturate" />
+        </label>
+        <label>
+          <span>Sheen top alpha <output data-out="sheen">0.30</output></span>
+          <input type="range" min="0" max="0.6" step="0.02" value="0.30" data-tune="sheen" />
+        </label>
+
+        <textarea id="nav-tuner-output" readonly rows="7"></textarea>
+        <div class="nav-tuner__actions">
+          <button type="button" id="nav-tuner-copy">Copy values</button>
+          <button type="button" id="nav-tuner-reset">Reset</button>
+        </div>
+      </div>
+    </aside>
+
+    <style is:global>
+      .nav-tuner {
+        position: fixed;
+        bottom: 12px;
+        right: 12px;
+        width: 280px;
+        max-height: calc(100vh - 24px);
+        overflow: auto;
+        background: rgba(20, 20, 24, 0.94);
+        color: #e8e8ea;
+        font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.10);
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+        z-index: 9999;
+      }
+      .nav-tuner__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 12px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+        font-weight: 600;
+      }
+      .nav-tuner__head button {
+        background: none;
+        border: none;
+        color: inherit;
+        font-size: 16px;
+        line-height: 1;
+        cursor: pointer;
+        padding: 2px 6px;
+      }
+      .nav-tuner__body {
+        padding: 10px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .nav-tuner.collapsed .nav-tuner__body { display: none; }
+      .nav-tuner label {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+      }
+      .nav-tuner label > span {
+        display: flex;
+        justify-content: space-between;
+        opacity: 0.85;
+      }
+      .nav-tuner output {
+        color: #9be8a3;
+        font-weight: 600;
+      }
+      .nav-tuner input[type="range"] {
+        width: 100%;
+        accent-color: #9be8a3;
+      }
+      .nav-tuner textarea {
+        width: 100%;
+        background: rgba(0, 0, 0, 0.45);
+        color: #e8e8ea;
+        border: 1px solid rgba(255, 255, 255, 0.10);
+        border-radius: 5px;
+        padding: 8px;
+        font: 11px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        resize: vertical;
+        margin-top: 4px;
+      }
+      .nav-tuner__actions {
+        display: flex;
+        gap: 8px;
+      }
+      .nav-tuner__actions button {
+        flex: 1;
+        background: #34343a;
+        color: #e8e8ea;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 5px;
+        padding: 6px 10px;
+        font: inherit;
+        cursor: pointer;
+      }
+      .nav-tuner__actions button:hover { background: #44444c; }
+    </style>
+
+    <script is:inline>
+      (function () {
+        function setup() {
+          const panel = document.getElementById('nav-tuner-panel');
+          if (!panel) return;
+
+          const dispR = document.querySelector('feDisplacementMap[result="dispR"]');
+          const dispG = document.querySelector('feDisplacementMap[result="dispG"]');
+          const dispB = document.querySelector('feDisplacementMap[result="dispB"]');
+          const mapBlur = document.querySelector('#liquid-glass-distort feGaussianBlur');
+
+          // Inline override <style> for things JS can't hit directly
+          // (::before pseudo + the !important needed to beat the stylesheet rule).
+          const overrideStyle = document.createElement('style');
+          overrideStyle.id = 'nav-tuner-overrides';
+          document.head.appendChild(overrideStyle);
+
+          const defaults = {
+            clamp: 0.97,
+            scaleR: 9,
+            scaleG: 11,
+            scaleB: 13,
+            mapBlur: 0.6,
+            backdropBlur: 1,
+            saturate: 180,
+            sheen: 0.30,
+          };
+          const state = { ...defaults };
+
+          function apply() {
+            // chromatic scales — direct attribute set
+            dispR.setAttribute('scale', state.scaleR);
+            dispG.setAttribute('scale', state.scaleG);
+            dispB.setAttribute('scale', state.scaleB);
+            mapBlur.setAttribute('stdDeviation', state.mapBlur);
+
+            // backdrop-filter overrides + sheen pseudo-element via inline style
+            overrideStyle.textContent = `
+              @media (min-width: 641px) {
+                #nav-pill {
+                  -webkit-backdrop-filter: blur(${state.backdropBlur}px) saturate(${state.saturate}%) url(#liquid-glass-distort) !important;
+                  backdrop-filter: blur(${state.backdropBlur}px) saturate(${state.saturate}%) url(#liquid-glass-distort) !important;
+                }
+                #nav-pill::before {
+                  background: linear-gradient(
+                    180deg,
+                    rgba(255, 255, 255, ${state.sheen}) 0%,
+                    rgba(255, 255, 255, ${(state.sheen * 0.2).toFixed(3)}) 40%,
+                    transparent 70%
+                  ) !important;
+                }
+                html.dark #nav-pill::before {
+                  background: linear-gradient(
+                    180deg,
+                    rgba(255, 255, 255, ${(state.sheen * 0.53).toFixed(3)}) 0%,
+                    rgba(255, 255, 255, ${(state.sheen * 0.1).toFixed(3)}) 40%,
+                    transparent 70%
+                  ) !important;
+                }
+              }
+            `;
+
+            // refresh the values text
+            document.getElementById('nav-tuner-output').value = formatValues(state);
+          }
+
+          function formatValues(s) {
+            return [
+              `SQUIRCLE_CLAMP=${s.clamp}`,
+              `ChromaticScales=${s.scaleR},${s.scaleG},${s.scaleB}`,
+              `MapBlur=${s.mapBlur}`,
+              `BackdropBlur=${s.backdropBlur}px`,
+              `BackdropSaturate=${s.saturate}%`,
+              `SheenTop=${s.sheen}`,
+            ].join('\n');
+          }
+
+          let regenScheduled = false;
+          function scheduleRegen() {
+            if (regenScheduled) return;
+            regenScheduled = true;
+            requestAnimationFrame(() => {
+              regenScheduled = false;
+              window.dispatchEvent(new CustomEvent('navlens:setClamp', {
+                detail: { value: state.clamp }
+              }));
+            });
+          }
+
+          panel.querySelectorAll('input[type="range"]').forEach((input) => {
+            const key = input.dataset.tune;
+            const out = panel.querySelector(`output[data-out="${key}"]`);
+            input.addEventListener('input', () => {
+              const v = parseFloat(input.value);
+              state[key] = v;
+              out.textContent = (key === 'clamp' || key === 'mapBlur' || key === 'sheen')
+                ? v.toFixed(2).replace(/\.?0+$/, (m) => m.length === 3 ? m : '')
+                : v;
+              if (key === 'clamp') scheduleRegen();
+              apply();
+            });
+          });
+
+          document.getElementById('nav-tuner-copy').addEventListener('click', async (ev) => {
+            const text = formatValues(state);
+            try {
+              await navigator.clipboard.writeText(text);
+              ev.target.textContent = 'Copied ✓';
+              setTimeout(() => { ev.target.textContent = 'Copy values'; }, 1200);
+            } catch {
+              const ta = document.getElementById('nav-tuner-output');
+              ta.select();
+              document.execCommand('copy');
+            }
+          });
+
+          document.getElementById('nav-tuner-reset').addEventListener('click', () => {
+            Object.assign(state, defaults);
+            panel.querySelectorAll('input[type="range"]').forEach((input) => {
+              const key = input.dataset.tune;
+              input.value = state[key];
+              const out = panel.querySelector(`output[data-out="${key}"]`);
+              out.textContent = state[key];
+            });
+            scheduleRegen();
+            apply();
+          });
+
+          document.getElementById('nav-tuner-toggle').addEventListener('click', (ev) => {
+            panel.classList.toggle('collapsed');
+            ev.target.textContent = panel.classList.contains('collapsed') ? '+' : '−';
+          });
+
+          apply();
+        }
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', setup);
+        } else {
+          setup();
+        }
+      })();
+    </script>
+  </Fragment>
+)}
