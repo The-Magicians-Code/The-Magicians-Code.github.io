@@ -34,7 +34,7 @@ Migrate `the-magicians-code.github.io` from a single hand-rolled `index.html` to
 | Custom domain | `themagicianscode.dev` (apex; canonical) |
 | Deploy target | Cloudflare Workers Static Assets (CF-recommended for new projects; Pages is in maintenance) |
 | CI/CD | Cloudflare Workers Builds (push-to-deploy from repo) |
-| Old URL handling | Keep GH Pages alive with a CNAME-only stub artifact so `the-magicians-code.github.io` issues a 301 to the new domain |
+| Old URL handling | Keep GH Pages alive with a meta-refresh `index.html` stub at the user-site root. **No `CNAME` file** — that would force all sibling project Pages (e.g., `the-magicians-code.github.io/qr-code/`, `the-magicians-code.github.io/play/`) to route through the new custom domain too, breaking them. |
 | Output target | Static (`output: 'static'`, the default) |
 
 ## Architecture
@@ -262,10 +262,10 @@ One-time setup (manual, dashboard):
 
 After this, every push to `master` builds and deploys automatically. No GitHub Actions, no secrets, no workflow YAML for the primary deploy.
 
-**`.github/workflows/redirect-stub.yml`** (the *only* GH Actions workflow — exists solely to keep the old `the-magicians-code.github.io` URL alive with a 301):
+**`.github/workflows/redirect-stub.yml`** (the *only* GH Actions workflow — exists solely to keep the old `the-magicians-code.github.io/` URL pointing at the new domain without breaking sibling project Pages sites like `/qr-code/` and `/play/`):
 
 ```yaml
-name: Publish 301 redirect stub to GitHub Pages
+name: Publish redirect stub to GitHub Pages
 
 on:
   push:
@@ -288,10 +288,9 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Build CNAME-only stub
+      - name: Build meta-refresh stub
         run: |
           mkdir -p stub
-          echo "themagicianscode.dev" > stub/CNAME
           cat > stub/index.html <<'EOF'
           <!doctype html>
           <html lang="en">
@@ -300,6 +299,10 @@ jobs:
               <title>Moved to themagicianscode.dev</title>
               <meta http-equiv="refresh" content="0; url=https://themagicianscode.dev/">
               <link rel="canonical" href="https://themagicianscode.dev/">
+              <script>
+                // Preserve hash + query when redirecting humans
+                location.replace('https://themagicianscode.dev/' + location.search + location.hash);
+              </script>
             </head>
             <body>
               <p>This site has moved to <a href="https://themagicianscode.dev/">themagicianscode.dev</a>.</p>
@@ -313,9 +316,11 @@ jobs:
         uses: actions/deploy-pages@v5
 ```
 
-The `CNAME` file in the artifact triggers GitHub Pages' built-in 301 from `<user>.github.io` → custom domain (server-side, before any DNS lookup of the destination). The `index.html` is a meta-refresh fallback for path-specific links (`/projects/...`) that the apex 301 might not cover, and as a defense in depth.
+**Critical: no `CNAME` file in the stub.** A `CNAME` would trigger GitHub's "user-site custom domain propagates to all project sites" behavior, causing `the-magicians-code.github.io/qr-code/` and `the-magicians-code.github.io/play/` to start routing to `themagicianscode.dev/qr-code/` and `themagicianscode.dev/play/` — both 404s on our CF Worker. With only the stub `index.html` published at the user site root, GH Pages routes `/` to our stub and continues serving sibling project repos at their own subpaths unchanged.
 
-**Repo settings (one-time)**: Settings → Pages → Source: **GitHub Actions**. Custom domain field in GH Pages settings: leave blank (the `CNAME` in the deployed artifact tells GH what to redirect to).
+Trade-off: we lose the server-side 301 status (search engines treat meta-refresh as a soft redirect, so the old URL stays in indexes longer). For a personal portfolio with no real SEO weight on the old `*.github.io` domain, this is acceptable. If a clean 301 becomes important later, each project Pages site can be moved to its own subdomain (e.g., `qr-code.themagicianscode.dev`) and the user-site `CNAME` can be added back as a follow-up project.
+
+**Repo settings (one-time)**: Settings → Pages → Source: **GitHub Actions**. Custom domain field in GH Pages settings: leave blank.
 
 **Cloudflare DNS for `themagicianscode.dev`**: handled automatically when the Worker custom domain is attached. No manual A/CNAME records needed.
 
@@ -360,14 +365,15 @@ pnpm-debug.log*
 
 ## Risks / gotchas
 
-- **GH Pages source flip**: switching from "Deploy from branch" to "GitHub Actions" causes a brief offline window for the *.github.io URL between the flip and first successful redirect-stub deploy. Land all code first, verify CF Worker is live at `themagicianscode.dev`, then flip — so the stub is the only thing offline during the window, not the real site.
+- **GH Pages source flip**: switching from "Deploy from branch" to "GitHub Actions" briefly takes the user-site URL offline for the window between the flip and the first redirect-stub deploy. **Sibling project Pages sites (`/qr-code/`, `/play/`) are unaffected** — they're deployed from their own repos with their own settings. Land all code first, verify CF Worker is live at `themagicianscode.dev`, then flip.
+- **Sibling project Pages preservation**: confirm `qr-code/` and `play/` still serve at `the-magicians-code.github.io/qr-code/` and `/play/` after the redirect-stub deploys. The absence of a `CNAME` file in the stub is what protects them — do not add one without first migrating each project Pages site to its own subdomain.
 - **Dark-mode FOUC**: inline script must run before any styled HTML paints. Test in Safari + Firefox + Chrome.
 - **Cross-route hash anchors**: must be root-absolute. Easy to forget.
 - **Font fallback flash**: with `@fontsource/inter`, ensure `font-display: swap` (Fontsource default) so text isn't invisible during font load.
 - **Old `index.html` at repo root**: delete from the repo source as part of this migration. Astro builds from `src/`; leftover root-level static files will confuse contributors and clutter `git status` permanently.
 - **Wrangler authentication for first deploy**: Workers Builds runs server-side at CF, so no local `wrangler login` is needed *after* the dashboard connects the repo. But if testing `wrangler deploy` from a local machine before then, that machine needs `wrangler login` first. Don't accidentally push a deploy from a personal laptop bypassing CI.
 - **`.dev` TLD**: the `.dev` TLD is on the [HSTS preload list](https://hstspreload.org/), meaning all browsers will *only* connect over HTTPS. Cloudflare auto-issues the cert; just don't accidentally configure HTTP-only somewhere.
-- **`CNAME` in `public/`**: do **NOT** put a `CNAME` file in the Astro project's `public/` folder. That file belongs only in the GH Pages redirect-stub artifact, generated inside the workflow. Putting it in `public/` would ship it via the CF Worker too, where it's pointless noise.
+- **No `CNAME` files anywhere on this user/org repo**: not in `public/`, not in the redirect-stub workflow output, not at the repo root. The presence of a `CNAME` on a user/org Pages site forces every sibling project Pages site (currently `qr-code` and `play`) to route through the new custom domain, which would 404 them on our CF Worker. The stub deliberately publishes only `index.html`.
 
 ## Testing checklist
 
@@ -379,7 +385,8 @@ pnpm-debug.log*
 - Canonical URLs correct on each route, all using `https://themagicianscode.dev` host
 - JSON-LD only on home, not on `/projects/*`
 - `https://themagicianscode.dev/` resolves and serves the Astro build (HTTPS, valid cert)
-- `https://the-magicians-code.github.io/` returns a 301 to `https://themagicianscode.dev/` (verify with `curl -sI`)
+- `https://the-magicians-code.github.io/` serves the meta-refresh stub and redirects browsers to `themagicianscode.dev/`
+- `https://the-magicians-code.github.io/qr-code/` and `/play/` still load their original interactive content (sibling project Pages preserved)
 - Lighthouse: ≥95 on perf / SEO / best-practices / accessibility (matches or beats current)
 
 ## Out of scope
