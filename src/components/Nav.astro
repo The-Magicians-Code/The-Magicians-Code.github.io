@@ -26,13 +26,13 @@ const isDev = import.meta.env.DEV;
     <feGaussianBlur in="rawMap" stdDeviation="0.6" result="map" />
 
     <feDisplacementMap color-interpolation-filters="sRGB"
-                       in="SourceGraphic" in2="map" scale="5"
+                       in="SourceGraphic" in2="map" scale="20"
                        xChannelSelector="R" yChannelSelector="G" result="dispR" />
     <feDisplacementMap color-interpolation-filters="sRGB"
-                       in="SourceGraphic" in2="map" scale="6"
+                       in="SourceGraphic" in2="map" scale="22"
                        xChannelSelector="R" yChannelSelector="G" result="dispG" />
     <feDisplacementMap color-interpolation-filters="sRGB"
-                       in="SourceGraphic" in2="map" scale="7"
+                       in="SourceGraphic" in2="map" scale="24"
                        xChannelSelector="R" yChannelSelector="G" result="dispB" />
 
     <feColorMatrix in="dispR" type="matrix" result="rOnly" values="
@@ -67,7 +67,7 @@ const isDev = import.meta.env.DEV;
     // distance-from-center: |dy/dx| = t³ / (1 − t⁴)^¾. Slope diverges at the
     // rim, so clamp t before the singularity and normalize so the clamped
     // peak maps to 1.
-    let SQUIRCLE_CLAMP = 0.99;
+    let SQUIRCLE_CLAMP = 0.89;
 
     function generateLensMap() {
       const W = 512;
@@ -181,68 +181,68 @@ const isDev = import.meta.env.DEV;
         <label data-mode="simple">
           <span>Refraction Level <output data-out="refractionLevel">1.00</output></span>
           <input type="range" min="0" max="2" step="0.05" value="1.00" data-tune="refractionLevel" />
-          <small class="nav-tuner__hint">How strongly the lens bends light. 1 = stock; 0 = no bend; 2 = exaggerated. Above 2 the lens enters the inversion regime and projects flipped ghost text — capped here. Use Advanced for full control.</small>
+          <small class="nav-tuner__hint">How strongly the lens bends light. 1 = stock; 0 = no bend; values above ~1.5 may enter the inversion regime (flipped ghost text inside the pill). Use Advanced for full control.</small>
         </label>
         <label data-mode="simple">
-          <span>Chromatic Spread <output data-out="chromaticSpread">1</output></span>
-          <input type="range" min="0" max="10" step="1" value="1" data-tune="chromaticSpread" />
+          <span>Chromatic Spread <output data-out="chromaticSpread">2</output></span>
+          <input type="range" min="0" max="10" step="1" value="2" data-tune="chromaticSpread" />
           <small class="nav-tuner__hint">Width of the rainbow halo at the rim. 0 = clean lens, no fringe. Higher = stronger color fringing. Independent of overall strength.</small>
         </label>
 
         <label data-mode="both">
-          <span>Specular Opacity <output data-out="sheen">0.30</output></span>
-          <input type="range" min="0" max="0.6" step="0.02" value="0.30" data-tune="sheen" />
+          <span>Specular Opacity <output data-out="sheen">0.20</output></span>
+          <input type="range" min="0" max="0.6" step="0.02" value="0.20" data-tune="sheen" />
           <small class="nav-tuner__hint">Brightness of the white glint along the top edge — the "light hitting glass" highlight.</small>
         </label>
         <label data-mode="both">
-          <span>Specular Saturation <output data-out="specularSat">1.0</output></span>
-          <input type="range" min="0" max="10" step="0.1" value="1.0" data-tune="specularSat" />
+          <span>Specular Saturation <output data-out="specularSat">2.5</output></span>
+          <input type="range" min="0" max="10" step="0.1" value="2.5" data-tune="specularSat" />
           <small class="nav-tuner__hint">How vivid the highlight's tint is. 0 = pure grayscale; 1 = neutral; higher = picks up subtle warm/cool color in the glint.</small>
         </label>
         <label data-mode="both">
-          <span>Blur Level <output data-out="backdropBlur">1</output>px</span>
-          <input type="range" min="0" max="10" step="0.25" value="1" data-tune="backdropBlur" />
+          <span>Blur Level <output data-out="backdropBlur">2.25</output>px</span>
+          <input type="range" min="0" max="10" step="0.25" value="2.25" data-tune="backdropBlur" />
           <small class="nav-tuner__hint">Frosts the background behind the pill. 0 = sharp; higher = misty. Heavy blur smears the rainbow halo.</small>
         </label>
         <label data-mode="both">
-          <span>Progressive Blur <output data-out="progBlur">0</output>px</span>
-          <input type="range" min="0" max="15" step="0.5" value="0" data-tune="progBlur" />
+          <span>Progressive Blur <output data-out="progBlur">0.5</output>px</span>
+          <input type="range" min="0" max="15" step="0.5" value="0.5" data-tune="progBlur" />
           <small class="nav-tuner__hint">Gradient blur across the top of the page that fades to clear lower down. Softens the area where content scrolls under the nav.</small>
         </label>
         <label data-mode="both">
-          <span>Glass BG Opacity <output data-out="glassBg">0.28</output></span>
-          <input type="range" min="0" max="0.9" step="0.02" value="0.28" data-tune="glassBg" />
+          <span>Glass BG Opacity <output data-out="glassBg">0.16</output></span>
+          <input type="range" min="0" max="0.9" step="0.02" value="0.16" data-tune="glassBg" />
           <small class="nav-tuner__hint">Tint of the panel itself (sits between the lens and what's behind). Higher = more opaque pill.</small>
         </label>
 
         <label data-mode="advanced">
-          <span>SQUIRCLE_CLAMP <output data-out="clamp">0.99</output></span>
-          <input type="range" min="0.85" max="0.995" step="0.005" value="0.99" data-tune="clamp" />
+          <span>SQUIRCLE_CLAMP <output data-out="clamp">0.89</output></span>
+          <input type="range" min="0.85" max="0.995" step="0.005" value="0.89" data-tune="clamp" />
           <small class="nav-tuner__hint">Where the bending happens. High = sharp rim, mirror-flat middle. Low = soft bowl that bends light all over.</small>
         </label>
         <label data-mode="advanced">
-          <span>Chromatic R scale <output data-out="scaleR">5</output></span>
-          <input type="range" min="0" max="60" step="1" value="5" data-tune="scaleR" />
+          <span>Chromatic R scale <output data-out="scaleR">20</output></span>
+          <input type="range" min="0" max="60" step="1" value="20" data-tune="scaleR" />
           <small class="nav-tuner__hint">How far red light is pulled at the rim.</small>
         </label>
         <label data-mode="advanced">
-          <span>Chromatic G scale <output data-out="scaleG">6</output></span>
-          <input type="range" min="0" max="60" step="1" value="6" data-tune="scaleG" />
+          <span>Chromatic G scale <output data-out="scaleG">22</output></span>
+          <input type="range" min="0" max="60" step="1" value="22" data-tune="scaleG" />
           <small class="nav-tuner__hint">How far green light is pulled at the rim.</small>
         </label>
         <label data-mode="advanced">
-          <span>Chromatic B scale <output data-out="scaleB">7</output></span>
-          <input type="range" min="0" max="60" step="1" value="7" data-tune="scaleB" />
+          <span>Chromatic B scale <output data-out="scaleB">24</output></span>
+          <input type="range" min="0" max="60" step="1" value="24" data-tune="scaleB" />
           <small class="nav-tuner__hint">How far blue light is pulled. Mismatch R/G/B → rainbow halo; match → clean lens.</small>
         </label>
         <label data-mode="advanced">
-          <span>Map blur (stdDeviation) <output data-out="mapBlur">0.6</output></span>
-          <input type="range" min="0" max="2" step="0.05" value="0.6" data-tune="mapBlur" />
+          <span>Map blur (stdDeviation) <output data-out="mapBlur">1.4</output></span>
+          <input type="range" min="0" max="2" step="0.05" value="1.4" data-tune="mapBlur" />
           <small class="nav-tuner__hint">Smooths the lens curve so the rim doesn't show stair-steps. A little goes a long way.</small>
         </label>
         <label data-mode="advanced">
-          <span>Backdrop saturate <output data-out="saturate">180</output>%</span>
-          <input type="range" min="50" max="300" step="5" value="180" data-tune="saturate" />
+          <span>Backdrop saturate <output data-out="saturate">125</output>%</span>
+          <input type="range" min="50" max="300" step="5" value="125" data-tune="saturate" />
           <small class="nav-tuner__hint">Color punch on whatever's behind the pill. 100% = unchanged; higher = punchier.</small>
         </label>
 
@@ -402,8 +402,8 @@ const isDev = import.meta.env.DEV;
       (function () {
         // Base chromatic model — Refraction Level (simplified) scales BASE_CENTER,
         // Chromatic Spread (simplified) is the ±offset of R and B from the center.
-        // Defaults: center=6, spread=1 → 5/6/7 (Apple-style thin-rim refraction).
-        const BASE_CENTER = 6;
+        // Defaults: center=22, spread=2 → 20/22/24 (user-tuned visual sweet spot).
+        const BASE_CENTER = 22;
 
         function setup() {
           const panel = document.getElementById('nav-tuner-panel');
@@ -423,22 +423,22 @@ const isDev = import.meta.env.DEV;
 
           const defaults = {
             // Advanced underlying state
-            clamp: 0.99,
-            scaleR: 5,
-            scaleG: 6,
-            scaleB: 7,
-            mapBlur: 0.6,
-            saturate: 180,
+            clamp: 0.89,
+            scaleR: 20,
+            scaleG: 22,
+            scaleB: 24,
+            mapBlur: 1.4,
+            saturate: 125,
             // Both-mode state
-            sheen: 0.30,
-            specularSat: 1.0,
-            backdropBlur: 1,
-            progBlur: 0,
-            glassBg: 0.28,
+            sheen: 0.20,
+            specularSat: 2.5,
+            backdropBlur: 2.25,
+            progBlur: 0.5,
+            glassBg: 0.16,
             // Simplified-mode derived view: center = BASE_CENTER * refractionLevel,
             // R/B = center ∓ chromaticSpread.
             refractionLevel: 1.00,
-            chromaticSpread: 1,
+            chromaticSpread: 2,
           };
           const state = { ...defaults };
 
