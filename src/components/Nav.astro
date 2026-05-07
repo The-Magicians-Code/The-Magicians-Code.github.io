@@ -278,8 +278,8 @@ const isDev = import.meta.env.DEV;
           <small class="nav-tuner__hint">Gradient blur across the top of the page that fades to clear lower down. Softens the area where content scrolls under the nav.</small>
         </label>
         <label data-mode="both">
-          <span>Glass BG Opacity <output data-out="glassBg">0.16</output></span>
-          <input type="range" min="0" max="0.9" step="0.02" value="0.16" data-tune="glassBg" />
+          <span>Glass BG Opacity <output data-out="glassBg">0.06</output></span>
+          <input type="range" min="0" max="0.9" step="0.02" value="0.06" data-tune="glassBg" />
           <small class="nav-tuner__hint">Tint of the panel itself (sits between the lens and what's behind). Higher = more opaque pill.</small>
         </label>
 
@@ -309,8 +309,8 @@ const isDev = import.meta.env.DEV;
           <small class="nav-tuner__hint">Smooths the lens curve so the rim doesn't show stair-steps. A little goes a long way.</small>
         </label>
         <label data-mode="advanced">
-          <span>Backdrop saturate <output data-out="saturate">125</output>%</span>
-          <input type="range" min="50" max="300" step="5" value="125" data-tune="saturate" />
+          <span>Backdrop saturate <output data-out="saturate">300</output>%</span>
+          <input type="range" min="50" max="500" step="5" value="300" data-tune="saturate" />
           <small class="nav-tuner__hint">Color punch on whatever's behind the pill. 100% = unchanged; higher = punchier.</small>
         </label>
 
@@ -498,13 +498,13 @@ const isDev = import.meta.env.DEV;
             scaleG: 12,
             scaleB: 15,
             mapBlur: 1.4,
-            saturate: 125,
+            saturate: 300,
             // Both-mode state
             sheen: 0.30,
             specularSat: 2.5,
             backdropBlur: 7,
             progBlur: 0.5,
-            glassBg: 0.16,
+            glassBg: 0.06,
             // Simplified-mode derived view: center = BASE_CENTER * refractionLevel,
             // R/B = center ∓ chromaticSpread.
             refractionLevel: 1.00,
