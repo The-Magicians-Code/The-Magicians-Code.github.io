@@ -170,34 +170,42 @@ const isDev = import.meta.env.DEV;
         <label>
           <span>SQUIRCLE_CLAMP <output data-out="clamp">0.97</output></span>
           <input type="range" min="0.85" max="0.995" step="0.005" value="0.97" data-tune="clamp" />
+          <small class="nav-tuner__hint">Where the bending happens. High = sharp rim, mirror-flat middle. Low = soft bowl that bends light all over.</small>
         </label>
         <label>
           <span>Chromatic R scale <output data-out="scaleR">9</output></span>
           <input type="range" min="0" max="30" step="1" value="9" data-tune="scaleR" />
+          <small class="nav-tuner__hint">How far red light is pulled at the rim.</small>
         </label>
         <label>
           <span>Chromatic G scale <output data-out="scaleG">11</output></span>
           <input type="range" min="0" max="30" step="1" value="11" data-tune="scaleG" />
+          <small class="nav-tuner__hint">How far green light is pulled at the rim.</small>
         </label>
         <label>
           <span>Chromatic B scale <output data-out="scaleB">13</output></span>
           <input type="range" min="0" max="30" step="1" value="13" data-tune="scaleB" />
+          <small class="nav-tuner__hint">How far blue light is pulled. Mismatch R/G/B → rainbow halo; match → clean lens. Bigger numbers = stronger lens overall.</small>
         </label>
         <label>
           <span>Map blur (stdDeviation) <output data-out="mapBlur">0.6</output></span>
           <input type="range" min="0" max="2" step="0.05" value="0.6" data-tune="mapBlur" />
+          <small class="nav-tuner__hint">Smooths the lens curve so the rim doesn't show stair-steps. A little goes a long way.</small>
         </label>
         <label>
           <span>Backdrop blur <output data-out="backdropBlur">1</output>px</span>
           <input type="range" min="0" max="10" step="0.25" value="1" data-tune="backdropBlur" />
+          <small class="nav-tuner__hint">Frosts the background behind the pill. 0 = sharp; higher = misty. Heavy blur smears the rainbow halo.</small>
         </label>
         <label>
           <span>Backdrop saturate <output data-out="saturate">180</output>%</span>
           <input type="range" min="50" max="300" step="5" value="180" data-tune="saturate" />
+          <small class="nav-tuner__hint">Color punch on whatever's behind the pill. 100% = unchanged; higher = punchier.</small>
         </label>
         <label>
           <span>Sheen top alpha <output data-out="sheen">0.30</output></span>
           <input type="range" min="0" max="0.6" step="0.02" value="0.30" data-tune="sheen" />
+          <small class="nav-tuner__hint">Brightness of the white glint along the top edge — the "light hitting glass" highlight.</small>
         </label>
 
         <textarea id="nav-tuner-output" readonly rows="7"></textarea>
@@ -265,6 +273,13 @@ const isDev = import.meta.env.DEV;
       .nav-tuner input[type="range"] {
         width: 100%;
         accent-color: #9be8a3;
+      }
+      .nav-tuner__hint {
+        display: block;
+        font-size: 10.5px;
+        line-height: 1.4;
+        opacity: 0.55;
+        margin-top: 1px;
       }
       .nav-tuner textarea {
         width: 100%;
