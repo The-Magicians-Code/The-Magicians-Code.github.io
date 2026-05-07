@@ -1,0 +1,20 @@
+---
+import { Icon } from 'astro-icon/components';
+---
+
+<button id="theme-toggle-button" type="button" aria-label="Toggle theme">
+  <Icon name="lucide:sun" class="icon-sun" aria-hidden="true" />
+  <Icon name="lucide:moon" class="icon-moon" aria-hidden="true" />
+</button>
+
+<script>
+  const THEME_KEY = 'theme-preference';
+
+  const handleClick = () => {
+    const isDark = document.documentElement.classList.toggle('dark');
+    localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light');
+  };
+
+  const button = document.getElementById('theme-toggle-button');
+  button?.addEventListener('click', handleClick);
+</script>
