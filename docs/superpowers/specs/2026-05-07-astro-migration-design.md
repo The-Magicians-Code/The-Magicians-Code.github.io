@@ -32,9 +32,11 @@ Migrate `the-magicians-code.github.io` from a single hand-rolled `index.html` to
 | Routes | `/`, `/projects/`, `/projects/[slug]` — `/blog/*` deferred |
 | Visual fidelity | Parity-with-judgment: same look, fix fragile bits during the move |
 | Custom domain | `themagicianscode.dev` (apex; canonical) |
-| Deploy target | Cloudflare Workers Static Assets (CF-recommended for new projects; Pages is in maintenance) |
-| CI/CD | Cloudflare Workers Builds (push-to-deploy from repo) |
-| Old URL handling | Keep GH Pages alive with a meta-refresh `index.html` stub at the user-site root. **No `CNAME` file** — that would force all sibling project Pages (e.g., `the-magicians-code.github.io/qr-code/`, `the-magicians-code.github.io/play/`) to route through the new custom domain too, breaking them. |
+| Deploy target | GitHub Pages on the user/org repo (`The-Magicians-Code.github.io`) |
+| CI/CD | GitHub Actions (`withastro/action@v6` → `actions/deploy-pages@v5`) |
+| DNS / edge | Cloudflare DNS-only (gray cloud) initially. CNAME at apex → `the-magicians-code.github.io`; GH terminates TLS via auto-issued Let's Encrypt cert. CF proxy can be enabled later for edge caching (requires SSL/TLS mode = Full). |
+| Sibling project Pages | Setting a custom domain on the user/org repo auto-routes all owned project Pages (`qr-code`, `play`, future ones) under the same domain — i.e., `themagicianscode.dev/qr-code/`, `themagicianscode.dev/play/`. This is exactly the desired behavior, not a footgun. |
+| Old URL redirect | Automatic. GH Pages 301s every `the-magicians-code.github.io/*` path to the corresponding `themagicianscode.dev/*` path once the user-site custom domain is set. No stub workflow needed. |
 | Output target | Static (`output: 'static'`, the default) |
 
 ## Architecture
@@ -43,14 +45,14 @@ Migrate `the-magicians-code.github.io` from a single hand-rolled `index.html` to
 
 ```
 .
-├── .github/workflows/redirect-stub.yml (only — main deploy is via Workers Builds)
+├── .github/workflows/deploy.yml        (build + deploy to GH Pages)
 ├── .gitignore                          (extended)
 ├── astro.config.mjs
-├── wrangler.jsonc                      (Cloudflare Workers Static Assets config)
 ├── package.json
-├── package-lock.json                   (committed; pin deps for reproducible Workers Builds)
+├── package-lock.json                   (committed; required by withastro/action for PM detection)
 ├── tsconfig.json
 ├── public/
+│   ├── CNAME                           (one line: themagicianscode.dev — tells GH Pages the custom domain)
 │   ├── favicon.ico
 │   ├── icon.svg
 │   └── apple-touch-icon.png
@@ -226,50 +228,34 @@ Year in footer: `{new Date().getFullYear()}` (SSR), drops `document.write`.
 
 ### Deploy
 
-**Primary target: Cloudflare Workers Static Assets** (CF's recommended hosting for new static sites; Pages is in maintenance for new projects, per [Workers best practices docs](https://developers.cloudflare.com/workers/best-practices/workers-best-practices/)).
+**Target: GitHub Pages on the user/org repo (`The-Magicians-Code.github.io`)**, with the custom domain `themagicianscode.dev` set via `public/CNAME`. Cloudflare handles DNS only; GitHub serves and terminates TLS.
 
-**Why Workers Static Assets over GH Pages or CF Pages**:
-- Domain is already in your Cloudflare account → automatic DNS + cert; no SSL/TLS mode dance, no Let's Encrypt timing window, no `public/CNAME` for the live site
-- Workers Builds = native CF push-to-deploy CI; no GitHub secrets to manage
-- Workers is where CF is investing; Pages gets bug fixes only
-- Edge-distributed, observability built in, free tier ample for a personal portfolio
+**Why GH Pages over Cloudflare Workers Static Assets** (the path we considered first):
 
-**`wrangler.jsonc`**:
+The decisive factor is the existing sibling project Pages (`qr-code`, `play`, future). When a user/org Pages site has a custom domain set, GH automatically:
 
-```jsonc
-{
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "themagicianscode",
-  "compatibility_date": "2026-05-01",
-  "assets": {
-    "directory": "./dist"
-  },
-  "routes": [
-    { "pattern": "themagicianscode.dev", "custom_domain": true }
-  ]
-}
+1. Serves that domain at the user/org site root (the portfolio).
+2. **Routes all sibling project Pages under the same domain** — `themagicianscode.dev/qr-code/`, `themagicianscode.dev/play/`, etc., with zero per-project configuration.
+3. **301-redirects every `<user>.github.io/*` path to the corresponding `<custom-domain>/*` path.** Subpaths preserved, no meta-refresh fallback needed.
+
+CF Workers Static Assets gets none of those for free — each project would need its own subdomain or a Worker proxy. GH Pages solves the multi-site case directly. Cloudflare still earns its keep as the registrar/DNS provider, and the proxy can be flipped on later for edge caching.
+
+**`public/CNAME`** (single line, no trailing newline issues):
+
+```
+themagicianscode.dev
 ```
 
-No Worker script (no `main`) — purely static. The `routes` entry with `custom_domain: true` lets `wrangler deploy` create/maintain the custom domain attachment automatically; Cloudflare handles DNS + cert.
+Astro copies `public/*` to `dist/`; GH Pages reads `dist/CNAME` and treats it as the custom-domain declaration.
 
-**CI: Cloudflare Workers Builds**
-
-One-time setup (manual, dashboard):
-1. Cloudflare dashboard → Workers & Pages → Create → Connect to Git → select this repo → branch `master`
-2. Build command: `npm run build`
-3. Deploy command: `npx wrangler deploy` (default; auto-detected from `wrangler.jsonc`)
-4. Custom domain: confirmed via the `routes` entry on first deploy, OR set in Workers → portfolio → Settings → Domains & Routes
-
-After this, every push to `master` builds and deploys automatically. No GitHub Actions, no secrets, no workflow YAML for the primary deploy.
-
-**`.github/workflows/redirect-stub.yml`** (the *only* GH Actions workflow — exists solely to keep the old `the-magicians-code.github.io/` URL pointing at the new domain without breaking sibling project Pages sites like `/qr-code/` and `/play/`):
+**`.github/workflows/deploy.yml`**:
 
 ```yaml
-name: Publish redirect stub to GitHub Pages
+name: Deploy site to GitHub Pages
 
 on:
   push:
-    branches: [master]
+    branches: [master]   # NOT main — repo's serving branch is master
   workflow_dispatch:
 
 permissions:
@@ -282,47 +268,38 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  publish:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: withastro/action@v6
+        # withastro/action infers PM from the committed lockfile,
+        # runs npm ci + astro build, and uploads dist/ as the Pages artifact
+  deploy:
+    needs: build
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Build meta-refresh stub
-        run: |
-          mkdir -p stub
-          cat > stub/index.html <<'EOF'
-          <!doctype html>
-          <html lang="en">
-            <head>
-              <meta charset="utf-8">
-              <title>Moved to themagicianscode.dev</title>
-              <meta http-equiv="refresh" content="0; url=https://themagicianscode.dev/">
-              <link rel="canonical" href="https://themagicianscode.dev/">
-              <script>
-                // Preserve hash + query when redirecting humans
-                location.replace('https://themagicianscode.dev/' + location.search + location.hash);
-              </script>
-            </head>
-            <body>
-              <p>This site has moved to <a href="https://themagicianscode.dev/">themagicianscode.dev</a>.</p>
-            </body>
-          </html>
-          EOF
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: stub
       - id: deployment
         uses: actions/deploy-pages@v5
 ```
 
-**Critical: no `CNAME` file in the stub.** A `CNAME` would trigger GitHub's "user-site custom domain propagates to all project sites" behavior, causing `the-magicians-code.github.io/qr-code/` and `the-magicians-code.github.io/play/` to start routing to `themagicianscode.dev/qr-code/` and `themagicianscode.dev/play/` — both 404s on our CF Worker. With only the stub `index.html` published at the user site root, GH Pages routes `/` to our stub and continues serving sibling project repos at their own subpaths unchanged.
+**Cloudflare DNS** (one-time, done in CF dashboard):
 
-Trade-off: we lose the server-side 301 status (search engines treat meta-refresh as a soft redirect, so the old URL stays in indexes longer). For a personal portfolio with no real SEO weight on the old `*.github.io` domain, this is acceptable. If a clean 301 becomes important later, each project Pages site can be moved to its own subdomain (e.g., `qr-code.themagicianscode.dev`) and the user-site `CNAME` can be added back as a follow-up project.
+| Type | Name | Target | Proxy status |
+|---|---|---|---|
+| CNAME | `themagicianscode.dev` (apex) | `the-magicians-code.github.io` | **DNS only** (gray cloud) |
 
-**Repo settings (one-time)**: Settings → Pages → Source: **GitHub Actions**. Custom domain field in GH Pages settings: leave blank.
+Cloudflare flattens the apex CNAME automatically. Keep the orange cloud OFF until/unless you want CF as a CDN in front of GH (in which case set SSL/TLS mode to **Full** to avoid redirect loops with GH Pages' enforced HTTPS — never **Flexible**).
 
-**Cloudflare DNS for `themagicianscode.dev`**: handled automatically when the Worker custom domain is attached. No manual A/CNAME records needed.
+`www.themagicianscode.dev` not configured. If desired later, add a 301 via CF Redirect Rule → apex.
+
+**Repo settings (one-time, via dashboard)**:
+1. Settings → Pages → Source: **GitHub Actions** (was likely "Deploy from branch")
+2. Settings → Pages → Custom domain: `themagicianscode.dev` (sets the value GH uses for cert provisioning; will sync with `public/CNAME` once the workflow first deploys)
+3. Settings → Pages → **Enforce HTTPS**: on (after cert is issued; takes a few minutes after DNS first resolves)
 
 ### `.gitignore`
 
@@ -351,29 +328,37 @@ pnpm-debug.log*
 7. Build `BaseLayout.astro` with FOUC script (`is:inline`)
 8. Build component tree
 9. Build pages: `index.astro`, `projects/index.astro`, `projects/[slug].astro`
-10. Move static assets to `public/`
-11. Local verify: `npm run dev` smoke test, `npm run build` zero-warning build, `npm run preview` spot-check
-12. Add `wrangler.jsonc`
-13. Add `.github/workflows/redirect-stub.yml`
-14. Extend `.gitignore`
-15. Commit `package-lock.json`
-16. Push to `master`
-17. Cloudflare dashboard: Workers & Pages → Create → Connect to Git → select repo, branch `master`, build command `npm run build`, deploy `npx wrangler deploy`. Confirm first deploy succeeds; custom domain `themagicianscode.dev` attaches automatically via the `routes` entry in `wrangler.jsonc`
-18. Repo Settings → Pages → Source: GitHub Actions (so the redirect-stub workflow can publish)
-19. Verify production: `https://themagicianscode.dev/` renders; `https://the-magicians-code.github.io/` 301s to `themagicianscode.dev`; `/projects/yolo-dualdev/` and `/projects/strato-pi/` reachable; dark mode + theme persistence + mobile menu all work; canonicals correct on each route
-20. Delete the old root `index.html`, `favicon.ico`, `icon.svg`, `apple-touch-icon.png` from the repo (their copies now live in `public/` and `dist/`)
+10. Move static assets to `public/` (favicon.ico, icon.svg, apple-touch-icon.png) — and add `public/CNAME` with `themagicianscode.dev`
+11. Local verify: `npm run dev` smoke test, `npm run build` zero-warning build (confirm `dist/CNAME` exists), `npm run preview` spot-check
+12. Add `.github/workflows/deploy.yml`
+13. Extend `.gitignore`
+14. Commit `package-lock.json`
+15. Delete the old root `index.html`, `favicon.ico`, `icon.svg`, `apple-touch-icon.png` (their canonical copies now live under `public/` → `dist/`)
+16. Cloudflare dashboard → DNS → add CNAME `themagicianscode.dev` → `the-magicians-code.github.io`, **proxy off (gray cloud)**
+17. Repo Settings → Pages: flip Source from "Deploy from branch" to **GitHub Actions**, set Custom domain to `themagicianscode.dev`
+18. Push to `master` — the workflow runs, builds, and publishes; `dist/CNAME` lands at the user-site root
+19. Wait for GH Pages cert issuance (typically a few minutes after DNS resolves), then enable **Enforce HTTPS** in Pages settings
+20. Verify production:
+    - `https://themagicianscode.dev/` → portfolio
+    - `https://themagicianscode.dev/projects/` and `/projects/yolo-dualdev/` and `/projects/strato-pi/` → reachable
+    - `https://themagicianscode.dev/qr-code/` and `/play/` → sibling project Pages render correctly
+    - `https://the-magicians-code.github.io/` and `/qr-code/` and `/play/` → 301 to corresponding paths under the new domain
+    - Dark mode, theme persistence, mobile menu all work
+    - Canonicals on each route point at the new domain
 
 ## Risks / gotchas
 
-- **GH Pages source flip**: switching from "Deploy from branch" to "GitHub Actions" briefly takes the user-site URL offline for the window between the flip and the first redirect-stub deploy. **Sibling project Pages sites (`/qr-code/`, `/play/`) are unaffected** — they're deployed from their own repos with their own settings. Land all code first, verify CF Worker is live at `themagicianscode.dev`, then flip.
-- **Sibling project Pages preservation**: confirm `qr-code/` and `play/` still serve at `the-magicians-code.github.io/qr-code/` and `/play/` after the redirect-stub deploys. The absence of a `CNAME` file in the stub is what protects them — do not add one without first migrating each project Pages site to its own subdomain.
+- **GH Pages source flip**: switching from "Deploy from branch" to "GitHub Actions" briefly takes the user-site URL offline between the flip and the first successful Actions deploy. **Sibling project Pages sites (`/qr-code/`, `/play/`) are unaffected** by this flip — each has its own Pages settings. Mitigation: have the deploy workflow + `public/CNAME` ready in the branch before flipping; push immediately after.
+- **GH cert provisioning timing**: GH issues the Let's Encrypt cert for the custom domain only after DNS resolves correctly. Typically a few minutes after the CF CNAME goes live. Until issued, Enforce HTTPS will be greyed out and the site will work on HTTP only. Wait for the dashboard to confirm cert is active before enforcing HTTPS.
+- **`.dev` TLD HSTS-preload**: every modern browser refuses HTTP for `.dev`. The window between cert issuance and Enforce-HTTPS being toggled on is the only fragile period — during it, browsers will get an HTTPS-only error if hitting the bare domain. Acceptable since it's a minutes-long, one-time window.
+- **Cloudflare proxy mode**: keep proxy OFF (gray cloud) for now. If turned on later for CF edge caching, set SSL/TLS to **Full** (not Flexible — Flexible loops with GH's HTTPS-required setting; not Strict only because GH's cert subject may not match what CF Strict expects). Don't flip it on the same day as the migration; layer it on after baseline is verified.
+- **Apex CNAME**: traditional DNS forbids apex CNAMEs, but Cloudflare flattens them transparently. Don't try to "fix" this with A records — the CF flattening is the correct setup.
+- **Sibling project Pages auto-routing**: the moment the user-site custom domain is set, *all* of your existing project Pages sites (`qr-code`, `play`, plus any others) start serving at `themagicianscode.dev/<project>/`. This is the desired outcome, but worth knowing — there is no "opt-out" per project unless that project sets its own custom domain. Future-proofing: don't name a future project repo something that collides with an Astro route (`projects`, `blog`, etc.) on the user site.
 - **Dark-mode FOUC**: inline script must run before any styled HTML paints. Test in Safari + Firefox + Chrome.
 - **Cross-route hash anchors**: must be root-absolute. Easy to forget.
 - **Font fallback flash**: with `@fontsource/inter`, ensure `font-display: swap` (Fontsource default) so text isn't invisible during font load.
-- **Old `index.html` at repo root**: delete from the repo source as part of this migration. Astro builds from `src/`; leftover root-level static files will confuse contributors and clutter `git status` permanently.
-- **Wrangler authentication for first deploy**: Workers Builds runs server-side at CF, so no local `wrangler login` is needed *after* the dashboard connects the repo. But if testing `wrangler deploy` from a local machine before then, that machine needs `wrangler login` first. Don't accidentally push a deploy from a personal laptop bypassing CI.
-- **`.dev` TLD**: the `.dev` TLD is on the [HSTS preload list](https://hstspreload.org/), meaning all browsers will *only* connect over HTTPS. Cloudflare auto-issues the cert; just don't accidentally configure HTTP-only somewhere.
-- **No `CNAME` files anywhere on this user/org repo**: not in `public/`, not in the redirect-stub workflow output, not at the repo root. The presence of a `CNAME` on a user/org Pages site forces every sibling project Pages site (currently `qr-code` and `play`) to route through the new custom domain, which would 404 them on our CF Worker. The stub deliberately publishes only `index.html`.
+- **Old `index.html` at repo root**: must be deleted from the repo as part of this migration. Astro builds from `src/`; leftover root-level static files will confuse contributors and clutter `git status` permanently.
+- **`public/CNAME` is required, not forbidden** (this changed mid-design as we pivoted from CF Workers back to GH Pages — the prior version of this spec said the opposite). The single line `themagicianscode.dev` in `public/CNAME` is what makes everything work.
 
 ## Testing checklist
 
@@ -385,8 +370,10 @@ pnpm-debug.log*
 - Canonical URLs correct on each route, all using `https://themagicianscode.dev` host
 - JSON-LD only on home, not on `/projects/*`
 - `https://themagicianscode.dev/` resolves and serves the Astro build (HTTPS, valid cert)
-- `https://the-magicians-code.github.io/` serves the meta-refresh stub and redirects browsers to `themagicianscode.dev/`
-- `https://the-magicians-code.github.io/qr-code/` and `/play/` still load their original interactive content (sibling project Pages preserved)
+- `https://themagicianscode.dev/qr-code/` and `/play/` resolve and serve their respective interactive sites (auto-routed sibling project Pages)
+- `https://the-magicians-code.github.io/` returns a 301 to `https://themagicianscode.dev/` (verify with `curl -sI`)
+- `https://the-magicians-code.github.io/qr-code/` returns a 301 to `https://themagicianscode.dev/qr-code/` (subpaths preserved)
+- `https://the-magicians-code.github.io/play/` returns a 301 to `https://themagicianscode.dev/play/`
 - Lighthouse: ≥95 on perf / SEO / best-practices / accessibility (matches or beats current)
 
 ## Out of scope
