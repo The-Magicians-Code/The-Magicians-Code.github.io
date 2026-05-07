@@ -20,15 +20,19 @@ const isDev = import.meta.env.DEV;
       4. feColorMatrix isolates each channel so we don't double-count.
       5. feBlend mode="lighten" recombines (per-channel max).
   -->
-  <filter id="liquid-glass-distort" x="0" y="0" width="100%" height="100%">
+  <filter id="liquid-glass-distort" color-interpolation-filters="sRGB"
+          x="0" y="0" width="100%" height="100%">
     <feImage id="liquid-glass-map" href="" preserveAspectRatio="none" result="rawMap" />
     <feGaussianBlur in="rawMap" stdDeviation="0.6" result="map" />
 
-    <feDisplacementMap in="SourceGraphic" in2="map" scale="9"
+    <feDisplacementMap color-interpolation-filters="sRGB"
+                       in="SourceGraphic" in2="map" scale="5"
                        xChannelSelector="R" yChannelSelector="G" result="dispR" />
-    <feDisplacementMap in="SourceGraphic" in2="map" scale="11"
+    <feDisplacementMap color-interpolation-filters="sRGB"
+                       in="SourceGraphic" in2="map" scale="6"
                        xChannelSelector="R" yChannelSelector="G" result="dispG" />
-    <feDisplacementMap in="SourceGraphic" in2="map" scale="13"
+    <feDisplacementMap color-interpolation-filters="sRGB"
+                       in="SourceGraphic" in2="map" scale="7"
                        xChannelSelector="R" yChannelSelector="G" result="dispB" />
 
     <feColorMatrix in="dispR" type="matrix" result="rOnly" values="
@@ -63,7 +67,7 @@ const isDev = import.meta.env.DEV;
     // distance-from-center: |dy/dx| = t³ / (1 − t⁴)^¾. Slope diverges at the
     // rim, so clamp t before the singularity and normalize so the clamped
     // peak maps to 1.
-    let SQUIRCLE_CLAMP = 0.97;
+    let SQUIRCLE_CLAMP = 0.99;
 
     function generateLensMap() {
       const W = 512;
@@ -161,54 +165,88 @@ const isDev = import.meta.env.DEV;
 
 {isDev && (
   <Fragment>
-    <aside id="nav-tuner-panel" class="nav-tuner" aria-label="Liquid glass tuner">
+    <div class="nav-progressive-blur" aria-hidden="true"></div>
+
+    <aside id="nav-tuner-panel" class="nav-tuner mode-simple" aria-label="Liquid glass tuner">
       <header class="nav-tuner__head">
         <span>Nav glass tuner</span>
         <button type="button" id="nav-tuner-toggle" aria-label="Collapse tuner">−</button>
       </header>
       <div class="nav-tuner__body">
-        <label>
-          <span>SQUIRCLE_CLAMP <output data-out="clamp">0.97</output></span>
-          <input type="range" min="0.85" max="0.995" step="0.005" value="0.97" data-tune="clamp" />
+        <div class="nav-tuner__mode-toggle" role="tablist" aria-label="Tuner mode">
+          <button type="button" role="tab" class="active" data-mode="simple" aria-selected="true">Simplified</button>
+          <button type="button" role="tab" data-mode="advanced" aria-selected="false">Advanced</button>
+        </div>
+
+        <label data-mode="simple">
+          <span>Refraction Level <output data-out="refractionLevel">1.00</output></span>
+          <input type="range" min="0" max="2" step="0.05" value="1.00" data-tune="refractionLevel" />
+          <small class="nav-tuner__hint">How strongly the lens bends light. 1 = stock; 0 = no bend; 2 = exaggerated. Above 2 the lens enters the inversion regime and projects flipped ghost text — capped here. Use Advanced for full control.</small>
+        </label>
+        <label data-mode="simple">
+          <span>Chromatic Spread <output data-out="chromaticSpread">1</output></span>
+          <input type="range" min="0" max="10" step="1" value="1" data-tune="chromaticSpread" />
+          <small class="nav-tuner__hint">Width of the rainbow halo at the rim. 0 = clean lens, no fringe. Higher = stronger color fringing. Independent of overall strength.</small>
+        </label>
+
+        <label data-mode="both">
+          <span>Specular Opacity <output data-out="sheen">0.30</output></span>
+          <input type="range" min="0" max="0.6" step="0.02" value="0.30" data-tune="sheen" />
+          <small class="nav-tuner__hint">Brightness of the white glint along the top edge — the "light hitting glass" highlight.</small>
+        </label>
+        <label data-mode="both">
+          <span>Specular Saturation <output data-out="specularSat">1.0</output></span>
+          <input type="range" min="0" max="10" step="0.1" value="1.0" data-tune="specularSat" />
+          <small class="nav-tuner__hint">How vivid the highlight's tint is. 0 = pure grayscale; 1 = neutral; higher = picks up subtle warm/cool color in the glint.</small>
+        </label>
+        <label data-mode="both">
+          <span>Blur Level <output data-out="backdropBlur">1</output>px</span>
+          <input type="range" min="0" max="10" step="0.25" value="1" data-tune="backdropBlur" />
+          <small class="nav-tuner__hint">Frosts the background behind the pill. 0 = sharp; higher = misty. Heavy blur smears the rainbow halo.</small>
+        </label>
+        <label data-mode="both">
+          <span>Progressive Blur <output data-out="progBlur">0</output>px</span>
+          <input type="range" min="0" max="15" step="0.5" value="0" data-tune="progBlur" />
+          <small class="nav-tuner__hint">Gradient blur across the top of the page that fades to clear lower down. Softens the area where content scrolls under the nav.</small>
+        </label>
+        <label data-mode="both">
+          <span>Glass BG Opacity <output data-out="glassBg">0.28</output></span>
+          <input type="range" min="0" max="0.9" step="0.02" value="0.28" data-tune="glassBg" />
+          <small class="nav-tuner__hint">Tint of the panel itself (sits between the lens and what's behind). Higher = more opaque pill.</small>
+        </label>
+
+        <label data-mode="advanced">
+          <span>SQUIRCLE_CLAMP <output data-out="clamp">0.99</output></span>
+          <input type="range" min="0.85" max="0.995" step="0.005" value="0.99" data-tune="clamp" />
           <small class="nav-tuner__hint">Where the bending happens. High = sharp rim, mirror-flat middle. Low = soft bowl that bends light all over.</small>
         </label>
-        <label>
-          <span>Chromatic R scale <output data-out="scaleR">9</output></span>
-          <input type="range" min="0" max="30" step="1" value="9" data-tune="scaleR" />
+        <label data-mode="advanced">
+          <span>Chromatic R scale <output data-out="scaleR">5</output></span>
+          <input type="range" min="0" max="60" step="1" value="5" data-tune="scaleR" />
           <small class="nav-tuner__hint">How far red light is pulled at the rim.</small>
         </label>
-        <label>
-          <span>Chromatic G scale <output data-out="scaleG">11</output></span>
-          <input type="range" min="0" max="30" step="1" value="11" data-tune="scaleG" />
+        <label data-mode="advanced">
+          <span>Chromatic G scale <output data-out="scaleG">6</output></span>
+          <input type="range" min="0" max="60" step="1" value="6" data-tune="scaleG" />
           <small class="nav-tuner__hint">How far green light is pulled at the rim.</small>
         </label>
-        <label>
-          <span>Chromatic B scale <output data-out="scaleB">13</output></span>
-          <input type="range" min="0" max="30" step="1" value="13" data-tune="scaleB" />
-          <small class="nav-tuner__hint">How far blue light is pulled. Mismatch R/G/B → rainbow halo; match → clean lens. Bigger numbers = stronger lens overall.</small>
+        <label data-mode="advanced">
+          <span>Chromatic B scale <output data-out="scaleB">7</output></span>
+          <input type="range" min="0" max="60" step="1" value="7" data-tune="scaleB" />
+          <small class="nav-tuner__hint">How far blue light is pulled. Mismatch R/G/B → rainbow halo; match → clean lens.</small>
         </label>
-        <label>
+        <label data-mode="advanced">
           <span>Map blur (stdDeviation) <output data-out="mapBlur">0.6</output></span>
           <input type="range" min="0" max="2" step="0.05" value="0.6" data-tune="mapBlur" />
           <small class="nav-tuner__hint">Smooths the lens curve so the rim doesn't show stair-steps. A little goes a long way.</small>
         </label>
-        <label>
-          <span>Backdrop blur <output data-out="backdropBlur">1</output>px</span>
-          <input type="range" min="0" max="10" step="0.25" value="1" data-tune="backdropBlur" />
-          <small class="nav-tuner__hint">Frosts the background behind the pill. 0 = sharp; higher = misty. Heavy blur smears the rainbow halo.</small>
-        </label>
-        <label>
+        <label data-mode="advanced">
           <span>Backdrop saturate <output data-out="saturate">180</output>%</span>
           <input type="range" min="50" max="300" step="5" value="180" data-tune="saturate" />
           <small class="nav-tuner__hint">Color punch on whatever's behind the pill. 100% = unchanged; higher = punchier.</small>
         </label>
-        <label>
-          <span>Sheen top alpha <output data-out="sheen">0.30</output></span>
-          <input type="range" min="0" max="0.6" step="0.02" value="0.30" data-tune="sheen" />
-          <small class="nav-tuner__hint">Brightness of the white glint along the top edge — the "light hitting glass" highlight.</small>
-        </label>
 
-        <textarea id="nav-tuner-output" readonly rows="7"></textarea>
+        <textarea id="nav-tuner-output" readonly rows="10"></textarea>
         <div class="nav-tuner__actions">
           <button type="button" id="nav-tuner-copy">Copy values</button>
           <button type="button" id="nav-tuner-reset">Reset</button>
@@ -307,10 +345,66 @@ const isDev = import.meta.env.DEV;
         cursor: pointer;
       }
       .nav-tuner__actions button:hover { background: #44444c; }
+
+      /* Mode toggle pills */
+      .nav-tuner__mode-toggle {
+        display: flex;
+        gap: 4px;
+        padding: 3px;
+        background: rgba(0, 0, 0, 0.35);
+        border-radius: 6px;
+      }
+      .nav-tuner__mode-toggle button {
+        flex: 1;
+        background: transparent;
+        color: #e8e8ea;
+        border: none;
+        padding: 5px 8px;
+        font: inherit;
+        font-size: 11px;
+        cursor: pointer;
+        border-radius: 4px;
+        opacity: 0.6;
+        transition: background-color 0.15s ease, opacity 0.15s ease;
+      }
+      .nav-tuner__mode-toggle button.active {
+        background: #34343a;
+        opacity: 1;
+        font-weight: 600;
+      }
+      /* Mode-based visibility — qualified to labels so the mode-toggle buttons
+         (which also carry data-mode) stay visible. */
+      .nav-tuner.mode-simple label[data-mode="advanced"],
+      .nav-tuner.mode-advanced label[data-mode="simple"] {
+        display: none;
+      }
+
+      /* Progressive blur layer — fixed strip at the top of the viewport behind
+         the nav, with a gradient mask so the blur fades from full at the top
+         to clear at the bottom. Default 0px backdrop-filter blur is invisible;
+         the tuner sets it via inline style. */
+      .nav-progressive-blur {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 140px;
+        pointer-events: none;
+        z-index: 39; /* below #site-nav (40) */
+        -webkit-backdrop-filter: blur(0px);
+        backdrop-filter: blur(0px);
+        -webkit-mask-image: linear-gradient(to bottom, black 0%, black 55%, transparent 100%);
+        mask-image: linear-gradient(to bottom, black 0%, black 55%, transparent 100%);
+      }
     </style>
 
     <script is:inline>
       (function () {
+        // Base chromatic model — Refraction Level (simplified) scales BASE_CENTER,
+        // Chromatic Spread (simplified) is the ±offset of R and B from the center.
+        // Defaults: center=6, spread=1 → 5/6/7 (Apple-style thin-rim refraction).
+        const BASE_CENTER = 6;
+
         function setup() {
           const panel = document.getElementById('nav-tuner-panel');
           if (!panel) return;
@@ -318,71 +412,124 @@ const isDev = import.meta.env.DEV;
           const dispR = document.querySelector('feDisplacementMap[result="dispR"]');
           const dispG = document.querySelector('feDisplacementMap[result="dispG"]');
           const dispB = document.querySelector('feDisplacementMap[result="dispB"]');
-          const mapBlur = document.querySelector('#liquid-glass-distort feGaussianBlur');
+          const mapBlurEl = document.querySelector('#liquid-glass-distort feGaussianBlur');
+          const progLayer = document.querySelector('.nav-progressive-blur');
 
           // Inline override <style> for things JS can't hit directly
-          // (::before pseudo + the !important needed to beat the stylesheet rule).
+          // (::before pseudo + !important needed to beat the stylesheet rule).
           const overrideStyle = document.createElement('style');
           overrideStyle.id = 'nav-tuner-overrides';
           document.head.appendChild(overrideStyle);
 
           const defaults = {
-            clamp: 0.97,
-            scaleR: 9,
-            scaleG: 11,
-            scaleB: 13,
+            // Advanced underlying state
+            clamp: 0.99,
+            scaleR: 5,
+            scaleG: 6,
+            scaleB: 7,
             mapBlur: 0.6,
-            backdropBlur: 1,
             saturate: 180,
+            // Both-mode state
             sheen: 0.30,
+            specularSat: 1.0,
+            backdropBlur: 1,
+            progBlur: 0,
+            glassBg: 0.28,
+            // Simplified-mode derived view: center = BASE_CENTER * refractionLevel,
+            // R/B = center ∓ chromaticSpread.
+            refractionLevel: 1.00,
+            chromaticSpread: 1,
           };
           const state = { ...defaults };
 
+          // Per-key display formatter — keeps the value chip compact and readable.
+          function fmtDisplay(key, v) {
+            if (key === 'clamp') {
+              return v.toFixed(3).replace(/0+$/, '').replace(/\.$/, '');
+            }
+            if (
+              key === 'mapBlur' || key === 'sheen' || key === 'glassBg' ||
+              key === 'refractionLevel' || key === 'specularSat'
+            ) {
+              return v.toFixed(2);
+            }
+            return String(v);
+          }
+
+          function applySimpleToScales() {
+            const center = Math.round(BASE_CENTER * state.refractionLevel);
+            state.scaleG = center;
+            state.scaleR = Math.max(0, center - state.chromaticSpread);
+            state.scaleB = center + state.chromaticSpread;
+          }
+
+          function deriveSimpleFromScales() {
+            state.refractionLevel = Math.max(0, Math.min(2, state.scaleG / BASE_CENTER));
+            state.chromaticSpread = Math.max(0, Math.min(10, Math.round((state.scaleB - state.scaleR) / 2)));
+          }
+
           function apply() {
-            // chromatic scales — direct attribute set
+            // SVG primitives: chromatic scales + map blur
             dispR.setAttribute('scale', state.scaleR);
             dispG.setAttribute('scale', state.scaleG);
             dispB.setAttribute('scale', state.scaleB);
-            mapBlur.setAttribute('stdDeviation', state.mapBlur);
+            mapBlurEl.setAttribute('stdDeviation', state.mapBlur);
 
-            // backdrop-filter overrides + sheen pseudo-element via inline style
+            // Progressive-blur strip — inline backdrop-filter
+            if (progLayer) {
+              progLayer.style.webkitBackdropFilter = `blur(${state.progBlur}px)`;
+              progLayer.style.backdropFilter = `blur(${state.progBlur}px)`;
+            }
+
+            // Sheen now uses faint warm-pink top + cool-blue mid stops so
+            // filter: saturate(N) on ::before has actual hue to act on. At
+            // saturate(0) the result reads as pure white; at saturate(>1) the
+            // tints become visible as a subtle iridescence.
             overrideStyle.textContent = `
               @media (min-width: 641px) {
                 #nav-pill {
+                  background: rgba(255, 255, 255, ${state.glassBg}) !important;
                   -webkit-backdrop-filter: blur(${state.backdropBlur}px) saturate(${state.saturate}%) url(#liquid-glass-distort) !important;
                   backdrop-filter: blur(${state.backdropBlur}px) saturate(${state.saturate}%) url(#liquid-glass-distort) !important;
+                }
+                html.dark #nav-pill {
+                  background: rgba(23, 23, 23, ${state.glassBg}) !important;
                 }
                 #nav-pill::before {
                   background: linear-gradient(
                     180deg,
-                    rgba(255, 255, 255, ${state.sheen}) 0%,
-                    rgba(255, 255, 255, ${(state.sheen * 0.2).toFixed(3)}) 40%,
+                    rgba(255, 240, 245, ${state.sheen}) 0%,
+                    rgba(220, 235, 255, ${(state.sheen * 0.2).toFixed(3)}) 40%,
                     transparent 70%
                   ) !important;
+                  filter: saturate(${state.specularSat}) !important;
                 }
                 html.dark #nav-pill::before {
                   background: linear-gradient(
                     180deg,
-                    rgba(255, 255, 255, ${(state.sheen * 0.53).toFixed(3)}) 0%,
-                    rgba(255, 255, 255, ${(state.sheen * 0.1).toFixed(3)}) 40%,
+                    rgba(255, 240, 245, ${(state.sheen * 0.53).toFixed(3)}) 0%,
+                    rgba(220, 235, 255, ${(state.sheen * 0.1).toFixed(3)}) 40%,
                     transparent 70%
                   ) !important;
+                  filter: saturate(${state.specularSat}) !important;
                 }
               }
             `;
 
-            // refresh the values text
             document.getElementById('nav-tuner-output').value = formatValues(state);
           }
 
           function formatValues(s) {
             return [
-              `SQUIRCLE_CLAMP=${s.clamp}`,
+              `SQUIRCLE_CLAMP=${fmtDisplay('clamp', s.clamp)}`,
               `ChromaticScales=${s.scaleR},${s.scaleG},${s.scaleB}`,
               `MapBlur=${s.mapBlur}`,
               `BackdropBlur=${s.backdropBlur}px`,
               `BackdropSaturate=${s.saturate}%`,
               `SheenTop=${s.sheen}`,
+              `SpecularSaturation=${s.specularSat}`,
+              `ProgressiveBlur=${s.progBlur}px`,
+              `GlassBgOpacity=${s.glassBg}`,
             ].join('\n');
           }
 
@@ -398,17 +545,59 @@ const isDev = import.meta.env.DEV;
             });
           }
 
+          // Sync a single slider's input value + output chip to current state.
+          function syncControl(key) {
+            const input = panel.querySelector(`input[data-tune="${key}"]`);
+            const out = panel.querySelector(`output[data-out="${key}"]`);
+            if (input) input.value = state[key];
+            if (out) out.textContent = fmtDisplay(key, state[key]);
+          }
+
           panel.querySelectorAll('input[type="range"]').forEach((input) => {
             const key = input.dataset.tune;
-            const out = panel.querySelector(`output[data-out="${key}"]`);
             input.addEventListener('input', () => {
               const v = parseFloat(input.value);
               state[key] = v;
-              out.textContent = (key === 'clamp' || key === 'mapBlur' || key === 'sheen')
-                ? v.toFixed(2).replace(/\.?0+$/, (m) => m.length === 3 ? m : '')
-                : v;
+              const out = panel.querySelector(`output[data-out="${key}"]`);
+              if (out) out.textContent = fmtDisplay(key, v);
+
               if (key === 'clamp') scheduleRegen();
+
+              // Refraction Level / Chromatic Spread (simplified) → derive R/G/B scales
+              if (key === 'refractionLevel' || key === 'chromaticSpread') {
+                applySimpleToScales();
+                ['scaleR', 'scaleG', 'scaleB'].forEach(syncControl);
+              }
+              // R/G/B (advanced) → derive both simplified controls so toggling
+              // back to Simplified shows values consistent with current state.
+              if (key === 'scaleR' || key === 'scaleG' || key === 'scaleB') {
+                deriveSimpleFromScales();
+                syncControl('refractionLevel');
+                syncControl('chromaticSpread');
+              }
+
               apply();
+            });
+          });
+
+          // Mode toggle
+          panel.querySelectorAll('.nav-tuner__mode-toggle button').forEach((btn) => {
+            btn.addEventListener('click', () => {
+              const mode = btn.dataset.mode;
+              panel.classList.toggle('mode-simple', mode === 'simple');
+              panel.classList.toggle('mode-advanced', mode === 'advanced');
+              panel.querySelectorAll('.nav-tuner__mode-toggle button').forEach((b) => {
+                const active = b.dataset.mode === mode;
+                b.classList.toggle('active', active);
+                b.setAttribute('aria-selected', String(active));
+              });
+              // Re-derive simplified controls when entering simple, in case
+              // advanced edits drifted them from the center+spread model.
+              if (mode === 'simple') {
+                deriveSimpleFromScales();
+                syncControl('refractionLevel');
+                syncControl('chromaticSpread');
+              }
             });
           });
 
@@ -428,10 +617,7 @@ const isDev = import.meta.env.DEV;
           document.getElementById('nav-tuner-reset').addEventListener('click', () => {
             Object.assign(state, defaults);
             panel.querySelectorAll('input[type="range"]').forEach((input) => {
-              const key = input.dataset.tune;
-              input.value = state[key];
-              const out = panel.querySelector(`output[data-out="${key}"]`);
-              out.textContent = state[key];
+              syncControl(input.dataset.tune);
             });
             scheduleRegen();
             apply();
