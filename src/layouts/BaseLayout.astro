@@ -1,0 +1,98 @@
+---
+import '@fontsource/inter/400.css';
+import '@fontsource/inter/500.css';
+import '@fontsource/inter/600.css';
+import '@fontsource/inter/700.css';
+import '../styles/global.css';
+
+import Nav from '../components/Nav.astro';
+import MobileMenu from '../components/MobileMenu.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+
+interface Props {
+  title: string;
+  description: string;
+  canonicalPath?: string;
+  ogType?: string;
+  includePersonSchema?: boolean;
+}
+
+const {
+  title,
+  description,
+  canonicalPath = '/',
+  ogType = 'website',
+  includePersonSchema = false,
+} = Astro.props;
+
+const siteUrl = Astro.site?.toString().replace(/\/$/, '') ?? 'https://themagicianscode.dev';
+const canonical = `${siteUrl}${canonicalPath}`;
+
+const personSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  name: 'Tanel Treuberg',
+  jobTitle: 'Software Engineer',
+  description: 'Software engineer with data driven results',
+  url: siteUrl + '/',
+  sameAs: [
+    'https://www.linkedin.com/in/taneltreuberg/',
+    'https://github.com/The-Magicians-Code/',
+  ],
+  knowsAbout: ['Python', 'Docker', 'BASH', 'Swift', 'Machine Learning', 'TensorRT', 'YOLO'],
+  worksFor: { '@type': 'Organization', name: 'Software Engineering' },
+};
+---
+
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="author" content="Tanel Treuberg" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href={canonical} />
+
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content={ogType} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:site_name" content="Tanel Treuberg Portfolio" />
+    <meta property="og:locale" content="en_US" />
+
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    {includePersonSchema && (
+      <script is:inline type="application/ld+json" set:html={JSON.stringify(personSchema)} />
+    )}
+
+    <script is:inline>
+      // Pre-paint theme application — avoids FOUC.
+      // Runs before any styled HTML paints. No imports allowed in is:inline scripts.
+      (function () {
+        try {
+          var THEME_KEY = 'theme-preference';
+          var saved = localStorage.getItem(THEME_KEY);
+          var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var useDark = saved ? saved === 'dark' : prefersDark;
+          if (useDark) document.documentElement.classList.add('dark');
+        } catch (_) {}
+      })();
+    </script>
+  </head>
+  <body class="bg-gray-50 text-gray-800 leading-relaxed dark:bg-black dark:text-gray-100 pt-28">
+    <Nav />
+    <MobileMenu />
+    <slot />
+    <SiteFooter />
+  </body>
+</html>
