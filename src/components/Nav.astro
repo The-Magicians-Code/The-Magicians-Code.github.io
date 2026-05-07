@@ -57,21 +57,31 @@ const isDev = import.meta.env.DEV;
 </svg>
 
 <script is:inline>
-  // Generate a pill-shaped lens displacement map at page load and inject it
-  // into the SVG filter. Encodes inward refraction at the rim, no displacement
-  // at the center — simulates real glass curvature.
+  // 2D pill-shape displacement map, generated at the actual pill dimensions
+  // and re-generated when the pill resizes. Encodes both X (R channel) and
+  // Y (G channel) displacement so the rounded corners wrap content from
+  // the opposite side of the pill — the corner-wrap effect Apple's pills
+  // exhibit, that pure cylindrical (Y-only) refraction cannot reproduce.
+  //
+  // Per pixel, the shape is decomposed into:
+  //   - Central flat section: pure vertical refraction (cylindrical lens)
+  //   - Two rounded ends:     radial refraction toward the corner center
+  // Pixels outside the pill rim (corners of the rectangular canvas not
+  // covered by the rounded shape) encode no displacement (R=G=128).
+  //
+  // Squircle profile from kube.io/blog/liquid-glass-css-svg: refraction
+  // magnitude follows |dy/dx| = t³ / (1 − t⁴)^¾ where t is normalized
+  // distance from center toward the nearest rim point. Clamped before
+  // the singularity at t=1, normalized so the clamp value maps to 1.0.
   (function () {
-    // Squircle profile (Apple's preferred curve, per kube.io/blog/liquid-glass-css-svg).
-    // Surface y = ⁴√(1 − (1 − x)⁴) where x = distance-from-edge. Snell's-law
-    // refraction is proportional to the surface slope; in terms of t =
-    // distance-from-center: |dy/dx| = t³ / (1 − t⁴)^¾. Slope diverges at the
-    // rim, so clamp t before the singularity and normalize so the clamped
-    // peak maps to 1.
     let SQUIRCLE_CLAMP = 0.97;
 
-    function generateLensMap() {
-      const W = 512;
-      const H = 96;
+    function squircleSlope(t) {
+      const tc = Math.min(t, SQUIRCLE_CLAMP);
+      return Math.pow(tc, 3) / Math.pow(1 - Math.pow(tc, 4), 0.75);
+    }
+
+    function generateLensMap(W, H) {
       const canvas = document.createElement('canvas');
       canvas.width = W;
       canvas.height = H;
@@ -79,45 +89,103 @@ const isDev = import.meta.env.DEV;
       const img = ctx.createImageData(W, H);
       const data = img.data;
 
-      const squircleSlope = (t) => {
-        const tc = Math.min(t, SQUIRCLE_CLAMP);
-        return Math.pow(tc, 3) / Math.pow(1 - Math.pow(tc, 4), 0.75);
-      };
+      const Wh = W / 2;
+      const Hh = H / 2;
+      const radius = Hh; // full-radius pill (border-radius: 999px)
+      const flatHalfW = Math.max(0, Wh - Hh); // length of central flat half
       const maxSlope = squircleSlope(SQUIRCLE_CLAMP);
 
-      // Vertical-only lens — a wide horizontal pill is best modelled as a
-      // cylindrical lens. R channel stays at 128 (no horizontal shift) so text
-      // passing under the pill doesn't compress horizontally. Only Y refracts.
       for (let y = 0; y < H; y++) {
         for (let x = 0; x < W; x++) {
-          const fy = (y / (H - 1)) * 2 - 1;
-          const shiftY = -Math.sign(fy) * (squircleSlope(Math.abs(fy)) / maxSlope);
+          // Pixel-center coords relative to pill center
+          const px = x + 0.5 - Wh;
+          const py = y + 0.5 - Hh;
+
+          let d, dirX, dirY;
+
+          if (Math.abs(px) <= flatHalfW) {
+            // Central flat section — Y refraction only (cylindrical)
+            d = radius - Math.abs(py);
+            dirX = 0;
+            dirY = py === 0 ? 0 : -Math.sign(py);
+          } else {
+            // Rounded end — radial refraction toward the corner center
+            const cx = Math.sign(px) * flatHalfW;
+            const dxC = px - cx;
+            const dyC = py;
+            const distFromCorner = Math.sqrt(dxC * dxC + dyC * dyC);
+            d = radius - distFromCorner;
+            if (distFromCorner > 0.001) {
+              dirX = -dxC / distFromCorner;
+              dirY = -dyC / distFromCorner;
+            } else {
+              dirX = 0;
+              dirY = 0;
+            }
+          }
 
           const i = (y * W + x) * 4;
-          data[i] = 128;                                // R = 128 (no X shift)
-          data[i + 1] = Math.round(128 + shiftY * 127); // G = Y displacement
+
+          if (d < 0) {
+            // Outside the pill rim — encode neutral (no displacement)
+            data[i] = 128;
+            data[i + 1] = 128;
+          } else {
+            const r = 1 - d / radius; // 0 at center, 1 at rim
+            const magnitude = squircleSlope(r) / maxSlope;
+            data[i] = Math.round(128 + dirX * magnitude * 127);
+            data[i + 1] = Math.round(128 + dirY * magnitude * 127);
+          }
           data[i + 2] = 0;
           data[i + 3] = 255;
         }
       }
 
       ctx.putImageData(img, 0, 0);
-      const url = canvas.toDataURL('image/png');
-
-      const feImg = document.getElementById('liquid-glass-map');
-      if (feImg) {
-        feImg.setAttribute('href', url);
-        feImg.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', url);
-      }
+      return canvas.toDataURL('image/png');
     }
 
-    generateLensMap();
+    function regenerate() {
+      const pill = document.getElementById('nav-pill');
+      const feImg = document.getElementById('liquid-glass-map');
+      if (!pill || !feImg) return;
+      const rect = pill.getBoundingClientRect();
+      const W = Math.round(rect.width);
+      const H = Math.round(rect.height);
+      if (W <= 0 || H <= 0) return;
+      const url = generateLensMap(W, H);
+      feImg.setAttribute('href', url);
+      feImg.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', url);
+    }
+
+    let resizeTimer;
+    let resizeObserver;
+    function observePill() {
+      const pill = document.getElementById('nav-pill');
+      if (!pill || resizeObserver) return;
+      resizeObserver = new ResizeObserver(() => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(regenerate, 80);
+      });
+      resizeObserver.observe(pill);
+    }
+
+    function init() {
+      regenerate();
+      observePill();
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
 
     // Dev tuner hook — listens for clamp updates from NavTuner and regenerates.
     window.addEventListener('navlens:setClamp', (e) => {
       if (e.detail && typeof e.detail.value === 'number') {
         SQUIRCLE_CLAMP = e.detail.value;
-        generateLensMap();
+        regenerate();
       }
     });
   })();
