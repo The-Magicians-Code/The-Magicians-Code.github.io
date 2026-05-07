@@ -31,7 +31,10 @@ Migrate `the-magicians-code.github.io` from a single hand-rolled `index.html` to
 | Content collections | `projects/` (active), `blog/` (schema only, no entries yet) |
 | Routes | `/`, `/projects/`, `/projects/[slug]` — `/blog/*` deferred |
 | Visual fidelity | Parity-with-judgment: same look, fix fragile bits during the move |
-| Deploy | GitHub Actions (`withastro/action` → `actions/deploy-pages`) |
+| Custom domain | `themagicianscode.dev` (apex; canonical) |
+| Deploy target | Cloudflare Workers Static Assets (CF-recommended for new projects; Pages is in maintenance) |
+| CI/CD | Cloudflare Workers Builds (push-to-deploy from repo) |
+| Old URL handling | Keep GH Pages alive with a CNAME-only stub artifact so `the-magicians-code.github.io` issues a 301 to the new domain |
 | Output target | Static (`output: 'static'`, the default) |
 
 ## Architecture
@@ -40,11 +43,12 @@ Migrate `the-magicians-code.github.io` from a single hand-rolled `index.html` to
 
 ```
 .
-├── .github/workflows/deploy.yml
+├── .github/workflows/redirect-stub.yml (only — main deploy is via Workers Builds)
 ├── .gitignore                          (extended)
 ├── astro.config.mjs
+├── wrangler.jsonc                      (Cloudflare Workers Static Assets config)
 ├── package.json
-├── package-lock.json                   (committed; required by withastro/action)
+├── package-lock.json                   (committed; pin deps for reproducible Workers Builds)
 ├── tsconfig.json
 ├── public/
 │   ├── favicon.ico
@@ -88,9 +92,11 @@ Migrate `the-magicians-code.github.io` from a single hand-rolled `index.html` to
 
 ### Pages
 
-- `index.astro` — composes `Hero`, `ProjectsSection` (home grid view), `SkillsTools`, `Contact`. JSON-LD Person on home only.
-- `projects/index.astro` — full projects listing. Title: "Projects · Tanel Treuberg". Canonical: `https://the-magicians-code.github.io/projects/`.
-- `projects/[slug].astro` — dynamic detail. Uses `getStaticPaths()` over the projects collection. Renders the project body (Markdown) into the page. Canonical: `https://the-magicians-code.github.io/projects/<slug>/`.
+- `index.astro` — composes `Hero`, `ProjectsSection` (home grid view), `SkillsTools`, `Contact`. JSON-LD Person on home only. Canonical: `https://themagicianscode.dev/`.
+- `projects/index.astro` — full projects listing. Title: "Projects · Tanel Treuberg". Canonical: `https://themagicianscode.dev/projects/`.
+- `projects/[slug].astro` — dynamic detail. Uses `getStaticPaths()` over the projects collection. Renders the project body (Markdown) into the page. Canonical: `https://themagicianscode.dev/projects/<slug>/`.
+
+Canonical URLs in `BaseLayout` should derive from `Astro.site` (set in `astro.config.mjs`) plus the route path, not be hardcoded — so a future domain change is one config edit.
 
 ### Components
 
@@ -156,8 +162,7 @@ Detail pages can have empty bodies initially; flesh out incrementally.
   import icon from 'astro-icon';
 
   export default defineConfig({
-    site: 'https://the-magicians-code.github.io/',
-    // base intentionally omitted — user/org pages serve from domain root
+    site: 'https://themagicianscode.dev',
     integrations: [icon()],
     vite: { plugins: [tailwindcss()] },
   });
@@ -221,14 +226,50 @@ Year in footer: `{new Date().getFullYear()}` (SSR), drops `document.write`.
 
 ### Deploy
 
-**`.github/workflows/deploy.yml`**:
+**Primary target: Cloudflare Workers Static Assets** (CF's recommended hosting for new static sites; Pages is in maintenance for new projects, per [Workers best practices docs](https://developers.cloudflare.com/workers/best-practices/workers-best-practices/)).
+
+**Why Workers Static Assets over GH Pages or CF Pages**:
+- Domain is already in your Cloudflare account → automatic DNS + cert; no SSL/TLS mode dance, no Let's Encrypt timing window, no `public/CNAME` for the live site
+- Workers Builds = native CF push-to-deploy CI; no GitHub secrets to manage
+- Workers is where CF is investing; Pages gets bug fixes only
+- Edge-distributed, observability built in, free tier ample for a personal portfolio
+
+**`wrangler.jsonc`**:
+
+```jsonc
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "themagicianscode",
+  "compatibility_date": "2026-05-01",
+  "assets": {
+    "directory": "./dist"
+  },
+  "routes": [
+    { "pattern": "themagicianscode.dev", "custom_domain": true }
+  ]
+}
+```
+
+No Worker script (no `main`) — purely static. The `routes` entry with `custom_domain: true` lets `wrangler deploy` create/maintain the custom domain attachment automatically; Cloudflare handles DNS + cert.
+
+**CI: Cloudflare Workers Builds**
+
+One-time setup (manual, dashboard):
+1. Cloudflare dashboard → Workers & Pages → Create → Connect to Git → select this repo → branch `master`
+2. Build command: `npm run build`
+3. Deploy command: `npx wrangler deploy` (default; auto-detected from `wrangler.jsonc`)
+4. Custom domain: confirmed via the `routes` entry on first deploy, OR set in Workers → portfolio → Settings → Domains & Routes
+
+After this, every push to `master` builds and deploys automatically. No GitHub Actions, no secrets, no workflow YAML for the primary deploy.
+
+**`.github/workflows/redirect-stub.yml`** (the *only* GH Actions workflow — exists solely to keep the old `the-magicians-code.github.io` URL alive with a 301):
 
 ```yaml
-name: Deploy site to GitHub Pages
+name: Publish 301 redirect stub to GitHub Pages
 
 on:
   push:
-    branches: [master]   # NOT main — repo serves from master
+    branches: [master]
   workflow_dispatch:
 
 permissions:
@@ -241,24 +282,42 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: withastro/action@v6
-        # withastro/action infers package manager from committed lockfile
-  deploy:
-    needs: build
+  publish:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - name: Build CNAME-only stub
+        run: |
+          mkdir -p stub
+          echo "themagicianscode.dev" > stub/CNAME
+          cat > stub/index.html <<'EOF'
+          <!doctype html>
+          <html lang="en">
+            <head>
+              <meta charset="utf-8">
+              <title>Moved to themagicianscode.dev</title>
+              <meta http-equiv="refresh" content="0; url=https://themagicianscode.dev/">
+              <link rel="canonical" href="https://themagicianscode.dev/">
+            </head>
+            <body>
+              <p>This site has moved to <a href="https://themagicianscode.dev/">themagicianscode.dev</a>.</p>
+            </body>
+          </html>
+          EOF
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: stub
       - id: deployment
         uses: actions/deploy-pages@v5
 ```
 
-**Repo settings (manual, one-time)**: Settings → Pages → Source: **GitHub Actions**.
+The `CNAME` file in the artifact triggers GitHub Pages' built-in 301 from `<user>.github.io` → custom domain (server-side, before any DNS lookup of the destination). The `index.html` is a meta-refresh fallback for path-specific links (`/projects/...`) that the apex 301 might not cover, and as a defense in depth.
+
+**Repo settings (one-time)**: Settings → Pages → Source: **GitHub Actions**. Custom domain field in GH Pages settings: leave blank (the `CNAME` in the deployed artifact tells GH what to redirect to).
+
+**Cloudflare DNS for `themagicianscode.dev`**: handled automatically when the Worker custom domain is attached. No manual A/CNAME records needed.
 
 ### `.gitignore`
 
@@ -289,19 +348,26 @@ pnpm-debug.log*
 9. Build pages: `index.astro`, `projects/index.astro`, `projects/[slug].astro`
 10. Move static assets to `public/`
 11. Local verify: `npm run dev` smoke test, `npm run build` zero-warning build, `npm run preview` spot-check
-12. Add `.github/workflows/deploy.yml`
-13. Extend `.gitignore`
-14. Commit `package-lock.json`
-15. Push to `master`; flip Pages source to GitHub Actions in repo settings
-16. Verify production deploy: site renders, dark mode works, theme persists, mobile menu works, projects detail pages reachable, canonicals correct
+12. Add `wrangler.jsonc`
+13. Add `.github/workflows/redirect-stub.yml`
+14. Extend `.gitignore`
+15. Commit `package-lock.json`
+16. Push to `master`
+17. Cloudflare dashboard: Workers & Pages → Create → Connect to Git → select repo, branch `master`, build command `npm run build`, deploy `npx wrangler deploy`. Confirm first deploy succeeds; custom domain `themagicianscode.dev` attaches automatically via the `routes` entry in `wrangler.jsonc`
+18. Repo Settings → Pages → Source: GitHub Actions (so the redirect-stub workflow can publish)
+19. Verify production: `https://themagicianscode.dev/` renders; `https://the-magicians-code.github.io/` 301s to `themagicianscode.dev`; `/projects/yolo-dualdev/` and `/projects/strato-pi/` reachable; dark mode + theme persistence + mobile menu all work; canonicals correct on each route
+20. Delete the old root `index.html`, `favicon.ico`, `icon.svg`, `apple-touch-icon.png` from the repo (their copies now live in `public/` and `dist/`)
 
 ## Risks / gotchas
 
-- **Pages source flip**: switching from "Deploy from branch" to "GitHub Actions" causes a brief offline window between the flip and first successful Action deploy. Land all code first, verify build is clean, then flip.
+- **GH Pages source flip**: switching from "Deploy from branch" to "GitHub Actions" causes a brief offline window for the *.github.io URL between the flip and first successful redirect-stub deploy. Land all code first, verify CF Worker is live at `themagicianscode.dev`, then flip — so the stub is the only thing offline during the window, not the real site.
 - **Dark-mode FOUC**: inline script must run before any styled HTML paints. Test in Safari + Firefox + Chrome.
 - **Cross-route hash anchors**: must be root-absolute. Easy to forget.
 - **Font fallback flash**: with `@fontsource/inter`, ensure `font-display: swap` (Fontsource default) so text isn't invisible during font load.
-- **Old `index.html` at repo root**: must be deleted from the repo (not just left orphaned), otherwise `actions/deploy-pages` artifact may pick the wrong file. Only `dist/` should ship.
+- **Old `index.html` at repo root**: delete from the repo source as part of this migration. Astro builds from `src/`; leftover root-level static files will confuse contributors and clutter `git status` permanently.
+- **Wrangler authentication for first deploy**: Workers Builds runs server-side at CF, so no local `wrangler login` is needed *after* the dashboard connects the repo. But if testing `wrangler deploy` from a local machine before then, that machine needs `wrangler login` first. Don't accidentally push a deploy from a personal laptop bypassing CI.
+- **`.dev` TLD**: the `.dev` TLD is on the [HSTS preload list](https://hstspreload.org/), meaning all browsers will *only* connect over HTTPS. Cloudflare auto-issues the cert; just don't accidentally configure HTTP-only somewhere.
+- **`CNAME` in `public/`**: do **NOT** put a `CNAME` file in the Astro project's `public/` folder. That file belongs only in the GH Pages redirect-stub artifact, generated inside the workflow. Putting it in `public/` would ship it via the CF Worker too, where it's pointless noise.
 
 ## Testing checklist
 
@@ -310,8 +376,10 @@ pnpm-debug.log*
 - Theme toggle persists across reload, no FOUC
 - Mobile menu opens/closes, links navigate and close menu
 - Hash links from nav work from `/projects/` (jumps to home + scrolls to anchor)
-- Canonical URLs correct on each route
+- Canonical URLs correct on each route, all using `https://themagicianscode.dev` host
 - JSON-LD only on home, not on `/projects/*`
+- `https://themagicianscode.dev/` resolves and serves the Astro build (HTTPS, valid cert)
+- `https://the-magicians-code.github.io/` returns a 301 to `https://themagicianscode.dev/` (verify with `curl -sI`)
 - Lighthouse: ≥95 on perf / SEO / best-practices / accessibility (matches or beats current)
 
 ## Out of scope
