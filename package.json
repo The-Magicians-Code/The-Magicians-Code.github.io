@@ -12,7 +12,12 @@
     "check": "astro check"
   },
   "dependencies": {
-    "astro": "^6.2.2"
+    "@fontsource/inter": "^5.2.8",
+    "@iconify-json/lucide": "^1.2.105",
+    "@tailwindcss/vite": "^4.2.4",
+    "astro": "^6.2.2",
+    "astro-icon": "^1.1.5",
+    "tailwindcss": "^4.2.4"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
