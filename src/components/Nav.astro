@@ -67,7 +67,7 @@ const isDev = import.meta.env.DEV;
     // distance-from-center: |dy/dx| = t³ / (1 − t⁴)^¾. Slope diverges at the
     // rim, so clamp t before the singularity and normalize so the clamped
     // peak maps to 1.
-    let SQUIRCLE_CLAMP = 0.89;
+    let SQUIRCLE_CLAMP = 0.97;
 
     function generateLensMap() {
       const W = 512;
@@ -216,8 +216,8 @@ const isDev = import.meta.env.DEV;
         </label>
 
         <label data-mode="advanced">
-          <span>SQUIRCLE_CLAMP <output data-out="clamp">0.89</output></span>
-          <input type="range" min="0.85" max="0.995" step="0.005" value="0.89" data-tune="clamp" />
+          <span>SQUIRCLE_CLAMP <output data-out="clamp">0.97</output></span>
+          <input type="range" min="0.85" max="0.995" step="0.005" value="0.97" data-tune="clamp" />
           <small class="nav-tuner__hint">Where the bending happens. High = sharp rim, mirror-flat middle. Low = soft bowl that bends light all over.</small>
         </label>
         <label data-mode="advanced">
@@ -423,7 +423,7 @@ const isDev = import.meta.env.DEV;
 
           const defaults = {
             // Advanced underlying state
-            clamp: 0.89,
+            clamp: 0.97,
             scaleR: 20,
             scaleG: 22,
             scaleB: 24,
