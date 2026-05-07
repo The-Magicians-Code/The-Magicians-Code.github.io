@@ -6,7 +6,7 @@
 
 ## Goal
 
-Migrate `the-magicians-code.github.io` from a single hand-rolled `index.html` to an Astro 5 + Tailwind v4 project with content collections and proper build tooling, preserving the current visual language while fixing fragile bits and laying groundwork for future blog posts and project case studies.
+Migrate `the-magicians-code.github.io` from a single hand-rolled `index.html` to an Astro 6 + Tailwind v4 project with content collections and proper build tooling, preserving the current visual language while fixing fragile bits and laying groundwork for future blog posts and project case studies.
 
 ## Why now
 
@@ -26,7 +26,7 @@ Migrate `the-magicians-code.github.io` from a single hand-rolled `index.html` to
 
 | Decision | Choice |
 |---|---|
-| Framework | Astro 5 |
+| Framework | Astro 6 (latest as of 2026-05; was 5 at brainstorm time) |
 | Styling | Tailwind v4 via `@tailwindcss/vite` (NOT deprecated `@astrojs/tailwind`) |
 | Content collections | `projects/` (active), `blog/` (schema only, no entries yet) |
 | Routes | `/`, `/projects/`, `/projects/[slug]` — `/blog/*` deferred |
@@ -51,7 +51,7 @@ Migrate `the-magicians-code.github.io` from a single hand-rolled `index.html` to
 │   ├── icon.svg
 │   └── apple-touch-icon.png
 ├── src/
-│   ├── content.config.ts               (Astro 5 API; NOT src/content/config.ts)
+│   ├── content.config.ts               (Astro 5+ API; NOT src/content/config.ts)
 │   ├── content/
 │   │   └── projects/
 │   │       ├── yolo-dualdev.md
@@ -110,7 +110,8 @@ Migrate `the-magicians-code.github.io` from a single hand-rolled `index.html` to
 ### Content collections (`src/content.config.ts`)
 
 ```ts
-import { defineCollection, z } from 'astro:content';
+import { defineCollection } from 'astro:content';
+import { z } from 'astro/zod';   // Astro 6: z is no longer re-exported from astro:content
 import { glob } from 'astro/loaders';
 
 const projects = defineCollection({
@@ -243,8 +244,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: withastro/action@v3
+      - uses: actions/checkout@v6
+      - uses: withastro/action@v6
         # withastro/action infers package manager from committed lockfile
   deploy:
     needs: build
@@ -254,7 +255,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 ```
 
 **Repo settings (manual, one-time)**: Settings → Pages → Source: **GitHub Actions**.
