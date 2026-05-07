@@ -4,11 +4,105 @@ import ThemeToggle from './ThemeToggle.astro';
 ---
 
 <svg class="liquid-glass-defs" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
-  <filter id="liquid-glass-distort" x="-10%" y="-10%" width="120%" height="120%">
-    <feTurbulence type="fractalNoise" baseFrequency="0.018 0.024" numOctaves="2" seed="7" result="noise" />
-    <feDisplacementMap in="SourceGraphic" in2="noise" scale="14" xChannelSelector="R" yChannelSelector="G" />
+  <!--
+    Liquid glass with chromatic aberration. Per Frontend Masters' "Liquid
+    Glass on the Web" pattern (Chromium-only — Safari/Firefox don't chain
+    SVG filters into backdrop-filter and fall back to plain blur+saturate
+    from .glass).
+
+    Pipeline:
+      1. feImage loads the runtime-generated lens displacement map.
+      2. feGaussianBlur smooths the map further to kill stepping artifacts.
+      3. Three feDisplacementMap passes shift R, G, B at slightly different
+         scales — gives chromatic aberration at the rim (rainbow fringe).
+      4. feColorMatrix isolates each channel so we don't double-count.
+      5. feBlend mode="lighten" recombines (per-channel max).
+  -->
+  <filter id="liquid-glass-distort" x="0" y="0" width="100%" height="100%">
+    <feImage id="liquid-glass-map" href="" preserveAspectRatio="none" result="rawMap" />
+    <feGaussianBlur in="rawMap" stdDeviation="0.6" result="map" />
+
+    <feDisplacementMap in="SourceGraphic" in2="map" scale="9"
+                       xChannelSelector="R" yChannelSelector="G" result="dispR" />
+    <feDisplacementMap in="SourceGraphic" in2="map" scale="11"
+                       xChannelSelector="R" yChannelSelector="G" result="dispG" />
+    <feDisplacementMap in="SourceGraphic" in2="map" scale="13"
+                       xChannelSelector="R" yChannelSelector="G" result="dispB" />
+
+    <feColorMatrix in="dispR" type="matrix" result="rOnly" values="
+      1 0 0 0 0
+      0 0 0 0 0
+      0 0 0 0 0
+      0 0 0 1 0" />
+    <feColorMatrix in="dispG" type="matrix" result="gOnly" values="
+      0 0 0 0 0
+      0 1 0 0 0
+      0 0 0 0 0
+      0 0 0 1 0" />
+    <feColorMatrix in="dispB" type="matrix" result="bOnly" values="
+      0 0 0 0 0
+      0 0 0 0 0
+      0 0 1 0 0
+      0 0 0 1 0" />
+
+    <feBlend in="rOnly" in2="gOnly" mode="lighten" result="rg" />
+    <feBlend in="rg" in2="bOnly" mode="lighten" />
   </filter>
 </svg>
+
+<script is:inline>
+  // Generate a pill-shaped lens displacement map at page load and inject it
+  // into the SVG filter. Encodes inward refraction at the rim, no displacement
+  // at the center — simulates real glass curvature.
+  (function () {
+    const W = 512;
+    const H = 96;
+    const canvas = document.createElement('canvas');
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext('2d');
+    const img = ctx.createImageData(W, H);
+    const data = img.data;
+
+    // Squircle profile (Apple's preferred curve, per kube.io/blog/liquid-glass-css-svg).
+    // Surface y = ⁴√(1 − (1 − x)⁴) where x = distance-from-edge. Snell's-law
+    // refraction is proportional to the surface slope; in terms of t =
+    // distance-from-center: |dy/dx| = t³ / (1 − t⁴)^¾. Slope diverges at the
+    // rim, so clamp t before the singularity and normalize so the clamped
+    // peak maps to 1.
+    const SQUIRCLE_CLAMP = 0.97;
+    const squircleSlope = (t) => {
+      const tc = Math.min(t, SQUIRCLE_CLAMP);
+      return Math.pow(tc, 3) / Math.pow(1 - Math.pow(tc, 4), 0.75);
+    };
+    const maxSlope = squircleSlope(SQUIRCLE_CLAMP);
+
+    // Vertical-only lens — a wide horizontal pill is best modelled as a
+    // cylindrical lens. R channel stays at 128 (no horizontal shift) so text
+    // passing under the pill doesn't compress horizontally. Only Y refracts.
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        const fy = (y / (H - 1)) * 2 - 1;
+        const shiftY = -Math.sign(fy) * (squircleSlope(Math.abs(fy)) / maxSlope);
+
+        const i = (y * W + x) * 4;
+        data[i] = 128;                                // R = 128 (no X shift)
+        data[i + 1] = Math.round(128 + shiftY * 127); // G = Y displacement
+        data[i + 2] = 0;
+        data[i + 3] = 255;
+      }
+    }
+
+    ctx.putImageData(img, 0, 0);
+    const url = canvas.toDataURL('image/png');
+
+    const feImg = document.getElementById('liquid-glass-map');
+    if (feImg) {
+      feImg.setAttribute('href', url);
+      feImg.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', url);
+    }
+  })();
+</script>
 
 <nav id="site-nav">
   <div class="nav-shell max-w-4xl mx-auto px-6 md:px-10">

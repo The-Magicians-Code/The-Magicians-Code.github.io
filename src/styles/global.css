@@ -94,8 +94,12 @@ html.dark {
   #nav-pill {
     position: relative;
     isolation: isolate;
-    -webkit-backdrop-filter: blur(14px) saturate(180%) url(#liquid-glass-distort);
-    backdrop-filter: blur(14px) saturate(180%) url(#liquid-glass-distort);
+    /* Minimal blur + boosted saturation. The SVG filter chain provides
+       lens displacement and chromatic aberration — backdrop-filter's job
+       is just to (a) provide a tiny softening pass and (b) punch the
+       saturation so refracted color reads vivid through the glass. */
+    -webkit-backdrop-filter: blur(1px) saturate(180%) url(#liquid-glass-distort);
+    backdrop-filter: blur(1px) saturate(180%) url(#liquid-glass-distort);
   }
 
   #nav-pill::before {
