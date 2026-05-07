@@ -1,0 +1,31 @@
+---
+---
+
+<div id="mobile-menu">
+  <div class="panel glass">
+    <a href="/#projects" class="mobile-nav-link">Projects</a>
+    <a href="/#skills-tools" class="mobile-nav-link">Skills & Tools</a>
+    <a href="/#contact" class="mobile-nav-link">Contact</a>
+  </div>
+</div>
+
+<script>
+  const menuButton = document.getElementById('hamburger-button');
+  const mobileMenu = document.getElementById('mobile-menu');
+
+  const setOpen = (open: boolean) => {
+    if (!menuButton || !mobileMenu) return;
+    mobileMenu.classList.toggle('show', open);
+    menuButton.setAttribute('aria-expanded', String(open));
+    menuButton.classList.toggle('open', open);
+  };
+
+  menuButton?.addEventListener('click', () => {
+    const open = mobileMenu?.classList.contains('show') ?? false;
+    setOpen(!open);
+  });
+
+  document.querySelectorAll<HTMLAnchorElement>('#mobile-menu .mobile-nav-link').forEach((link) => {
+    link.addEventListener('click', () => setOpen(false));
+  });
+</script>
