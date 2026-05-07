@@ -26,13 +26,13 @@ const isDev = import.meta.env.DEV;
     <feGaussianBlur in="rawMap" stdDeviation="0.6" result="map" />
 
     <feDisplacementMap color-interpolation-filters="sRGB"
-                       in="SourceGraphic" in2="map" scale="20"
+                       in="SourceGraphic" in2="map" scale="10"
                        xChannelSelector="R" yChannelSelector="G" result="dispR" />
     <feDisplacementMap color-interpolation-filters="sRGB"
-                       in="SourceGraphic" in2="map" scale="22"
+                       in="SourceGraphic" in2="map" scale="12"
                        xChannelSelector="R" yChannelSelector="G" result="dispG" />
     <feDisplacementMap color-interpolation-filters="sRGB"
-                       in="SourceGraphic" in2="map" scale="24"
+                       in="SourceGraphic" in2="map" scale="14"
                        xChannelSelector="R" yChannelSelector="G" result="dispB" />
 
     <feColorMatrix in="dispR" type="matrix" result="rOnly" values="
@@ -181,7 +181,7 @@ const isDev = import.meta.env.DEV;
         <label data-mode="simple">
           <span>Refraction Level <output data-out="refractionLevel">1.00</output></span>
           <input type="range" min="0" max="2" step="0.05" value="1.00" data-tune="refractionLevel" />
-          <small class="nav-tuner__hint">How strongly the lens bends light. 1 = stock; 0 = no bend; values above ~1.5 may enter the inversion regime (flipped ghost text inside the pill). Use Advanced for full control.</small>
+          <small class="nav-tuner__hint">How strongly the lens bends light. 1 = stock (Apple-subtle); 0 = no bend; 2 = exaggerated. Inversion-safe across the whole slider range at the current scales — push individual chromatic scales high in Advanced to trigger inversion intentionally.</small>
         </label>
         <label data-mode="simple">
           <span>Chromatic Spread <output data-out="chromaticSpread">2</output></span>
@@ -221,18 +221,18 @@ const isDev = import.meta.env.DEV;
           <small class="nav-tuner__hint">Where the bending happens. High = sharp rim, mirror-flat middle. Low = soft bowl that bends light all over.</small>
         </label>
         <label data-mode="advanced">
-          <span>Chromatic R scale <output data-out="scaleR">20</output></span>
-          <input type="range" min="0" max="60" step="1" value="20" data-tune="scaleR" />
+          <span>Chromatic R scale <output data-out="scaleR">10</output></span>
+          <input type="range" min="0" max="60" step="1" value="10" data-tune="scaleR" />
           <small class="nav-tuner__hint">How far red light is pulled at the rim.</small>
         </label>
         <label data-mode="advanced">
-          <span>Chromatic G scale <output data-out="scaleG">22</output></span>
-          <input type="range" min="0" max="60" step="1" value="22" data-tune="scaleG" />
+          <span>Chromatic G scale <output data-out="scaleG">12</output></span>
+          <input type="range" min="0" max="60" step="1" value="12" data-tune="scaleG" />
           <small class="nav-tuner__hint">How far green light is pulled at the rim.</small>
         </label>
         <label data-mode="advanced">
-          <span>Chromatic B scale <output data-out="scaleB">24</output></span>
-          <input type="range" min="0" max="60" step="1" value="24" data-tune="scaleB" />
+          <span>Chromatic B scale <output data-out="scaleB">14</output></span>
+          <input type="range" min="0" max="60" step="1" value="14" data-tune="scaleB" />
           <small class="nav-tuner__hint">How far blue light is pulled. Mismatch R/G/B → rainbow halo; match → clean lens.</small>
         </label>
         <label data-mode="advanced">
@@ -402,8 +402,10 @@ const isDev = import.meta.env.DEV;
       (function () {
         // Base chromatic model — Refraction Level (simplified) scales BASE_CENTER,
         // Chromatic Spread (simplified) is the ±offset of R and B from the center.
-        // Defaults: center=22, spread=2 → 20/22/24 (user-tuned visual sweet spot).
-        const BASE_CENTER = 22;
+        // Defaults: center=12, spread=2 → 10/12/14 (Apple-stock subtle: ~6px rim
+        // displacement on the 64px pill, well below the ~32 inversion threshold
+        // across the full 0–2 slider range).
+        const BASE_CENTER = 12;
 
         function setup() {
           const panel = document.getElementById('nav-tuner-panel');
@@ -424,9 +426,9 @@ const isDev = import.meta.env.DEV;
           const defaults = {
             // Advanced underlying state
             clamp: 0.97,
-            scaleR: 20,
-            scaleG: 22,
-            scaleB: 24,
+            scaleR: 10,
+            scaleG: 12,
+            scaleB: 14,
             mapBlur: 1.4,
             saturate: 125,
             // Both-mode state
