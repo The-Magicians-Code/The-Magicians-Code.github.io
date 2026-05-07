@@ -7,52 +7,34 @@ const isDev = import.meta.env.DEV;
 
 <svg class="liquid-glass-defs" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" color-interpolation-filters="sRGB">
   <!--
-    Liquid glass with chromatic aberration. Per Frontend Masters' "Liquid
-    Glass on the Web" pattern (Chromium-only — Safari/Firefox don't chain
-    SVG filters into backdrop-filter and fall back to plain blur+saturate
-    from .glass).
+    Single-pass liquid glass, ported from the Option E mechanism of
+    themagicianscode.dev/prototypes/liquid-glass-pill: one
+    feDisplacementMap (driven by the canvas-generated 2D displacement
+    map) followed by a heavy feColorMatrix saturate to punch any
+    refracted color through the now-transparent glass. No explicit
+    chromatic-aberration chain — the rainbow fringe at the rim is
+    replaced by amplified color saturation across the displaced
+    backdrop. Chromium-only (Safari/Firefox don't chain SVG filters
+    into backdrop-filter; they fall back to plain blur+saturate).
 
     Pipeline:
-      1. feImage loads the runtime-generated lens displacement map.
-      2. feGaussianBlur smooths the map further to kill stepping artifacts.
-      3. Three feDisplacementMap passes shift R, G, B at slightly different
-         scales — gives chromatic aberration at the rim (rainbow fringe).
-      4. feColorMatrix isolates each channel so we don't double-count.
-      5. feBlend mode="lighten" recombines (per-channel max).
+      1. feImage loads the runtime-generated 2D lens displacement map.
+      2. feGaussianBlur smooths the map to kill stepping artifacts.
+      3. feDisplacementMap warps the backdrop in 2D (R = dx, G = dy).
+      4. feColorMatrix type=saturate punches the color of the result.
   -->
   <filter id="liquid-glass-distort" color-interpolation-filters="sRGB"
           x="0" y="0" width="100%" height="100%">
     <feImage id="liquid-glass-map" href="" preserveAspectRatio="none" result="rawMap" />
     <feGaussianBlur in="rawMap" stdDeviation="0.6" result="map" />
 
-    <feDisplacementMap color-interpolation-filters="sRGB"
-                       in="SourceGraphic" in2="map" scale="9"
-                       xChannelSelector="R" yChannelSelector="G" result="dispR" />
-    <feDisplacementMap color-interpolation-filters="sRGB"
+    <feDisplacementMap id="liquid-glass-disp"
+                       color-interpolation-filters="sRGB"
                        in="SourceGraphic" in2="map" scale="12"
-                       xChannelSelector="R" yChannelSelector="G" result="dispG" />
-    <feDisplacementMap color-interpolation-filters="sRGB"
-                       in="SourceGraphic" in2="map" scale="15"
-                       xChannelSelector="R" yChannelSelector="G" result="dispB" />
+                       xChannelSelector="R" yChannelSelector="G" result="displaced" />
 
-    <feColorMatrix in="dispR" type="matrix" result="rOnly" values="
-      1 0 0 0 0
-      0 0 0 0 0
-      0 0 0 0 0
-      0 0 0 1 0" />
-    <feColorMatrix in="dispG" type="matrix" result="gOnly" values="
-      0 0 0 0 0
-      0 1 0 0 0
-      0 0 0 0 0
-      0 0 0 1 0" />
-    <feColorMatrix in="dispB" type="matrix" result="bOnly" values="
-      0 0 0 0 0
-      0 0 0 0 0
-      0 0 1 0 0
-      0 0 0 1 0" />
-
-    <feBlend in="rOnly" in2="gOnly" mode="lighten" result="rg" />
-    <feBlend in="rg" in2="bOnly" mode="lighten" />
+    <feColorMatrix id="liquid-glass-saturate"
+                   in="displaced" type="saturate" values="4" />
   </filter>
 </svg>
 
@@ -249,12 +231,12 @@ const isDev = import.meta.env.DEV;
         <label data-mode="simple">
           <span>Refraction Level <output data-out="refractionLevel">1.00</output></span>
           <input type="range" min="0" max="2" step="0.05" value="1.00" data-tune="refractionLevel" />
-          <small class="nav-tuner__hint">How strongly the lens bends light. 1 = stock (Apple-subtle); 0 = no bend; 2 = exaggerated. Inversion-safe across the whole slider range at the current scales — push individual chromatic scales high in Advanced to trigger inversion intentionally.</small>
+          <small class="nav-tuner__hint">How strongly the lens bends light. 1 = stock (Apple-subtle); 0 = no bend; 2 = exaggerated. Inversion-safe across the whole slider range at the current scale.</small>
         </label>
-        <label data-mode="simple">
-          <span>Chromatic Spread <output data-out="chromaticSpread">3</output></span>
-          <input type="range" min="0" max="10" step="1" value="3" data-tune="chromaticSpread" />
-          <small class="nav-tuner__hint">Width of the rainbow halo at the rim. 0 = clean lens, no fringe. Higher = stronger color fringing. Independent of overall strength.</small>
+        <label data-mode="both">
+          <span>Color Punch <output data-out="internalSat">4</output></span>
+          <input type="range" min="0" max="10" step="0.25" value="4" data-tune="internalSat" />
+          <small class="nav-tuner__hint">How vivid the refracted backdrop reads through the glass. 0 = grayscale (no color); 1 = unchanged; 4 = strong (Apple-style); higher = oversaturated. Applied as feColorMatrix saturate inside the filter, the prototype's actual mechanism.</small>
         </label>
 
         <label data-mode="both">
@@ -289,19 +271,9 @@ const isDev = import.meta.env.DEV;
           <small class="nav-tuner__hint">Where the bending happens. High = sharp rim, mirror-flat middle. Low = soft bowl that bends light all over.</small>
         </label>
         <label data-mode="advanced">
-          <span>Chromatic R scale <output data-out="scaleR">9</output></span>
-          <input type="range" min="0" max="60" step="1" value="9" data-tune="scaleR" />
-          <small class="nav-tuner__hint">How far red light is pulled at the rim.</small>
-        </label>
-        <label data-mode="advanced">
-          <span>Chromatic G scale <output data-out="scaleG">12</output></span>
-          <input type="range" min="0" max="60" step="1" value="12" data-tune="scaleG" />
-          <small class="nav-tuner__hint">How far green light is pulled at the rim.</small>
-        </label>
-        <label data-mode="advanced">
-          <span>Chromatic B scale <output data-out="scaleB">15</output></span>
-          <input type="range" min="0" max="60" step="1" value="15" data-tune="scaleB" />
-          <small class="nav-tuner__hint">How far blue light is pulled. Mismatch R/G/B → rainbow halo; match → clean lens.</small>
+          <span>Refraction Scale <output data-out="scale">12</output></span>
+          <input type="range" min="0" max="60" step="1" value="12" data-tune="scale" />
+          <small class="nav-tuner__hint">Pixel displacement at the rim — the absolute scale on feDisplacementMap. Refraction Level multiplies BASE_CENTER (=12) to derive this; tweak directly to override.</small>
         </label>
         <label data-mode="advanced">
           <span>Map blur (stdDeviation) <output data-out="mapBlur">1.4</output></span>
@@ -309,9 +281,9 @@ const isDev = import.meta.env.DEV;
           <small class="nav-tuner__hint">Smooths the lens curve so the rim doesn't show stair-steps. A little goes a long way.</small>
         </label>
         <label data-mode="advanced">
-          <span>Backdrop saturate <output data-out="saturate">300</output>%</span>
-          <input type="range" min="50" max="500" step="5" value="300" data-tune="saturate" />
-          <small class="nav-tuner__hint">Color punch on whatever's behind the pill. 100% = unchanged; higher = punchier.</small>
+          <span>Backdrop saturate (pre-filter) <output data-out="saturate">100</output>%</span>
+          <input type="range" min="50" max="500" step="5" value="100" data-tune="saturate" />
+          <small class="nav-tuner__hint">Saturation applied by CSS backdrop-filter <em>before</em> the SVG sees the backdrop. Stacks multiplicatively with Color Punch. 100% = no extra punch.</small>
         </label>
 
         <textarea id="nav-tuner-output" readonly rows="10"></textarea>
@@ -479,9 +451,8 @@ const isDev = import.meta.env.DEV;
           const panel = document.getElementById('nav-tuner-panel');
           if (!panel) return;
 
-          const dispR = document.querySelector('feDisplacementMap[result="dispR"]');
-          const dispG = document.querySelector('feDisplacementMap[result="dispG"]');
-          const dispB = document.querySelector('feDisplacementMap[result="dispB"]');
+          const disp = document.getElementById('liquid-glass-disp');
+          const satMatrix = document.getElementById('liquid-glass-saturate');
           const mapBlurEl = document.querySelector('#liquid-glass-distort feGaussianBlur');
           const progLayer = document.querySelector('.nav-progressive-blur');
 
@@ -494,21 +465,18 @@ const isDev = import.meta.env.DEV;
           const defaults = {
             // Advanced underlying state
             clamp: 0.97,
-            scaleR: 9,
-            scaleG: 12,
-            scaleB: 15,
+            scale: 12,
             mapBlur: 1.4,
-            saturate: 300,
+            saturate: 100,            // CSS backdrop-filter saturate (pre-SVG)
             // Both-mode state
             sheen: 0.30,
             specularSat: 2.5,
             backdropBlur: 7,
             progBlur: 0.5,
             glassBg: 0.06,
-            // Simplified-mode derived view: center = BASE_CENTER * refractionLevel,
-            // R/B = center ∓ chromaticSpread.
+            internalSat: 4,           // feColorMatrix saturate (post-displacement)
+            // Simplified-mode derived view: scale = BASE_CENTER * refractionLevel
             refractionLevel: 1.00,
-            chromaticSpread: 3,
           };
           const state = { ...defaults };
 
@@ -519,31 +487,27 @@ const isDev = import.meta.env.DEV;
             }
             if (
               key === 'mapBlur' || key === 'sheen' || key === 'glassBg' ||
-              key === 'refractionLevel' || key === 'specularSat'
+              key === 'refractionLevel' || key === 'specularSat' ||
+              key === 'internalSat'
             ) {
               return v.toFixed(2);
             }
             return String(v);
           }
 
-          function applySimpleToScales() {
-            const center = Math.round(BASE_CENTER * state.refractionLevel);
-            state.scaleG = center;
-            state.scaleR = Math.max(0, center - state.chromaticSpread);
-            state.scaleB = center + state.chromaticSpread;
+          function applySimpleToScale() {
+            state.scale = Math.round(BASE_CENTER * state.refractionLevel);
           }
 
-          function deriveSimpleFromScales() {
-            state.refractionLevel = Math.max(0, Math.min(2, state.scaleG / BASE_CENTER));
-            state.chromaticSpread = Math.max(0, Math.min(10, Math.round((state.scaleB - state.scaleR) / 2)));
+          function deriveSimpleFromScale() {
+            state.refractionLevel = Math.max(0, Math.min(2, state.scale / BASE_CENTER));
           }
 
           function apply() {
-            // SVG primitives: chromatic scales + map blur
-            dispR.setAttribute('scale', state.scaleR);
-            dispG.setAttribute('scale', state.scaleG);
-            dispB.setAttribute('scale', state.scaleB);
+            // SVG primitives: single displacement scale + map blur + internal saturate
+            disp.setAttribute('scale', state.scale);
             mapBlurEl.setAttribute('stdDeviation', state.mapBlur);
+            satMatrix.setAttribute('values', state.internalSat);
 
             // Progressive-blur strip — inline backdrop-filter
             if (progLayer) {
@@ -592,7 +556,8 @@ const isDev = import.meta.env.DEV;
           function formatValues(s) {
             return [
               `SQUIRCLE_CLAMP=${fmtDisplay('clamp', s.clamp)}`,
-              `ChromaticScales=${s.scaleR},${s.scaleG},${s.scaleB}`,
+              `RefractionScale=${s.scale}`,
+              `InternalSaturate=${fmtDisplay('internalSat', s.internalSat)}`,
               `MapBlur=${s.mapBlur}`,
               `BackdropBlur=${s.backdropBlur}px`,
               `BackdropSaturate=${s.saturate}%`,
@@ -633,17 +598,16 @@ const isDev = import.meta.env.DEV;
 
               if (key === 'clamp') scheduleRegen();
 
-              // Refraction Level / Chromatic Spread (simplified) → derive R/G/B scales
-              if (key === 'refractionLevel' || key === 'chromaticSpread') {
-                applySimpleToScales();
-                ['scaleR', 'scaleG', 'scaleB'].forEach(syncControl);
+              // Refraction Level (simplified) → derive single scale
+              if (key === 'refractionLevel') {
+                applySimpleToScale();
+                syncControl('scale');
               }
-              // R/G/B (advanced) → derive both simplified controls so toggling
-              // back to Simplified shows values consistent with current state.
-              if (key === 'scaleR' || key === 'scaleG' || key === 'scaleB') {
-                deriveSimpleFromScales();
+              // Refraction Scale (advanced) → derive Refraction Level so
+              // toggling to Simplified shows a value consistent with state.
+              if (key === 'scale') {
+                deriveSimpleFromScale();
                 syncControl('refractionLevel');
-                syncControl('chromaticSpread');
               }
 
               apply();
@@ -661,12 +625,11 @@ const isDev = import.meta.env.DEV;
                 b.classList.toggle('active', active);
                 b.setAttribute('aria-selected', String(active));
               });
-              // Re-derive simplified controls when entering simple, in case
-              // advanced edits drifted them from the center+spread model.
+              // Re-derive Refraction Level when entering Simplified, in case
+              // advanced edits drifted scale away from BASE_CENTER × level.
               if (mode === 'simple') {
-                deriveSimpleFromScales();
+                deriveSimpleFromScale();
                 syncControl('refractionLevel');
-                syncControl('chromaticSpread');
               }
             });
           });
