@@ -1,0 +1,38 @@
+---
+import { Icon } from 'astro-icon/components';
+import { getCollection } from 'astro:content';
+import ProjectCard from './ProjectCard.astro';
+
+const projects = (await getCollection('projects'))
+  .filter((p) => !p.data.draft)
+  .sort((a, b) => a.data.order - b.data.order);
+---
+
+<section id="projects" class="section-fade-in" style="--delay: 0.2s">
+  <h2 class="text-2xl md:text-3xl font-semibold mb-6 flex items-center dark:text-white">
+    <Icon name="lucide:folder-git-2" class="inline-block w-6 h-6 mr-3 text-blue-600 dark:text-blue-400" aria-hidden="true" />
+    Projects
+  </h2>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    {projects.map((project) => (
+      <ProjectCard
+        title={project.data.title}
+        description={project.data.description}
+        repoUrl={project.data.repoUrl}
+        slug={project.id}
+      />
+    ))}
+    <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-300 md:col-span-2 text-center dark:bg-neutral-800 dark:border-neutral-700">
+      <a
+        href="https://github.com/The-Magicians-Code/"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="text-gray-700 hover:text-black dark:text-neutral-300 dark:hover:text-white font-medium inline-flex items-center"
+        aria-label="View all projects on GitHub"
+      >
+        <Icon name="lucide:github" class="inline-block w-5 h-5 mr-2" aria-hidden="true" />
+        See all projects on GitHub
+      </a>
+    </div>
+  </div>
+</section>
