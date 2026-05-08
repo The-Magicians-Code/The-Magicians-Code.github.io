@@ -266,13 +266,17 @@ const isDev = import.meta.env.DEV;
 
     <script is:inline>
       (function () {
-        // CSS variable inputs the IIFE reads via getComputedStyle; mutating
-        // these from the tuner + dispatching navlens:reinit re-runs init().
+        // CSS vars the tuner writes to the pill element; the module reads
+        // them via getComputedStyle and window.__lg.refresh(pill) re-runs the filter.
         const CSS_VAR_BY_KEY = {
           thickness: '--lg-thickness',
           bezel: '--lg-bezel',
           ior: '--lg-ior',
           uniformShift: '--lg-uniform-shift',
+          internalSat: '--lg-svg-saturate',
+          specStrength: '--lg-spec-alpha',
+          backdropBlur: '--lg-blur',
+          saturate: '--lg-saturate',
         };
         const REINIT_KEYS = new Set(Object.keys(CSS_VAR_BY_KEY));
 
@@ -283,7 +287,8 @@ const isDev = import.meta.env.DEV;
           reinitScheduled = true;
           requestAnimationFrame(() => {
             reinitScheduled = false;
-            window.dispatchEvent(new Event('navlens:reinit'));
+            const pill = document.getElementById('nav-pill');
+            if (pill) window.__lg?.refresh?.(pill);
           });
         }
 
@@ -291,8 +296,6 @@ const isDev = import.meta.env.DEV;
           const panel = document.getElementById('nav-tuner-panel');
           if (!panel) return;
 
-          const satMatrix = document.getElementById('liquid-glass-saturate');
-          const specAlpha = document.getElementById('liquid-glass-spec-alpha');
           const progLayer = document.querySelector('.nav-progressive-blur');
 
           const overrideStyle = document.createElement('style');
@@ -324,10 +327,6 @@ const isDev = import.meta.env.DEV;
           }
 
           function apply() {
-            // SVG attributes — direct
-            satMatrix.setAttribute('values', String(state.internalSat));
-            specAlpha.setAttribute('slope', String(state.specStrength));
-
             // Progressive-blur strip
             if (progLayer) {
               progLayer.style.webkitBackdropFilter = `blur(${state.progBlur}px)`;
@@ -339,8 +338,6 @@ const isDev = import.meta.env.DEV;
               @media (min-width: 641px) {
                 #nav-pill {
                   background: rgba(255, 255, 255, ${state.glassBg}) !important;
-                  -webkit-backdrop-filter: blur(${state.backdropBlur}px) saturate(${state.saturate}%) url(#liquid-glass-distort) !important;
-                  backdrop-filter: blur(${state.backdropBlur}px) saturate(${state.saturate}%) url(#liquid-glass-distort) !important;
                 }
                 html.dark #nav-pill {
                   background: rgba(23, 23, 23, ${state.glassBg}) !important;
@@ -376,9 +373,10 @@ const isDev = import.meta.env.DEV;
           // Push the current refraction-physics state into the CSS variables
           // the IIFE reads. Used at first paint and on Reset.
           function pushCssVars() {
-            const root = document.documentElement;
+            const pill = document.getElementById('nav-pill');
+            if (!pill) return;
             Object.keys(CSS_VAR_BY_KEY).forEach((key) => {
-              root.style.setProperty(CSS_VAR_BY_KEY[key], String(state[key]));
+              pill.style.setProperty(CSS_VAR_BY_KEY[key], String(state[key]));
             });
           }
 
@@ -391,7 +389,8 @@ const isDev = import.meta.env.DEV;
               if (out) out.textContent = fmtDisplay(key, v);
 
               if (REINIT_KEYS.has(key)) {
-                document.documentElement.style.setProperty(CSS_VAR_BY_KEY[key], String(v));
+                const pill = document.getElementById('nav-pill');
+                if (pill) pill.style.setProperty(CSS_VAR_BY_KEY[key], String(v));
                 scheduleReinit();
               }
 
@@ -440,6 +439,7 @@ const isDev = import.meta.env.DEV;
             ev.target.textContent = panel.classList.contains('collapsed') ? '+' : '−';
           });
 
+          pushCssVars();
           apply();
         }
 
