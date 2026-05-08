@@ -1,0 +1,32 @@
+/* Liquid-glass module — extracted from src/components/Nav.astro.
+   Spec: docs/superpowers/specs/2026-05-08-liquid-glass-module-design.md
+   Technique: kube.io/blog/liquid-glass-css-svg + Atlas Pup pattern. */
+
+:root {
+  --lg-thickness: 80;
+  --lg-bezel: 20;
+  --lg-ior: 1.5;
+  --lg-uniform-shift: -4.5;
+  --lg-blur: 4;
+  --lg-saturate: 100;
+  --lg-svg-saturate: 4;
+  --lg-spec-alpha: 0.4;
+}
+
+/* Always-on fallback identical to .glass. Shown on Safari/Firefox without
+   SVG-backdrop support, below 641px (without data-lg-mobile), and during the
+   brief window between HTML parse and module init. The runtime overrides this
+   via inline backdrop-filter on each upgraded element. */
+.liquid-glass {
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  backdrop-filter: blur(18px) saturate(140%);
+}
+
+/* Hidden defs container the runtime appends per-instance <filter> chains to. */
+.liquid-glass-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
