@@ -30,6 +30,15 @@ body {
   --glow-fade-opaque: rgba(255, 255, 255, 1);
   --glow-fade-transparent: rgba(255, 255, 255, 0);
   --glow-alpha: 0.35;
+
+  /* Liquid-glass refraction tunables — read by Nav.astro's IIFE via
+     getComputedStyle. Edit here, not in JS. Unitless because the IIFE
+     parseFloat()s and uses them as plain numbers. Defaults from
+     github.com/The-Magicians-Code/prototypes/liquid-glass-pill. */
+  --lg-thickness: 80;
+  --lg-bezel: 20;
+  --lg-ior: 1.5;
+  --lg-uniform-shift: -4.5;
 }
 
 html.dark {
@@ -94,8 +103,28 @@ html.dark {
   #nav-pill {
     position: relative;
     isolation: isolate;
-    -webkit-backdrop-filter: blur(14px) saturate(180%) url(#liquid-glass-distort);
-    backdrop-filter: blur(14px) saturate(180%) url(#liquid-glass-distort);
+    /* Pill identity ported from themagicianscode.dev/prototypes/liquid-glass-pill:
+       very transparent panel, soft inner glow (instead of hard 1px rim
+       inset), and a strong lifted drop shadow. Backdrop blur stays
+       outside the SVG filter (vs. prototype's internal feGaussianBlur);
+       saturation is pumped hard so refracted colors read vivid. */
+    background: rgba(255, 255, 255, 0.06);
+    /* Saturation now lives inside the SVG filter (feColorMatrix saturate=4)
+       per the Option E mechanism. CSS pre-saturate stays at 100% (no-op);
+       the tuner's "Backdrop saturate" slider can still push it for an
+       extra pre-filter punch if desired. */
+    -webkit-backdrop-filter: blur(4px) saturate(100%) url(#liquid-glass-distort);
+    backdrop-filter: blur(4px) saturate(100%) url(#liquid-glass-distort);
+    box-shadow:
+      inset 0 0 12px -3px rgba(255, 255, 255, 0.60),  /* soft inner glow */
+      0 18px 30px -10px rgba(0, 0, 0, 0.35);           /* lifted drop shadow */
+  }
+
+  html.dark #nav-pill {
+    background: rgba(23, 23, 23, 0.06);
+    box-shadow:
+      inset 0 0 12px -3px rgba(255, 255, 255, 0.30),
+      0 18px 30px -10px rgba(0, 0, 0, 0.55);
   }
 
   #nav-pill::before {

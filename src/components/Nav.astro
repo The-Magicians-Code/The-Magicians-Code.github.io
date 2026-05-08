@@ -1,14 +1,295 @@
 ---
 import { Icon } from 'astro-icon/components';
 import ThemeToggle from './ThemeToggle.astro';
+
+const isDev = import.meta.env.DEV;
 ---
 
-<svg class="liquid-glass-defs" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
-  <filter id="liquid-glass-distort" x="-10%" y="-10%" width="120%" height="120%">
-    <feTurbulence type="fractalNoise" baseFrequency="0.018 0.024" numOctaves="2" seed="7" result="noise" />
-    <feDisplacementMap in="SourceGraphic" in2="noise" scale="14" xChannelSelector="R" yChannelSelector="G" />
+<svg class="liquid-glass-defs" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" color-interpolation-filters="sRGB">
+  <!--
+    Liquid-glass filter ported from
+    github.com/The-Magicians-Code/prototypes/liquid-glass-pill.
+    Technique by Chris Feijoo (kube.io/blog/liquid-glass-css-svg);
+    implementation original.
+
+    Pipeline:
+      1. feGaussianBlur softens the SourceGraphic (the backdrop) before
+         the lens warps it — masks sub-pixel artifacts.
+      2. feImage loads the runtime-generated displacement map (Snell's-
+         law refraction profile rasterized to a PNG by the IIFE below).
+      3. feDisplacementMap warps the blurred backdrop. scale set live
+         to the computed maxDisp from the refraction profile.
+      4. feColorMatrix saturate punches refracted color so it reads
+         vivid through the very-transparent panel.
+      5. feImage loads the runtime-generated specular highlight map.
+      6. feComposite operator=in masks the saturated lens output to the
+         shape of the specular highlight (bright rim pixels keep color
+         from the displaced output).
+      7. feComponentTransfer fades the raw specular layer to alpha 0.4
+         so the overlaid highlight doesn't blow out the rim entirely.
+      8-9. Two feBlend passes recombine spec_masked + displaced + spec_faded.
+  -->
+  <filter id="liquid-glass-distort" x="0%" y="0%" width="100%" height="100%" color-interpolation-filters="sRGB">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="1.5" result="blurred_source" />
+    <feImage id="liquid-glass-map" href="" result="disp_map" />
+    <feDisplacementMap id="liquid-glass-disp"
+                       in="blurred_source" in2="disp_map" scale="0"
+                       xChannelSelector="R" yChannelSelector="G" result="displaced" />
+    <feColorMatrix id="liquid-glass-saturate"
+                   in="displaced" type="saturate" values="4" result="displaced_sat" />
+    <feImage id="liquid-glass-spec" href="" result="spec_layer" />
+    <feComposite in="displaced_sat" in2="spec_layer" operator="in" result="spec_masked" />
+    <feComponentTransfer in="spec_layer" result="spec_faded">
+      <feFuncA id="liquid-glass-spec-alpha" type="linear" slope="0.4" />
+    </feComponentTransfer>
+    <feBlend in="spec_masked" in2="displaced" mode="normal" result="with_sat" />
+    <feBlend in="spec_faded" in2="with_sat" mode="normal" />
   </filter>
 </svg>
+
+<script is:inline>
+  // Liquid-glass IIFE — physics + maps ported from
+  // github.com/The-Magicians-Code/prototypes/liquid-glass-pill (pill.js).
+  //
+  // Algorithm overview:
+  //   - heightAt(t):              convex squircle bezel surface profile
+  //   - refractRay(nx,ny,ior):    Snell's law for a downward incident ray
+  //   - buildRefractionProfile(): traces refracted rays at each radial
+  //                               sample → 1D Float64 array of lateral
+  //                               displacements (px) at each bezel position
+  //   - generateDisplacementMap(): rasterizes the profile + uniform-slab
+  //                               shift into an R/G PNG for feDisplacementMap
+  //   - generateSpecularMap():    rasterizes a directional rim-light into
+  //                               a grayscale PNG for the specular feImage
+  //
+  // Tunables read from CSS custom properties on :root via getComputedStyle:
+  //   --lg-thickness, --lg-bezel, --lg-ior, --lg-uniform-shift
+  // The dev tuner mutates these vars and re-runs init().
+  (function () {
+    'use strict';
+
+    function heightAt(t) {
+      return Math.pow(1 - Math.pow(1 - t, 4), 0.25);
+    }
+
+    function refractRay(nx, ny, ior) {
+      const eta = 1 / ior;
+      const dot = ny;
+      const k = 1 - eta * eta * (1 - dot * dot);
+      if (k < 0) return null;
+      const sq = Math.sqrt(k);
+      return [-(eta * dot + sq) * nx, eta - (eta * dot + sq) * ny];
+    }
+
+    function buildRefractionProfile(thickness, bezelWidth, ior, samples) {
+      samples = samples || 128;
+      const profile = new Float64Array(samples);
+      for (let i = 0; i < samples; i++) {
+        const t = i / samples;
+        const y = heightAt(t);
+        const dt = t < 1 ? 0.0001 : -0.0001;
+        const y2 = heightAt(t + dt);
+        const deriv = (y2 - y) / dt;
+        const mag = Math.sqrt(deriv * deriv + 1);
+        const nx = -deriv / mag;
+        const ny = -1 / mag;
+        const ref = refractRay(nx, ny, ior);
+        if (!ref) { profile[i] = 0; continue; }
+        profile[i] = ref[0] * ((y * bezelWidth + thickness) / ref[1]);
+      }
+      return profile;
+    }
+
+    function generateDisplacementMap(w, h, radius, bezelWidth, profile, maxDisp, uniformShiftPx) {
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      const img = ctx.createImageData(w, h);
+      const data = img.data;
+
+      const r = radius;
+      const rSq = r * r;
+      const r1Sq = (r + 1) * (r + 1);
+      const rBSq = Math.max(r - bezelWidth, 0) * Math.max(r - bezelWidth, 0);
+      const wB = w - r * 2;
+      const hB = h - r * 2;
+      const samples = profile.length;
+      const uniformR = -((uniformShiftPx || 0) / maxDisp) * 255;
+
+      // Phase 1 — uniform slab fill inside pill, neutral outside
+      for (let py = 0; py < h; py++) {
+        for (let px = 0; px < w; px++) {
+          const cx = px + 0.5, cy = py + 0.5;
+          const x = cx < r ? cx - r : (cx >= w - r ? cx - r - wB : 0);
+          const y = cy < r ? cy - r : (cy >= h - r ? cy - r - hB : 0);
+          const dSq = x * x + y * y;
+          const idx = (py * w + px) * 4;
+          const insidePill = dSq <= rSq;
+          data[idx] = 128 + (insidePill ? Math.round(uniformR) : 0);
+          data[idx + 1] = 128;
+          data[idx + 2] = 0;
+          data[idx + 3] = 255;
+        }
+      }
+
+      // Phase 2 — bezel rim curl combined with the uniform shift
+      for (let py = 0; py < h; py++) {
+        for (let px = 0; px < w; px++) {
+          const cx = px + 0.5, cy = py + 0.5;
+          const x = cx < r ? cx - r : (cx >= w - r ? cx - r - wB : 0);
+          const y = cy < r ? cy - r : (cy >= h - r ? cy - r - hB : 0);
+          const dSq = x * x + y * y;
+          if (dSq > r1Sq || dSq < rBSq) continue;
+          const dist = Math.sqrt(dSq);
+          if (dist === 0) continue;
+          const fromSide = r - dist;
+          const op = dSq < rSq ? 1 : 1 - (dist - Math.sqrt(rSq)) / (Math.sqrt(r1Sq) - Math.sqrt(rSq));
+          if (op <= 0) continue;
+          const t = Math.max(0, Math.min(1, fromSide / bezelWidth));
+          const sampleIdx = Math.min((t * samples) | 0, samples - 1);
+          const disp = profile[sampleIdx] || 0;
+          const dirX = x / dist;
+          const dirY = y / dist;
+          const dX = (-dirX * disp) / maxDisp;
+          const dY = (-dirY * disp) / maxDisp;
+          const baseR = 128 + uniformR * (dSq <= rSq ? 1 : op);
+          const idx = (py * w + px) * 4;
+          data[idx] = Math.max(0, Math.min(255, Math.round(baseR + dX * 127 * op)));
+          data[idx + 1] = Math.max(0, Math.min(255, Math.round(128 + dY * 127 * op)));
+        }
+      }
+
+      ctx.putImageData(img, 0, 0);
+      return canvas.toDataURL();
+    }
+
+    function generateSpecularMap(w, h, radius, bezelWidth, angle) {
+      angle = angle != null ? angle : Math.PI / 2;
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      const img = ctx.createImageData(w, h);
+      const data = img.data;
+      data.fill(0);
+
+      const r = radius;
+      const rSq = r * r;
+      const r1Sq = (r + 1) * (r + 1);
+      const rBSq = Math.max(r - bezelWidth, 0) * Math.max(r - bezelWidth, 0);
+      const wB = w - r * 2;
+      const hB = h - r * 2;
+      const lightX = Math.cos(angle);
+      const lightY = Math.sin(angle);
+
+      for (let py = 0; py < h; py++) {
+        for (let px = 0; px < w; px++) {
+          const cx = px + 0.5, cy = py + 0.5;
+          const x = cx < r ? cx - r : (cx >= w - r ? cx - r - wB : 0);
+          const y = cy < r ? cy - r : (cy >= h - r ? cy - r - hB : 0);
+          const dSq = x * x + y * y;
+          if (dSq > r1Sq || dSq < rBSq) continue;
+          const dist = Math.sqrt(dSq);
+          if (dist === 0) continue;
+          const fromSide = r - dist;
+          const op = dSq < rSq ? 1 : 1 - (dist - Math.sqrt(rSq)) / (Math.sqrt(r1Sq) - Math.sqrt(rSq));
+          if (op <= 0) continue;
+          const dirX = x / dist;
+          const dirY = -y / dist;
+          const dot = Math.abs(dirX * lightX + dirY * lightY);
+          const edge = Math.sqrt(Math.max(0, 1 - (1 - fromSide) * (1 - fromSide)));
+          const coeff = dot * edge;
+          const col = (255 * coeff) | 0;
+          const alpha = (255 * coeff * coeff * op) | 0;
+          const idx = (py * w + px) * 4;
+          data[idx] = col;
+          data[idx + 1] = col;
+          data[idx + 2] = col;
+          data[idx + 3] = alpha;
+        }
+      }
+      ctx.putImageData(img, 0, 0);
+      return canvas.toDataURL();
+    }
+
+    function readCssNumber(el, prop, fallback) {
+      const raw = getComputedStyle(el).getPropertyValue(prop).trim();
+      const v = parseFloat(raw);
+      return Number.isFinite(v) ? v : fallback;
+    }
+
+    function init() {
+      const pill = document.getElementById('nav-pill');
+      if (!pill) return;
+      try {
+        const rect = pill.getBoundingClientRect();
+        const w = Math.round(rect.width);
+        const h = Math.round(rect.height);
+        if (w <= 0 || h <= 0) return;
+        const radius = Math.min(parseFloat(getComputedStyle(pill).borderRadius) || h / 2, h / 2);
+
+        const root = document.documentElement;
+        const thickness = readCssNumber(root, '--lg-thickness', 80);
+        const bezelWidth = readCssNumber(root, '--lg-bezel', 20);
+        const ior = readCssNumber(root, '--lg-ior', 1.5);
+        const uniformShift = readCssNumber(root, '--lg-uniform-shift', 0);
+        const samples = 128;
+
+        const clampedBezel = Math.min(bezelWidth, radius - 1, Math.min(w, h) / 2 - 1);
+        const profile = buildRefractionProfile(thickness, clampedBezel, ior, samples);
+        const maxRimDisp = Math.max.apply(null, Array.from(profile).map(Math.abs)) || 1;
+        const maxDisp = (maxRimDisp + 2 * Math.abs(uniformShift)) || 1;
+
+        const dispUrl = generateDisplacementMap(w, h, radius, clampedBezel, profile, maxDisp, uniformShift);
+        const dispEl = document.getElementById('liquid-glass-map');
+        if (dispEl) {
+          dispEl.setAttribute('href', dispUrl);
+          dispEl.setAttributeNS('http://www.w3.org/1999/xlink', 'href', dispUrl);
+          dispEl.setAttribute('width', String(w));
+          dispEl.setAttribute('height', String(h));
+        }
+        const dispMapEl = document.getElementById('liquid-glass-disp');
+        if (dispMapEl) dispMapEl.setAttribute('scale', String(maxDisp));
+
+        const specBezel = clampedBezel * 2.5;
+        const specUrl = generateSpecularMap(w, h, radius, specBezel, Math.PI / 2);
+        const specEl = document.getElementById('liquid-glass-spec');
+        if (specEl) {
+          specEl.setAttribute('href', specUrl);
+          specEl.setAttributeNS('http://www.w3.org/1999/xlink', 'href', specUrl);
+          specEl.setAttribute('width', String(w));
+          specEl.setAttribute('height', String(h));
+        }
+
+        window.__lgPill = { heightAt, refractRay, buildRefractionProfile, generateDisplacementMap, generateSpecularMap, init };
+      } catch (err) {
+        console.warn('liquid-glass-pill: filter generation failed; frosted-glass fallback remains active.', err);
+      }
+    }
+
+    let resizeTimer = null;
+    let resizeObserver;
+    function observePill() {
+      const pill = document.getElementById('nav-pill');
+      if (!pill || resizeObserver) return;
+      resizeObserver = new ResizeObserver(() => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(init, 100);
+      });
+      resizeObserver.observe(pill);
+    }
+
+    function start() { init(); observePill(); }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', start);
+    } else {
+      start();
+    }
+
+    // Dev tuner hook — re-init when CSS variable inputs change.
+    window.addEventListener('navlens:reinit', init);
+  })();
+</script>
 
 <nav id="site-nav">
   <div class="nav-shell max-w-4xl mx-auto px-6 md:px-10">
@@ -49,3 +330,411 @@ import ThemeToggle from './ThemeToggle.astro';
     </div>
   </div>
 </nav>
+
+{isDev && (
+  <Fragment>
+    <div class="nav-progressive-blur" aria-hidden="true"></div>
+
+    <aside id="nav-tuner-panel" class="nav-tuner mode-simple" aria-label="Liquid glass tuner">
+      <header class="nav-tuner__head">
+        <span>Nav glass tuner</span>
+        <button type="button" id="nav-tuner-toggle" aria-label="Collapse tuner">−</button>
+      </header>
+      <div class="nav-tuner__body">
+        <div class="nav-tuner__mode-toggle" role="tablist" aria-label="Tuner mode">
+          <button type="button" role="tab" class="active" data-mode="simple" aria-selected="true">Simplified</button>
+          <button type="button" role="tab" data-mode="advanced" aria-selected="false">Advanced</button>
+        </div>
+
+        <label data-mode="both">
+          <span>Glass Thickness <output data-out="thickness">80</output></span>
+          <input type="range" min="10" max="200" step="5" value="80" data-tune="thickness" />
+          <small class="nav-tuner__hint">How thick the glass slab is, in px. Bigger = light travels further through the glass = stronger Snell's-law bend at the rim. Drives the --lg-thickness CSS var.</small>
+        </label>
+        <label data-mode="both">
+          <span>Color Punch <output data-out="internalSat">4</output></span>
+          <input type="range" min="0" max="10" step="0.25" value="4" data-tune="internalSat" />
+          <small class="nav-tuner__hint">How vivid the refracted backdrop reads through the glass. 0 = grayscale; 1 = unchanged; 4 = strong (Apple-style). Drives feColorMatrix saturate inside the filter.</small>
+        </label>
+        <label data-mode="both">
+          <span>Specular Strength <output data-out="specStrength">0.4</output></span>
+          <input type="range" min="0" max="1" step="0.05" value="0.4" data-tune="specStrength" />
+          <small class="nav-tuner__hint">Brightness of the SVG-rendered rim highlight. Drives the feFuncA slope on the specular layer. 0 = no highlight, 1 = full strength.</small>
+        </label>
+        <label data-mode="both">
+          <span>Blur Level <output data-out="backdropBlur">4</output>px</span>
+          <input type="range" min="0" max="20" step="0.25" value="4" data-tune="backdropBlur" />
+          <small class="nav-tuner__hint">Frosts the backdrop behind the pill. CSS backdrop-filter blur, applied before the SVG lens.</small>
+        </label>
+        <label data-mode="both">
+          <span>Progressive Blur <output data-out="progBlur">0.5</output>px</span>
+          <input type="range" min="0" max="15" step="0.5" value="0.5" data-tune="progBlur" />
+          <small class="nav-tuner__hint">Gradient blur on the strip above where content scrolls under the nav. Softens the transition into the pill.</small>
+        </label>
+        <label data-mode="both">
+          <span>Glass BG Opacity <output data-out="glassBg">0.06</output></span>
+          <input type="range" min="0" max="0.9" step="0.02" value="0.06" data-tune="glassBg" />
+          <small class="nav-tuner__hint">Tint of the panel itself (sits between the lens and what's behind). Higher = more opaque pill.</small>
+        </label>
+
+        <label data-mode="advanced">
+          <span>Bezel Width <output data-out="bezel">20</output>px</span>
+          <input type="range" min="2" max="50" step="1" value="20" data-tune="bezel" />
+          <small class="nav-tuner__hint">Width of the curved bezel band at the rim. Wider = the rim curl extends further into the body. Drives --lg-bezel.</small>
+        </label>
+        <label data-mode="advanced">
+          <span>IOR <output data-out="ior">1.5</output></span>
+          <input type="range" min="1" max="2.5" step="0.05" value="1.5" data-tune="ior" />
+          <small class="nav-tuner__hint">Refractive index. 1.0 = no refraction (air); 1.5 = standard glass; 2.4 = diamond. Higher = stronger Snell's-law bend. Drives --lg-ior.</small>
+        </label>
+        <label data-mode="advanced">
+          <span>Uniform Shift <output data-out="uniformShift">-4.5</output>px</span>
+          <input type="range" min="-10" max="10" step="0.5" value="-4.5" data-tune="uniformShift" />
+          <small class="nav-tuner__hint">Apple-style tilted-slab refraction across the whole pill, on top of the rim curl. 0 = pure rim curl; ±5–10 = visible directional drift. Drives --lg-uniform-shift.</small>
+        </label>
+        <label data-mode="advanced">
+          <span>Backdrop saturate (pre-filter) <output data-out="saturate">100</output>%</span>
+          <input type="range" min="50" max="500" step="5" value="100" data-tune="saturate" />
+          <small class="nav-tuner__hint">CSS backdrop-filter saturate, applied before the SVG sees the backdrop. Stacks with Color Punch. 100% = no extra punch.</small>
+        </label>
+
+        <textarea id="nav-tuner-output" readonly rows="10"></textarea>
+        <div class="nav-tuner__actions">
+          <button type="button" id="nav-tuner-copy">Copy values</button>
+          <button type="button" id="nav-tuner-reset">Reset</button>
+        </div>
+      </div>
+    </aside>
+
+    <style is:global>
+      .nav-tuner {
+        position: fixed;
+        bottom: 12px;
+        right: 12px;
+        width: 280px;
+        max-height: calc(100vh - 24px);
+        overflow: auto;
+        background: rgba(20, 20, 24, 0.94);
+        color: #e8e8ea;
+        font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.10);
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+        z-index: 9999;
+      }
+      .nav-tuner__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 12px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+        font-weight: 600;
+      }
+      .nav-tuner__head button {
+        background: none;
+        border: none;
+        color: inherit;
+        font-size: 16px;
+        line-height: 1;
+        cursor: pointer;
+        padding: 2px 6px;
+      }
+      .nav-tuner__body {
+        padding: 10px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .nav-tuner.collapsed .nav-tuner__body { display: none; }
+      .nav-tuner label {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+      }
+      .nav-tuner label > span {
+        display: flex;
+        justify-content: space-between;
+        opacity: 0.85;
+      }
+      .nav-tuner output {
+        color: #9be8a3;
+        font-weight: 600;
+      }
+      .nav-tuner input[type="range"] {
+        width: 100%;
+        accent-color: #9be8a3;
+      }
+      .nav-tuner__hint {
+        display: block;
+        font-size: 10.5px;
+        line-height: 1.4;
+        opacity: 0.55;
+        margin-top: 1px;
+      }
+      .nav-tuner textarea {
+        width: 100%;
+        background: rgba(0, 0, 0, 0.45);
+        color: #e8e8ea;
+        border: 1px solid rgba(255, 255, 255, 0.10);
+        border-radius: 5px;
+        padding: 8px;
+        font: 11px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        resize: vertical;
+        margin-top: 4px;
+      }
+      .nav-tuner__actions {
+        display: flex;
+        gap: 8px;
+      }
+      .nav-tuner__actions button {
+        flex: 1;
+        background: #34343a;
+        color: #e8e8ea;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 5px;
+        padding: 6px 10px;
+        font: inherit;
+        cursor: pointer;
+      }
+      .nav-tuner__actions button:hover { background: #44444c; }
+
+      /* Mode toggle pills */
+      .nav-tuner__mode-toggle {
+        display: flex;
+        gap: 4px;
+        padding: 3px;
+        background: rgba(0, 0, 0, 0.35);
+        border-radius: 6px;
+      }
+      .nav-tuner__mode-toggle button {
+        flex: 1;
+        background: transparent;
+        color: #e8e8ea;
+        border: none;
+        padding: 5px 8px;
+        font: inherit;
+        font-size: 11px;
+        cursor: pointer;
+        border-radius: 4px;
+        opacity: 0.6;
+        transition: background-color 0.15s ease, opacity 0.15s ease;
+      }
+      .nav-tuner__mode-toggle button.active {
+        background: #34343a;
+        opacity: 1;
+        font-weight: 600;
+      }
+      /* Mode-based visibility — qualified to labels so the mode-toggle buttons
+         (which also carry data-mode) stay visible. */
+      .nav-tuner.mode-simple label[data-mode="advanced"],
+      .nav-tuner.mode-advanced label[data-mode="simple"] {
+        display: none;
+      }
+
+      /* Progressive blur layer — fixed strip at the top of the viewport behind
+         the nav, with a gradient mask so the blur fades from full at the top
+         to clear at the bottom. Default 0px backdrop-filter blur is invisible;
+         the tuner sets it via inline style. */
+      .nav-progressive-blur {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 140px;
+        pointer-events: none;
+        z-index: 39; /* below #site-nav (40) */
+        -webkit-backdrop-filter: blur(0px);
+        backdrop-filter: blur(0px);
+        -webkit-mask-image: linear-gradient(to bottom, black 0%, black 55%, transparent 100%);
+        mask-image: linear-gradient(to bottom, black 0%, black 55%, transparent 100%);
+      }
+    </style>
+
+    <script is:inline>
+      (function () {
+        // CSS variable inputs the IIFE reads via getComputedStyle; mutating
+        // these from the tuner + dispatching navlens:reinit re-runs init().
+        const CSS_VAR_BY_KEY = {
+          thickness: '--lg-thickness',
+          bezel: '--lg-bezel',
+          ior: '--lg-ior',
+          uniformShift: '--lg-uniform-shift',
+        };
+        const REINIT_KEYS = new Set(Object.keys(CSS_VAR_BY_KEY));
+
+        // Debounce reinit since dragging fires input events many times per second.
+        let reinitScheduled = false;
+        function scheduleReinit() {
+          if (reinitScheduled) return;
+          reinitScheduled = true;
+          requestAnimationFrame(() => {
+            reinitScheduled = false;
+            window.dispatchEvent(new Event('navlens:reinit'));
+          });
+        }
+
+        function setup() {
+          const panel = document.getElementById('nav-tuner-panel');
+          if (!panel) return;
+
+          const satMatrix = document.getElementById('liquid-glass-saturate');
+          const specAlpha = document.getElementById('liquid-glass-spec-alpha');
+          const progLayer = document.querySelector('.nav-progressive-blur');
+
+          const overrideStyle = document.createElement('style');
+          overrideStyle.id = 'nav-tuner-overrides';
+          document.head.appendChild(overrideStyle);
+
+          const defaults = {
+            // Refraction physics — mutate CSS vars + reinit
+            thickness: 80,
+            bezel: 20,
+            ior: 1.5,
+            uniformShift: -4.5,
+            // SVG-side knobs — direct attribute set
+            internalSat: 4,
+            specStrength: 0.4,
+            // CSS-side knobs — override style
+            backdropBlur: 4,
+            saturate: 100,
+            glassBg: 0.06,
+            progBlur: 0.5,
+          };
+          const state = { ...defaults };
+
+          function fmtDisplay(key, v) {
+            if (key === 'ior' || key === 'specStrength' || key === 'glassBg' || key === 'internalSat') {
+              return v.toFixed(2);
+            }
+            return String(v);
+          }
+
+          function apply() {
+            // SVG attributes — direct
+            satMatrix.setAttribute('values', String(state.internalSat));
+            specAlpha.setAttribute('slope', String(state.specStrength));
+
+            // Progressive-blur strip
+            if (progLayer) {
+              progLayer.style.webkitBackdropFilter = `blur(${state.progBlur}px)`;
+              progLayer.style.backdropFilter = `blur(${state.progBlur}px)`;
+            }
+
+            // CSS overrides
+            overrideStyle.textContent = `
+              @media (min-width: 641px) {
+                #nav-pill {
+                  background: rgba(255, 255, 255, ${state.glassBg}) !important;
+                  -webkit-backdrop-filter: blur(${state.backdropBlur}px) saturate(${state.saturate}%) url(#liquid-glass-distort) !important;
+                  backdrop-filter: blur(${state.backdropBlur}px) saturate(${state.saturate}%) url(#liquid-glass-distort) !important;
+                }
+                html.dark #nav-pill {
+                  background: rgba(23, 23, 23, ${state.glassBg}) !important;
+                }
+              }
+            `;
+
+            document.getElementById('nav-tuner-output').value = formatValues(state);
+          }
+
+          function formatValues(s) {
+            return [
+              `Thickness=${s.thickness}`,
+              `Bezel=${s.bezel}`,
+              `IOR=${fmtDisplay('ior', s.ior)}`,
+              `UniformShift=${s.uniformShift}`,
+              `ColorPunch=${fmtDisplay('internalSat', s.internalSat)}`,
+              `Specular=${fmtDisplay('specStrength', s.specStrength)}`,
+              `BackdropBlur=${s.backdropBlur}px`,
+              `BackdropSaturate=${s.saturate}%`,
+              `GlassBgOpacity=${fmtDisplay('glassBg', s.glassBg)}`,
+              `ProgressiveBlur=${s.progBlur}px`,
+            ].join('\n');
+          }
+
+          function syncControl(key) {
+            const input = panel.querySelector(`input[data-tune="${key}"]`);
+            const out = panel.querySelector(`output[data-out="${key}"]`);
+            if (input) input.value = state[key];
+            if (out) out.textContent = fmtDisplay(key, state[key]);
+          }
+
+          // Push the current refraction-physics state into the CSS variables
+          // the IIFE reads. Used at first paint and on Reset.
+          function pushCssVars() {
+            const root = document.documentElement;
+            Object.keys(CSS_VAR_BY_KEY).forEach((key) => {
+              root.style.setProperty(CSS_VAR_BY_KEY[key], String(state[key]));
+            });
+          }
+
+          panel.querySelectorAll('input[type="range"]').forEach((input) => {
+            const key = input.dataset.tune;
+            input.addEventListener('input', () => {
+              const v = parseFloat(input.value);
+              state[key] = v;
+              const out = panel.querySelector(`output[data-out="${key}"]`);
+              if (out) out.textContent = fmtDisplay(key, v);
+
+              if (REINIT_KEYS.has(key)) {
+                document.documentElement.style.setProperty(CSS_VAR_BY_KEY[key], String(v));
+                scheduleReinit();
+              }
+
+              apply();
+            });
+          });
+
+          panel.querySelectorAll('.nav-tuner__mode-toggle button').forEach((btn) => {
+            btn.addEventListener('click', () => {
+              const mode = btn.dataset.mode;
+              panel.classList.toggle('mode-simple', mode === 'simple');
+              panel.classList.toggle('mode-advanced', mode === 'advanced');
+              panel.querySelectorAll('.nav-tuner__mode-toggle button').forEach((b) => {
+                const active = b.dataset.mode === mode;
+                b.classList.toggle('active', active);
+                b.setAttribute('aria-selected', String(active));
+              });
+            });
+          });
+
+          document.getElementById('nav-tuner-copy').addEventListener('click', async (ev) => {
+            const text = formatValues(state);
+            try {
+              await navigator.clipboard.writeText(text);
+              ev.target.textContent = 'Copied ✓';
+              setTimeout(() => { ev.target.textContent = 'Copy values'; }, 1200);
+            } catch {
+              const ta = document.getElementById('nav-tuner-output');
+              ta.select();
+              document.execCommand('copy');
+            }
+          });
+
+          document.getElementById('nav-tuner-reset').addEventListener('click', () => {
+            Object.assign(state, defaults);
+            panel.querySelectorAll('input[type="range"]').forEach((input) => {
+              syncControl(input.dataset.tune);
+            });
+            pushCssVars();
+            scheduleReinit();
+            apply();
+          });
+
+          document.getElementById('nav-tuner-toggle').addEventListener('click', (ev) => {
+            panel.classList.toggle('collapsed');
+            ev.target.textContent = panel.classList.contains('collapsed') ? '+' : '−';
+          });
+
+          apply();
+        }
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', setup);
+        } else {
+          setup();
+        }
+      })();
+    </script>
+  </Fragment>
+)}
