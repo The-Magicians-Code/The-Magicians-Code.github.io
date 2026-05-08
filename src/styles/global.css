@@ -129,20 +129,13 @@ html.dark {
   }
 
   /* Safari/Firefox lack url(#filter) support inside backdrop-filter, so the
-     refraction pipeline above never runs there. The desktop pill's
-     very-transparent bg is tuned for refraction to do the visual work, so
-     without the filter it reads as washed-out. Restore a proper frosted-glass
-     tint via var(--glass-bg) (theme-aware: 28% white / 42% near-black) and
-     hide the ::before specular sheen, which only complements refraction.
-     The desktop drop shadow + inner glow stay intact so the pill keeps its
-     identity. */
+     refraction pipeline above never runs there. Add a plain blur + saturate
+     so the backdrop reads as frosted instead of just transparent. Background
+     and shadows stay as-is; the pill keeps its desktop identity. */
   @supports not ((backdrop-filter: url(#x)) or (-webkit-backdrop-filter: url(#x))) {
-    #nav-pill,
-    html.dark #nav-pill {
-      background: var(--glass-bg);
-    }
-    #nav-pill::before {
-      display: none;
+    #nav-pill {
+      -webkit-backdrop-filter: blur(18px) saturate(140%);
+      backdrop-filter: blur(18px) saturate(140%);
     }
   }
 }
