@@ -38,6 +38,15 @@ interface Instance {
 const instances = new WeakMap<Element, Instance>();
 let defsContainer: SVGSVGElement | null = null;
 
+// Safari/Firefox don't accept url(#filter) inside backdrop-filter; the inline
+// declaration we'd write would be either fully dropped or partially honored
+// (giving a too-weak blur). Skip the upgrade entirely on those engines and let
+// the @supports block in global.css restore the pill's .glass-equivalent look.
+const supportsSvgBackdropFilter =
+  typeof CSS !== 'undefined' &&
+  (CSS.supports('backdrop-filter', 'url(#x)') ||
+    CSS.supports('-webkit-backdrop-filter', 'url(#x)'));
+
 // ---------- Physics (verbatim from Nav.astro lines 71-212) ----------
 
 function heightAt(t: number): number {
@@ -296,6 +305,8 @@ function buildFilterChain(): { filter: SVGFilterElement; refs: Pick<Instance, 'd
 // ---------- Per-element init ----------
 
 function initElement(el: Element): void {
+  if (!supportsSvgBackdropFilter) return;
+
   const htmlEl = el as HTMLElement;
   const isMobile = !window.matchMedia(DESKTOP_MQ).matches;
   const optInMobile = htmlEl.hasAttribute('data-lg-mobile');

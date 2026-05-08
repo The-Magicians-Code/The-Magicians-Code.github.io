@@ -127,6 +127,23 @@ html.dark {
       transparent 70%
     );
   }
+
+  /* Safari/Firefox lack url(#filter) support inside backdrop-filter, so the
+     refraction pipeline above never runs there. The desktop pill identity
+     (very-transparent bg + soft inner-glow shadow) is tuned for refraction
+     to do the visual work, so without the filter it reads as washed-out.
+     Fall back to the .glass-equivalent treatment used on mobile/.glass. */
+  @supports not ((backdrop-filter: url(#x)) or (-webkit-backdrop-filter: url(#x))) {
+    #nav-pill,
+    html.dark #nav-pill {
+      background: var(--glass-bg);
+      box-shadow: var(--glass-inner), var(--glass-shadow);
+      border: 1px solid var(--glass-brd);
+    }
+    #nav-pill::before {
+      display: none;
+    }
+  }
 }
 
 .nav-links {
