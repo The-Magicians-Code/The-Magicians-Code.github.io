@@ -374,8 +374,8 @@ function initElement(el: Element): void {
 
     const filterUrl = `url(#${inst.filterId})`;
     const declaration = `blur(${blur}px) saturate(${saturate}%) ${filterUrl}`;
-    htmlEl.style.backdropFilter = declaration;
-    (htmlEl.style as unknown as Record<string, string>)['webkitBackdropFilter'] = declaration;
+    htmlEl.style.setProperty('backdrop-filter', declaration);
+    htmlEl.style.setProperty('-webkit-backdrop-filter', declaration);
   } catch (err) {
     console.warn('liquid-glass: filter generation failed; .glass fallback remains active.', err);
   }
@@ -383,8 +383,8 @@ function initElement(el: Element): void {
 
 function clearElementUpgrade(el: Element): void {
   const htmlEl = el as HTMLElement;
-  htmlEl.style.backdropFilter = '';
-  (htmlEl.style as unknown as Record<string, string>)['webkitBackdropFilter'] = '';
+  htmlEl.style.removeProperty('backdrop-filter');
+  htmlEl.style.removeProperty('-webkit-backdrop-filter');
 }
 
 function refresh(el: Element): void {
