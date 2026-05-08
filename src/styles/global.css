@@ -128,15 +128,21 @@ html.dark {
     );
   }
 
-  /* Safari/Firefox lack url(#filter) support inside backdrop-filter, so the
-     refraction pipeline above never runs there. Add a plain blur + saturate
-     so the backdrop reads as frosted instead of just transparent. Background
-     and shadows stay as-is; the pill keeps its desktop identity. */
-  @supports not ((backdrop-filter: url(#x)) or (-webkit-backdrop-filter: url(#x))) {
-    #nav-pill {
-      -webkit-backdrop-filter: blur(18px) saturate(140%);
-      backdrop-filter: blur(18px) saturate(140%);
-    }
+  /* Safari/Firefox lack url(#filter) support inside backdrop-filter. The
+     `lg-no-svg-backdrop` class is set by an inline script in BaseLayout
+     (CSS @supports gives Safari a false-positive on url()). When set, swap
+     the pill to the same frosted-glass treatment used on the mobile-mode
+     side-wrap icons: translucent tint + blur + saturate + .glass border
+     and shadow, sheen hidden. */
+  html.lg-no-svg-backdrop #nav-pill {
+    background: var(--glass-bg);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    backdrop-filter: blur(18px) saturate(140%);
+    box-shadow: var(--glass-inner), var(--glass-shadow);
+    border: 1px solid var(--glass-brd);
+  }
+  html.lg-no-svg-backdrop #nav-pill::before {
+    display: none;
   }
 }
 

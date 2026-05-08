@@ -38,14 +38,15 @@ interface Instance {
 const instances = new WeakMap<Element, Instance>();
 let defsContainer: SVGSVGElement | null = null;
 
-// Safari/Firefox don't accept url(#filter) inside backdrop-filter; the inline
-// declaration we'd write would be either fully dropped or partially honored
-// (giving a too-weak blur). Skip the upgrade entirely on those engines and let
-// the @supports block in global.css restore the pill's .glass-equivalent look.
+// Safari/Firefox don't actually render url(#filter) inside backdrop-filter,
+// even though Safari's CSS parser accepts the syntax (so CSS.supports lies).
+// The reliable signal is the `lg-no-svg-backdrop` class set pre-paint by
+// BaseLayout's inline UA-sniff script. When that class is present, skip the
+// upgrade and let the global.css fallback styling provide a frosted-glass
+// treatment instead.
 const supportsSvgBackdropFilter =
-  typeof CSS !== 'undefined' &&
-  (CSS.supports('backdrop-filter', 'url(#x)') ||
-    CSS.supports('-webkit-backdrop-filter', 'url(#x)'));
+  typeof document !== 'undefined' &&
+  !document.documentElement.classList.contains('lg-no-svg-backdrop');
 
 // ---------- Physics (verbatim from Nav.astro lines 71-212) ----------
 
