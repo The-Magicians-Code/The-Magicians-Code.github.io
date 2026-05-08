@@ -12,9 +12,12 @@ coupling between instances.
 
 ## Non-Goals
 
-- Generalizing the Nav tuner panel into a reusable dev-tool. The tuner stays in
-  Nav.astro as nav-pill-specific dev scaffolding (and gets simplified — see
-  "Nav.astro Migration").
+- Generalizing nav-specific tuner knobs (`glassBg`, `progBlur`) into the module
+  tuner. Those stay in Nav.astro's existing tuner as nav scaffolding. The
+  module tuner covers only the 8 module-owned CSS vars.
+- Multiple module tuners visible simultaneously on the same page. Only one
+  element per page may have `data-lg-tuner`; if more than one is found, the
+  first wins and others are warned to console.
 - Supporting elements that mount dynamically after `DOMContentLoaded`. The site
   is static Astro; revisit if a use case appears.
 - Cleaning up per-element filter defs when elements leave the DOM. Bounded leak
@@ -25,24 +28,28 @@ coupling between instances.
 
 ## Architecture
 
-Three artifacts; no new components:
+Four artifacts; no new components:
 
 ```
 src/
 ├── scripts/
-│   └── liquid-glass.ts          ← runtime: physics, auto-discovery, per-instance setup
+│   ├── liquid-glass.ts          ← runtime: physics, auto-discovery, per-instance setup
+│   └── liquid-glass-tuner.ts    ← dev tuner UI (loaded only when data-lg-tuner is present)
 ├── styles/
 │   └── liquid-glass.css         ← .liquid-glass fallback CSS, default tokens on :root
 └── layouts/
-    └── BaseLayout.astro         ← imports both site-wide
+    └── BaseLayout.astro         ← imports the runtime + stylesheet site-wide
 ```
 
 The runtime and stylesheet are imported once from `BaseLayout.astro`, picked up
-by Astro's standard CSS/script bundling. The script becomes a deferred ES
-module (vs. today's `is:inline` IIFE in Nav.astro), so first paint lands before
-init. The module compensates by giving `.liquid-glass` a fallback identical to
-`.glass`, so the pre-init frame shows plain frosted glass — same as Safari and
-Firefox see permanently today.
+by Astro's standard CSS/script bundling. The tuner is dynamically imported
+(`import('./liquid-glass-tuner')`) only when the runtime sees a
+`data-lg-tuner` attribute, so it lands in its own chunk and adds zero bytes to
+pages without one. The script becomes a deferred ES module (vs. today's
+`is:inline` IIFE in Nav.astro), so first paint lands before init. The module
+compensates by giving `.liquid-glass` a fallback identical to `.glass`, so the
+pre-init frame shows plain frosted glass — same as Safari and Firefox see
+permanently today.
 
 ## Public API
 
@@ -57,6 +64,9 @@ Firefox see permanently today.
 
 <!-- Force-on below 641px (opt out of the desktop gate) -->
 <div class="liquid-glass" data-lg-mobile>…</div>
+
+<!-- Open the module tuner targeting this element (dev-only) -->
+<div class="liquid-glass" data-lg-tuner>…</div>
 
 <!-- Parent override cascades to descendants -->
 <section style="--lg-blur: 2;">
@@ -89,8 +99,9 @@ beat both `:root` defaults and parent inheritance.
 **Imperative refresh:**
 
 `window.__lg.refresh(el)` forces re-rasterization and re-applies all CSS-var
-values to the element's per-instance filter chain. Used by the Nav tuner when
-sliders move; not expected in ordinary consumer code. The module guards
+values to the element's per-instance filter chain. Used by both the module
+tuner and Nav.astro's tuner when sliders move; not expected in ordinary
+consumer code. The module guards
 `window.__lg` to be defined synchronously at script-eval time so guarded calls
 (`window.__lg?.refresh?.(el)`) work safely from any later script.
 
@@ -189,6 +200,46 @@ The fallback CSS values (`18px` / `140%`) match `.glass` so opting into
 inline-style path — they are intentionally *weaker* because the SVG filter
 adds its own internal `feGaussianBlur` and `feColorMatrix saturate` on top.
 
+### Module tuner
+
+Loaded only when the runtime finds at least one `data-lg-tuner` attribute on
+a `.liquid-glass` element. Dynamic-imported to keep the production bundle
+clean for pages that don't use it.
+
+**Behavior:**
+
+- The runtime picks the **first** `[data-lg-tuner]` element it encounters.
+  Subsequent ones are ignored with a single console warning.
+- The chosen element receives a tuner panel mounted to `<body>`, positioned
+  fixed in a corner (top-right by default; movable later if needed).
+- Panel exposes 8 sliders, one per module CSS var:
+  `--lg-thickness`, `--lg-bezel`, `--lg-ior`, `--lg-uniform-shift`,
+  `--lg-blur`, `--lg-saturate`, `--lg-svg-saturate`, `--lg-spec-alpha`. Each
+  slider's initial value is the element's current computed value (so reload
+  preserves prior tuning if it's been written into source).
+- On slider change: the tuner writes the value to the target element's
+  `style` (e.g., `el.style.setProperty('--lg-thickness', val)`) and calls
+  `window.__lg.refresh(el)`. The module re-reads computed CSS vars and
+  updates both the rasterized PNGs and the per-instance filter chain.
+- Reset button: clears all module-owned inline CSS vars on the target so
+  `:root` defaults take over again, then refreshes.
+- Close button: removes the panel; does NOT clear the inline overrides.
+- Output panel below sliders: shows the current values as a block of
+  `:root { --lg-thickness: …; … }` CSS, copy-paste-able into source.
+
+**Scope discipline:** the tuner only knows about the 8 module CSS vars.
+It does not handle nav-specific concerns like `glassBg` or `progBlur`, and
+it does not let consumers register custom knobs. If a target element has
+non-module knobs that need tuning, the consumer ships its own dev tuner
+alongside (e.g., Nav.astro keeps its existing tuner — see "Nav.astro
+Migration").
+
+**Coexistence with Nav.astro's tuner:** because the nav pill keeps its own
+tuner, the pill should NOT also have `data-lg-tuner` — otherwise both
+panels mount and compete on the same CSS vars. This is undocumented
+behavior; the Nav-side spec is "use the nav tuner for the pill, use the
+module tuner for everything else."
+
 ### Why inline backdrop-filter, not `var(--lg-filter)`
 
 Earlier draft used `backdrop-filter: blur(...) saturate(...) var(--lg-filter, none)`.
@@ -255,6 +306,12 @@ everything physics-related:
 (`.liquid-glass` now includes the `.glass` fallback, so `class="glass"` is
 redundant. Drop it from the pill to keep the markup clean.)
 
+The pill must NOT also carry `data-lg-tuner` — the nav has its own tuner
+covering both module CSS vars and nav-specific knobs (`glassBg`, `progBlur`).
+Adding the module tuner attribute would mount a competing panel that fights
+the nav tuner on the same CSS vars. Tune the pill via the nav tuner; tune
+other glass elements via `data-lg-tuner`.
+
 **`global.css` cleanup:**
 
 - The `--lg-thickness`, `--lg-bezel`, `--lg-ior`, `--lg-uniform-shift` defaults
@@ -288,6 +345,10 @@ redundant. Drop it from the pill to keep the markup clean.)
 - No console warnings under normal operation.
 - Safari/Firefox (no SVG-backdrop) render the pill as plain frosted glass,
   identical to today's fallback.
+- Adding `data-lg-tuner` to any `.liquid-glass` element opens a tuner panel
+  that mutates that element's 8 module CSS vars in real time and ships zero
+  bytes to pages without the attribute.
+- A page with no `data-lg-tuner` attributes does not load the tuner chunk.
 
 ## Risks / Open Questions
 
@@ -306,3 +367,9 @@ redundant. Drop it from the pill to keep the markup clean.)
   the module doesn't read from CSS vars (e.g., direct attribute knobs),
   that's a module-API change, not a tuner-side workaround. Acceptable; flag
   if it happens.
+- **Tuner panel design quality:** the panel is utility-grade dev UI, not site
+  design. Expect inline styles and minimal polish — same posture as today's
+  nav tuner. If the tuner becomes user-facing later, that's a follow-up.
+- **Multiple `data-lg-tuner` on one page:** silently picks the first match
+  with a console warning. Not a hard error because the warning is enough
+  signal during dev, and the module shouldn't crash a page over it.
