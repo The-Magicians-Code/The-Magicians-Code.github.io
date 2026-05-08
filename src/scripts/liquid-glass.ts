@@ -396,6 +396,16 @@ function refresh(el: Element): void {
 function discoverAndInit(): void {
   ensureDefsEl();
   document.querySelectorAll<HTMLElement>('.liquid-glass').forEach(initElement);
+
+  const tunerTargets = document.querySelectorAll<HTMLElement>('.liquid-glass[data-lg-tuner]');
+  if (tunerTargets.length === 0) return;
+  if (tunerTargets.length > 1) {
+    console.warn(`liquid-glass: ${tunerTargets.length} elements have data-lg-tuner; only the first will receive a tuner panel.`);
+  }
+  const target = tunerTargets[0];
+  import('./liquid-glass-tuner').then((mod) => mod.mountTuner(target)).catch((err) => {
+    console.warn('liquid-glass: tuner failed to load', err);
+  });
 }
 
 // Crossing the desktop breakpoint: init skipped elements, or strip inline
