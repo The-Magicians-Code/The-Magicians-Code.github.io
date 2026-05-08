@@ -30,6 +30,15 @@ body {
   --glow-fade-opaque: rgba(255, 255, 255, 1);
   --glow-fade-transparent: rgba(255, 255, 255, 0);
   --glow-alpha: 0.35;
+
+  /* Liquid-glass refraction tunables — read by Nav.astro's IIFE via
+     getComputedStyle. Edit here, not in JS. Unitless because the IIFE
+     parseFloat()s and uses them as plain numbers. Defaults from
+     github.com/The-Magicians-Code/prototypes/liquid-glass-pill. */
+  --lg-thickness: 80;
+  --lg-bezel: 20;
+  --lg-ior: 1.5;
+  --lg-uniform-shift: 0;
 }
 
 html.dark {
