@@ -1,7 +1,7 @@
 # Liquid Glass Module — Design
 
 **Date:** 2026-05-08
-**Status:** Approved (brainstorming complete; awaiting plan)
+**Status:** Approved (brainstorming + codex-rescue review complete; awaiting plan)
 
 ## Goal
 
@@ -13,13 +13,15 @@ coupling between instances.
 ## Non-Goals
 
 - Generalizing the Nav tuner panel into a reusable dev-tool. The tuner stays in
-  Nav.astro as nav-pill-specific dev scaffolding.
+  Nav.astro as nav-pill-specific dev scaffolding (and gets simplified — see
+  "Nav.astro Migration").
 - Supporting elements that mount dynamically after `DOMContentLoaded`. The site
   is static Astro; revisit if a use case appears.
 - Cleaning up per-element filter defs when elements leave the DOM. Bounded leak
   on a static site; revisit if churn appears.
-- Exposing the SVG filter's internal `feColorMatrix saturate` as a per-instance
-  knob. The CSS-side `--lg-saturate` stays the only saturate control.
+- Observing runtime mutations to the `data-lg-mobile` attribute. The attribute
+  is build-time. Runtime toggling requires an explicit `window.__lg.refresh(el)`
+  call.
 
 ## Architecture
 
@@ -30,15 +32,17 @@ src/
 ├── scripts/
 │   └── liquid-glass.ts          ← runtime: physics, auto-discovery, per-instance setup
 ├── styles/
-│   └── liquid-glass.css         ← .liquid-glass class, default tokens, desktop @media gate
+│   └── liquid-glass.css         ← .liquid-glass fallback CSS, default tokens on :root
 └── layouts/
     └── BaseLayout.astro         ← imports both site-wide
 ```
 
 The runtime and stylesheet are imported once from `BaseLayout.astro`, picked up
-by Astro's standard CSS/script bundling. Total line count is roughly the same
-as today's IIFE in Nav.astro — this is relocation plus generalization, not a
-rewrite.
+by Astro's standard CSS/script bundling. The script becomes a deferred ES
+module (vs. today's `is:inline` IIFE in Nav.astro), so first paint lands before
+init. The module compensates by giving `.liquid-glass` a fallback identical to
+`.glass`, so the pre-init frame shows plain frosted glass — same as Safari and
+Firefox see permanently today.
 
 ## Public API
 
@@ -46,20 +50,26 @@ rewrite.
 
 ```html
 <!-- Minimal -->
-<div class="liquid-glass glass">…</div>
+<div class="liquid-glass">…</div>
 
 <!-- Per-instance overrides (CSS custom properties) -->
-<div class="liquid-glass glass" style="--lg-thickness: 60; --lg-bezel: 10;">…</div>
+<div class="liquid-glass" style="--lg-thickness: 60; --lg-bezel: 10;">…</div>
 
-<!-- Force-on below 641px (opt out of mobile gate) -->
-<div class="liquid-glass glass" data-lg-mobile>…</div>
+<!-- Force-on below 641px (opt out of the desktop gate) -->
+<div class="liquid-glass" data-lg-mobile>…</div>
+
+<!-- Parent override cascades to descendants -->
+<section style="--lg-blur: 2;">
+  <div class="liquid-glass">…</div>
+  <div class="liquid-glass">…</div>
+</section>
 ```
 
-`.glass` continues to live separately as the always-on backdrop-blur fallback.
-`.liquid-glass` is the upgrade you stack on top. Browsers without SVG-backdrop
-support keep the cheap `.glass` blur, matching today's behavior.
+`.liquid-glass` is now self-contained — it includes a `.glass`-equivalent
+fallback (`blur(18px) saturate(140%)`) so consumers no longer need to also add
+`class="glass"`. Stacking both is harmless but redundant.
 
-**Tunable CSS custom properties (per-element):**
+**Tunable CSS custom properties (defaults on `:root`):**
 
 | Var                  | Default | Purpose                                                       |
 |----------------------|---------|---------------------------------------------------------------|
@@ -67,17 +77,22 @@ support keep the cheap `.glass` blur, matching today's behavior.
 | `--lg-bezel`         | `20`    | Bezel ring width in px                                        |
 | `--lg-ior`           | `1.5`   | Index of refraction                                           |
 | `--lg-uniform-shift` | `-4.5`  | Uniform vertical shift of refracted rays                      |
-| `--lg-blur`          | `4`     | Pre-filter backdrop blur (px)                                 |
-| `--lg-saturate`      | `100`   | Pre-filter backdrop saturate (%)                              |
+| `--lg-blur`          | `4`     | Pre-filter backdrop blur (px) — applied with the SVG filter   |
+| `--lg-saturate`      | `100`   | Pre-filter backdrop saturate (%) — applied with the SVG filter|
+| `--lg-svg-saturate`  | `4`     | Internal `feColorMatrix saturate` value                       |
+| `--lg-spec-alpha`    | `0.4`   | Specular highlight alpha (`feFuncA slope`)                    |
 
-Vars are read via `getComputedStyle(el)` so they cascade — set on a parent and
-all `.liquid-glass` descendants inherit.
+Defaults live on `:root` so they cascade by inheritance — set on a parent and
+all `.liquid-glass` descendants pick them up. Inline element-style overrides
+beat both `:root` defaults and parent inheritance.
 
 **Imperative refresh:**
 
-`window.__lg.refresh(el)` forces re-rasterization of a specific element. Used
-by the Nav tuner when sliders change values; not expected to be needed in
-ordinary consumer code.
+`window.__lg.refresh(el)` forces re-rasterization and re-applies all CSS-var
+values to the element's per-instance filter chain. Used by the Nav tuner when
+sliders move; not expected in ordinary consumer code. The module guards
+`window.__lg` to be defined synchronously at script-eval time so guarded calls
+(`window.__lg?.refresh?.(el)`) work safely from any later script.
 
 ## Internals
 
@@ -93,60 +108,70 @@ On `DOMContentLoaded`, the module:
    </svg>
    ```
 
-   No layout-level markup needed.
-
 2. Queries `document.querySelectorAll('.liquid-glass')` and inits each element:
    - **Mobile gate:** if `!matchMedia('(min-width: 641px)').matches` and the
-     element does not have `data-lg-mobile`, skip.
-   - **Read computed config:** thickness, bezel, IOR, uniform-shift via
-     `getComputedStyle(el)`. Per-instance overrides automatically apply.
+     element does not have `data-lg-mobile`, skip — the `.glass`-equivalent
+     CSS fallback continues to show.
+   - **Read computed config** via `getComputedStyle(el)`: thickness, bezel,
+     IOR, uniform-shift, blur, saturate, svg-saturate, spec-alpha. Per-instance
+     and parent-cascaded overrides apply automatically.
    - **Read geometry:** `getBoundingClientRect()` for `w`, `h`; computed
      `border-radius` clamped to `min(h/2, …)`.
-   - **Build refraction profile** (existing physics, unchanged from current
-     IIFE: `heightAt`, `refractRay`, `buildRefractionProfile`).
+   - **Build refraction profile** (existing physics, unchanged: `heightAt`,
+     `refractRay`, `buildRefractionProfile`).
    - **Rasterize displacement + specular maps** (existing physics, unchanged).
-   - **Append a per-element filter chain** to the defs SVG with id
-     `lg-filter-{n}` (monotonically increasing). The chain is byte-identical
-     to today's `#liquid-glass-distort` modulo IDs and the per-element PNG
-     hrefs.
-   - **Wire the filter to the element:**
-     `el.style.setProperty('--lg-filter', 'url(#lg-filter-{n})')`.
+   - **Append a per-element filter chain** to the defs SVG. ID is
+     `lg-filter-{8-char-random-hex}` (generated via `crypto.getRandomValues`)
+     — random IDs avoid collision under any future script re-execution
+     scenario where a monotonic counter would reset and clash with stale defs.
+     The chain mirrors today's filter, with `--lg-svg-saturate` and
+     `--lg-spec-alpha` interpolated into the `feColorMatrix values` and
+     `feFuncA slope` attributes respectively, and the per-element PNGs in the
+     `feImage` hrefs.
+   - **Apply the upgrade:** the module sets the element's inline
+     `backdrop-filter` (and `-webkit-backdrop-filter`) to
+     `blur(<lg-blur>px) saturate(<lg-saturate>%) url(#lg-filter-<id>)`. Inline
+     style wins over the class fallback, so refraction kicks in.
 
-3. **Per-element ResizeObserver** with debounced (100ms) re-rasterization on
-   size change.
+3. **Per-element ResizeObserver** with debounced (100ms) re-init on size
+   change.
 
-4. **MediaQueryList listener** on `(min-width: 641px)`: when crossing into
-   desktop, init any `.liquid-glass` elements that were skipped earlier.
-   Crossing into mobile is a no-op (filters stay defined; CSS suppresses
-   `backdrop-filter`).
+4. **MediaQueryList listener** on `(min-width: 641px)`:
+   - **Crossing into desktop:** init any `.liquid-glass` elements that were
+     skipped earlier (mobile-skipped elements have no inline backdrop-filter
+     and no per-instance filter chain yet).
+   - **Crossing into mobile:** for every `.liquid-glass` element that does
+     *not* have `data-lg-mobile`, clear its inline `backdropFilter` /
+     `webkitBackdropFilter` so the class fallback (`blur(18px) saturate(140%)`)
+     takes over. The per-instance filter chain in the defs SVG stays — it's
+     unused but cheap, and re-init on next desktop crossing reuses or replaces
+     it. (This is necessary because, unlike the nav pill's `!important` mobile
+     CSS, generic `.liquid-glass` elements have no nav-specific override to
+     defeat the inline style.)
 
 ### Stylesheet
 
 ```css
-.liquid-glass {
+:root {
   --lg-thickness: 80;
   --lg-bezel: 20;
   --lg-ior: 1.5;
   --lg-uniform-shift: -4.5;
   --lg-blur: 4;
   --lg-saturate: 100;
+  --lg-svg-saturate: 4;
+  --lg-spec-alpha: 0.4;
 }
 
-@media (min-width: 641px) {
-  .liquid-glass {
-    -webkit-backdrop-filter:
-      blur(calc(var(--lg-blur) * 1px))
-      saturate(calc(var(--lg-saturate) * 1%))
-      var(--lg-filter, none);
-    backdrop-filter:
-      blur(calc(var(--lg-blur) * 1px))
-      saturate(calc(var(--lg-saturate) * 1%))
-      var(--lg-filter, none);
-  }
-}
-
-.liquid-glass[data-lg-mobile] {
-  /* Same backdrop-filter rule, no media gate */
+/* Always-on fallback. Identical to today's .glass primitive. Shown:
+   - On Safari/Firefox without SVG-backdrop support
+   - Below 641px (when not opted in via data-lg-mobile)
+   - During the brief window between HTML parse and module init
+   The module replaces this via inline backdrop-filter on each upgraded
+   element. Inline > class, so the upgrade wins when present. */
+.liquid-glass {
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  backdrop-filter: blur(18px) saturate(140%);
 }
 
 .liquid-glass-defs {
@@ -158,34 +183,64 @@ On `DOMContentLoaded`, the module:
 }
 ```
 
-`var(--lg-filter, none)` ensures graceful degradation: before the JS runs (or
-on browsers that ignore the SVG-url filter), the element falls back to plain
-`blur + saturate`, identical to `.glass`.
+The fallback CSS values (`18px` / `140%`) match `.glass` so opting into
+`.liquid-glass` doesn't visually regress unsupported browsers. The
+`--lg-blur: 4` and `--lg-saturate: 100` defaults apply only on the upgraded
+inline-style path — they are intentionally *weaker* because the SVG filter
+adds its own internal `feGaussianBlur` and `feColorMatrix saturate` on top.
+
+### Why inline backdrop-filter, not `var(--lg-filter)`
+
+Earlier draft used `backdrop-filter: blur(...) saturate(...) var(--lg-filter, none)`.
+That breaks: when `--lg-filter` is unset, the value resolves to
+`blur(...) saturate(...) none`, which is not a valid `backdrop-filter` value
+(`none` is a top-level alternative in the grammar, not a list element). The
+entire declaration drops, and there's no fallback to fall back to.
+
+Setting backdrop-filter inline at JS init time avoids this entirely: the class
+provides a complete, valid fallback; the inline upgrade is a complete, valid
+overlay; nothing relies on the fallback chain inside a single declaration.
 
 ## Nav.astro Migration
 
 **Removed (~270 lines):**
 
-- The inline `<svg class="liquid-glass-defs">` filter-defs block
-- The full liquid-glass IIFE (`heightAt`, `refractRay`, `buildRefractionProfile`,
-  `generateDisplacementMap`, `generateSpecularMap`, `init`, `observePill`,
-  resize/MQ wiring)
+- The inline `<svg class="liquid-glass-defs">` filter-defs block — script
+  generates a per-instance one.
+- The full liquid-glass IIFE.
 - The `#nav-pill`-specific desktop CSS that hardcoded
-  `url(#liquid-glass-distort)` in `backdrop-filter`
+  `url(#liquid-glass-distort)` in `backdrop-filter`.
 
 **Kept:**
 
 - Pill structural CSS: background, `::before` sheen, `isolation: isolate`,
-  drop shadow. These are pill-identity, not module concerns.
-- Tuner panel and slider event handlers (~150 lines).
+  drop shadow.
+- Tuner panel UI + slider event handlers, simplified (~30 lines smaller).
 
-**Tuner changes:**
+**Tuner simplification:**
 
-- Slider event handlers write to **the pill element's** inline style
-  (`pill.style.setProperty('--lg-thickness', val)`), not `:root` as today.
-- After each change, the tuner calls `window.__lg.refresh(pill)` to force
-  re-rasterization (pill ResizeObserver only fires on size change, not on
-  CSS-var change, so an explicit hook is needed).
+Today's tuner has three integration paths:
+1. Writes `:root` CSS vars + dispatches `navlens:reinit`.
+2. Mutates global SVG-element attributes by ID
+   (`#liquid-glass-saturate`, `#liquid-glass-spec-alpha`).
+3. Writes a `<style id="nav-tuner-overrides">` with `!important` rules to
+   override `#nav-pill` background and backdrop-filter.
+
+After the module ships, the tuner converges on a single integration path for
+everything physics-related:
+
+1. Write **all** CSS vars on `pill.style` (not `:root`):
+   `--lg-thickness`, `--lg-bezel`, `--lg-ior`, `--lg-uniform-shift`, `--lg-blur`,
+   `--lg-saturate`, `--lg-svg-saturate`, `--lg-spec-alpha`.
+2. Call `window.__lg?.refresh?.(pill)` once per change. The module re-reads
+   computed CSS vars and updates both the rasterized PNGs and the
+   `feColorMatrix` / `feFuncA` attributes on the pill's instance-specific
+   filter — no global IDs to mutate.
+3. Path 3 stays for nav-only knobs that aren't module concerns: `glassBg`
+   (pill background opacity) and `progBlur` (progressive-blur strip). The
+   tuner's injected `<style>` block keeps those rules but no longer needs the
+   `!important backdrop-filter` override (the module sets backdrop-filter
+   inline, which already wins over class CSS without needing `!important`).
 
 **Markup change:**
 
@@ -194,14 +249,28 @@ on browsers that ignore the SVG-url filter), the element falls back to plain
 <div id="nav-pill" class="glass">
 
 <!-- after -->
-<div id="nav-pill" class="glass liquid-glass">
+<div id="nav-pill" class="liquid-glass">
 ```
+
+(`.liquid-glass` now includes the `.glass` fallback, so `class="glass"` is
+redundant. Drop it from the pill to keep the markup clean.)
 
 **`global.css` cleanup:**
 
 - The `--lg-thickness`, `--lg-bezel`, `--lg-ior`, `--lg-uniform-shift` defaults
-  currently on `:root` move to `.liquid-glass` (in the new stylesheet). The
-  `:root` declarations are removed — nothing else reads them.
+  currently on `:root` are removed — they move to `:root` in the new
+  `liquid-glass.css` (alongside the new `--lg-blur` / `--lg-saturate` /
+  `--lg-svg-saturate` / `--lg-spec-alpha` defaults).
+- `.glass` stays unchanged for any non-liquid consumers (currently: nothing
+  else imports `.glass` directly, but the primitive is harmless to keep).
+- `.liquid-glass-defs` selector moves from global.css to liquid-glass.css.
+- The `#nav-pill` desktop block that includes `backdrop-filter ... url(...)`
+  loses its backdrop-filter declaration; the rest (background, ::before sheen,
+  shadow) stays.
+- The mobile media query (`max-width: 640px`) that strips `#nav-pill`
+  backdrop-filter / background / border / radius / shadow with `!important`
+  stays unchanged. It continues to defeat the module's inline backdrop-filter
+  on the pill below the breakpoint, which is the desired behavior.
 
 ## Acceptance Criteria
 
@@ -211,21 +280,29 @@ on browsers that ignore the SVG-url filter), the element falls back to plain
   effect on desktop with no further configuration.
 - Per-instance CSS-var overrides on a single element do not affect any other
   `.liquid-glass` element on the same page.
+- Parent-element CSS-var overrides cascade to `.liquid-glass` descendants.
 - Tuner sliders continue to mutate the pill in real time and do not affect any
   other glass elements that happen to be on the page.
 - No regression in mobile rendering (effect remains gated unless
   `data-lg-mobile` is set).
 - No console warnings under normal operation.
+- Safari/Firefox (no SVG-backdrop) render the pill as plain frosted glass,
+  identical to today's fallback.
 
 ## Risks / Open Questions
 
-- **Tuner integration timing:** if `window.__lg` is not yet defined when the
-  tuner script binds slider listeners, the first slider move would no-op. The
-  module must publish `window.__lg` synchronously at script-eval time (before
-  `DOMContentLoaded`), and the tuner's `refresh` calls must guard
-  `window.__lg?.refresh?.(pill)`.
-- **Filter ID collisions:** `lg-filter-{n}` uses an internal counter. Safe as
-  long as no consumer hardcodes that ID elsewhere; we don't expect them to,
-  but it's worth flagging.
-- **`getComputedStyle` cost:** called once per element on init and once per
-  resize-debounce-tick. Negligible at the scale of 1–5 glass elements.
+- **Future client routing:** if Astro view transitions or a client router are
+  later adopted, the module's DOMContentLoaded-only discovery and
+  no-cleanup-on-unmount become incorrect. Random filter IDs prevent
+  collision-on-reset, but the module would need a re-discovery pass on route
+  change. Out of scope until a router exists.
+- **First-paint flash:** between HTML parse and module init, all
+  `.liquid-glass` elements show plain `.glass`-style fallback before the
+  refraction upgrade applies. Visible only on slow devices/connections.
+  Acceptable trade-off vs. the current `is:inline` IIFE approach (which has
+  the same flash but slightly shorter on first load).
+- **Tuner-bound refresh API surface:** the module exposes `refresh(el)` as the
+  only post-init mutation hook. If the tuner ever needs to mutate something
+  the module doesn't read from CSS vars (e.g., direct attribute knobs),
+  that's a module-API change, not a tuner-side workaround. Acceptable; flag
+  if it happens.
