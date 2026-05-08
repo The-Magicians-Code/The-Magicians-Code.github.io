@@ -186,7 +186,7 @@ function generateSpecularMap(w: number, h: number, radius: number, bezelWidth: n
 
 // ---------- DOM helpers ----------
 
-function ensureDefsContainer(): SVGElement {
+function ensureDefsEl(): SVGDefsElement {
   if (defsContainer && defsContainer.isConnected) {
     return defsContainer.querySelector('defs')!;
   }
@@ -195,7 +195,7 @@ function ensureDefsContainer(): SVGElement {
   svg.setAttribute('aria-hidden', 'true');
   svg.setAttribute('focusable', 'false');
   svg.setAttribute('color-interpolation-filters', 'sRGB');
-  const defs = document.createElementNS(SVG_NS, 'defs');
+  const defs = document.createElementNS(SVG_NS, 'defs') as SVGDefsElement;
   svg.appendChild(defs);
   document.body.appendChild(svg);
   defsContainer = svg;
@@ -314,7 +314,7 @@ function initElement(el: Element): void {
   const thickness = readCssNumber(htmlEl, '--lg-thickness', 80);
   const bezelWidth = readCssNumber(htmlEl, '--lg-bezel', 20);
   const ior = readCssNumber(htmlEl, '--lg-ior', 1.5);
-  const uniformShift = readCssNumber(htmlEl, '--lg-uniform-shift', 0);
+  const uniformShift = readCssNumber(htmlEl, '--lg-uniform-shift', -4.5);
   const blur = readCssNumber(htmlEl, '--lg-blur', 4);
   const saturate = readCssNumber(htmlEl, '--lg-saturate', 100);
   const svgSaturate = readCssNumber(htmlEl, '--lg-svg-saturate', 4);
@@ -331,7 +331,7 @@ function initElement(el: Element): void {
     const specBezel = clampedBezel * 2.5;
     const specUrl = generateSpecularMap(w, h, radius, specBezel, Math.PI / 2);
 
-    const defs = ensureDefsContainer();
+    const defs = ensureDefsEl();
 
     let inst = instances.get(htmlEl);
     if (!inst) {
@@ -341,8 +341,10 @@ function initElement(el: Element): void {
       defs.appendChild(filter);
 
       const observer = new ResizeObserver(() => {
-        if (inst!.resizeTimer !== null) clearTimeout(inst!.resizeTimer);
-        inst!.resizeTimer = window.setTimeout(() => initElement(htmlEl), 100);
+        const i = instances.get(htmlEl);
+        if (!i) return;
+        if (i.resizeTimer !== null) clearTimeout(i.resizeTimer);
+        i.resizeTimer = window.setTimeout(() => initElement(htmlEl), 100);
       });
       observer.observe(htmlEl);
 
@@ -392,7 +394,7 @@ function refresh(el: Element): void {
 }
 
 function discoverAndInit(): void {
-  ensureDefsContainer();
+  ensureDefsEl();
   document.querySelectorAll<HTMLElement>('.liquid-glass').forEach(initElement);
 }
 
