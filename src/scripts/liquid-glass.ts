@@ -38,6 +38,16 @@ interface Instance {
 const instances = new WeakMap<Element, Instance>();
 let defsContainer: SVGSVGElement | null = null;
 
+// Safari/Firefox don't actually render url(#filter) inside backdrop-filter,
+// even though Safari's CSS parser accepts the syntax (so CSS.supports lies).
+// The reliable signal is the `lg-no-svg-backdrop` class set pre-paint by
+// BaseLayout's inline UA-sniff script. When that class is present, skip the
+// upgrade and let the global.css fallback styling provide a frosted-glass
+// treatment instead.
+const supportsSvgBackdropFilter =
+  typeof document !== 'undefined' &&
+  !document.documentElement.classList.contains('lg-no-svg-backdrop');
+
 // ---------- Physics (verbatim from Nav.astro lines 71-212) ----------
 
 function heightAt(t: number): number {
@@ -296,6 +306,8 @@ function buildFilterChain(): { filter: SVGFilterElement; refs: Pick<Instance, 'd
 // ---------- Per-element init ----------
 
 function initElement(el: Element): void {
+  if (!supportsSvgBackdropFilter) return;
+
   const htmlEl = el as HTMLElement;
   const isMobile = !window.matchMedia(DESKTOP_MQ).matches;
   const optInMobile = htmlEl.hasAttribute('data-lg-mobile');

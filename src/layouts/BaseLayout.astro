@@ -90,6 +90,24 @@ const personSchema = {
       })();
     </script>
 
+    <script is:inline>
+      // Detect engines that don't render url(#filter) inside backdrop-filter
+      // (Safari, Firefox). CSS @supports gives a false-positive on Safari
+      // because its parser accepts the syntax without rendering. Setting a
+      // class pre-paint lets global.css swap the desktop nav pill to the
+      // mobile-icon frosted-glass treatment without FOUC.
+      (function () {
+        try {
+          var ua = navigator.userAgent;
+          var isWebkitNotChromium = /AppleWebKit/.test(ua) && !/Chrome|Chromium|Edg/.test(ua);
+          var isFirefox = /Firefox/.test(ua);
+          if (isWebkitNotChromium || isFirefox) {
+            document.documentElement.classList.add('lg-no-svg-backdrop');
+          }
+        } catch (_) {}
+      })();
+    </script>
+
     <script>
       import '../scripts/liquid-glass';
     </script>
