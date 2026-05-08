@@ -217,9 +217,15 @@ const isDev = import.meta.env.DEV;
       return Number.isFinite(v) ? v : fallback;
     }
 
+    // Lens is only applied at >=641px (the @media gate in global.css).
+    // Below that, the pill drops to plain blur+saturate and the SVG filter
+    // is never used — bail before doing the expensive canvas rasterization.
+    const desktopMQ = window.matchMedia('(min-width: 641px)');
+
     function init() {
       const pill = document.getElementById('nav-pill');
       if (!pill) return;
+      if (!desktopMQ.matches) return;
       try {
         const rect = pill.getBoundingClientRect();
         const w = Math.round(rect.width);
@@ -278,7 +284,23 @@ const isDev = import.meta.env.DEV;
       resizeObserver.observe(pill);
     }
 
-    function start() { init(); observePill(); }
+    function start() {
+      // Skip pill observation on mobile too — when the breakpoint is crossed
+      // upward later, the matchMedia listener below kicks observePill() in.
+      if (!desktopMQ.matches) return;
+      init();
+      observePill();
+    }
+
+    // When the user resizes from mobile → desktop, kick init+observePill in.
+    // Going desktop → mobile, init() bails early; the ResizeObserver keeps
+    // running but the bail is cheap.
+    desktopMQ.addEventListener('change', (e) => {
+      if (e.matches) {
+        init();
+        observePill();
+      }
+    });
 
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', start);
