@@ -362,8 +362,8 @@ const isDev = import.meta.env.DEV;
           <small class="nav-tuner__hint">Brightness of the SVG-rendered rim highlight. Drives the feFuncA slope on the specular layer. 0 = no highlight, 1 = full strength.</small>
         </label>
         <label data-mode="both">
-          <span>Blur Level <output data-out="backdropBlur">7</output>px</span>
-          <input type="range" min="0" max="20" step="0.25" value="7" data-tune="backdropBlur" />
+          <span>Blur Level <output data-out="backdropBlur">4</output>px</span>
+          <input type="range" min="0" max="20" step="0.25" value="4" data-tune="backdropBlur" />
           <small class="nav-tuner__hint">Frosts the backdrop behind the pill. CSS backdrop-filter blur, applied before the SVG lens.</small>
         </label>
         <label data-mode="both">
@@ -388,8 +388,8 @@ const isDev = import.meta.env.DEV;
           <small class="nav-tuner__hint">Refractive index. 1.0 = no refraction (air); 1.5 = standard glass; 2.4 = diamond. Higher = stronger Snell's-law bend. Drives --lg-ior.</small>
         </label>
         <label data-mode="advanced">
-          <span>Uniform Shift <output data-out="uniformShift">0</output>px</span>
-          <input type="range" min="-10" max="10" step="0.5" value="0" data-tune="uniformShift" />
+          <span>Uniform Shift <output data-out="uniformShift">-4.5</output>px</span>
+          <input type="range" min="-10" max="10" step="0.5" value="-4.5" data-tune="uniformShift" />
           <small class="nav-tuner__hint">Apple-style tilted-slab refraction across the whole pill, on top of the rim curl. 0 = pure rim curl; ±5–10 = visible directional drift. Drives --lg-uniform-shift.</small>
         </label>
         <label data-mode="advanced">
@@ -590,12 +590,12 @@ const isDev = import.meta.env.DEV;
             thickness: 80,
             bezel: 20,
             ior: 1.5,
-            uniformShift: 0,
+            uniformShift: -4.5,
             // SVG-side knobs — direct attribute set
             internalSat: 4,
             specStrength: 0.4,
             // CSS-side knobs — override style
-            backdropBlur: 7,
+            backdropBlur: 4,
             saturate: 100,
             glassBg: 0.06,
             progBlur: 0.5,

@@ -38,7 +38,7 @@ body {
   --lg-thickness: 80;
   --lg-bezel: 20;
   --lg-ior: 1.5;
-  --lg-uniform-shift: 0;
+  --lg-uniform-shift: -4.5;
 }
 
 html.dark {
@@ -113,8 +113,8 @@ html.dark {
        per the Option E mechanism. CSS pre-saturate stays at 100% (no-op);
        the tuner's "Backdrop saturate" slider can still push it for an
        extra pre-filter punch if desired. */
-    -webkit-backdrop-filter: blur(7px) saturate(100%) url(#liquid-glass-distort);
-    backdrop-filter: blur(7px) saturate(100%) url(#liquid-glass-distort);
+    -webkit-backdrop-filter: blur(4px) saturate(100%) url(#liquid-glass-distort);
+    backdrop-filter: blur(4px) saturate(100%) url(#liquid-glass-distort);
     box-shadow:
       inset 0 0 12px -3px rgba(255, 255, 255, 0.60),  /* soft inner glow */
       0 18px 30px -10px rgba(0, 0, 0, 0.35);           /* lifted drop shadow */
