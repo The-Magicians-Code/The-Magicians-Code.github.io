@@ -54,7 +54,10 @@ function buildPanel(target: HTMLElement): HTMLElement {
 
   const head = document.createElement('header');
   head.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-weight:600;';
-  head.textContent = 'Liquid Glass Tuner';
+
+  const title = document.createElement('span');
+  title.textContent = 'Liquid Glass Tuner';
+  head.appendChild(title);
 
   const closeBtn = document.createElement('button');
   closeBtn.type = 'button';
@@ -87,6 +90,7 @@ function buildPanel(target: HTMLElement): HTMLElement {
     input.max = String(slider.max);
     input.step = String(slider.step);
     input.value = String(value);
+    input.dataset.lgVar = slider.cssVar;
     input.style.cssText = 'width:100%;';
     input.addEventListener('input', () => {
       const v = parseFloat(input.value);
@@ -111,9 +115,11 @@ function buildPanel(target: HTMLElement): HTMLElement {
     }
     window.__lg?.refresh?.(target);
     // Re-read defaults and update slider positions
-    panel.querySelectorAll<HTMLInputElement>('input[type="range"]').forEach((input, i) => {
-      const slider = SLIDERS[i];
-      const v = readInitial(target, slider.cssVar);
+    panel.querySelectorAll<HTMLInputElement>('input[type="range"]').forEach((input) => {
+      const slider = SLIDERS.find((s) => s.cssVar === input.dataset.lgVar);
+      if (!slider) return;
+      const raw = readInitial(target, slider.cssVar);
+      const v = Number.isFinite(raw) ? raw : (slider.min + slider.max) / 2;
       input.value = String(v);
       const out = input.parentElement?.querySelector('output');
       if (out) out.textContent = slider.fmt(v);
