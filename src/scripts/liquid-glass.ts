@@ -133,6 +133,7 @@ function generateDisplacementMap(
       const sampleIdx = Math.min((t * samples) | 0, samples - 1);
       const disp = profile[sampleIdx] || 0;
       const dirX = x / dist;
+      if (dirX === 0) continue;
       const dirY = y / dist;
       const dX = (-dirX * disp) / maxDisp;
       const dY = (-dirY * disp) / maxDisp;
