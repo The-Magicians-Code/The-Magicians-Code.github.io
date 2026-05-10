@@ -102,8 +102,8 @@ const isDev = import.meta.env.DEV;
           <small class="nav-tuner__hint">Refractive index. 1.0 = no refraction (air); 1.5 = standard glass; 2.4 = diamond. Higher = stronger Snell's-law bend. Drives --lg-ior.</small>
         </label>
         <label data-mode="advanced">
-          <span>Uniform Shift <output data-out="uniformShift">-4.5</output>px</span>
-          <input type="range" min="-10" max="10" step="0.5" value="-4.5" data-tune="uniformShift" />
+          <span>Uniform Shift <output data-out="uniformShift">0</output>px</span>
+          <input type="range" min="-10" max="10" step="0.5" value="0" data-tune="uniformShift" />
           <small class="nav-tuner__hint">Apple-style tilted-slab refraction across the whole pill, on top of the rim curl. 0 = pure rim curl; ±5–10 = visible directional drift. Drives --lg-uniform-shift.</small>
         </label>
         <label data-mode="advanced">
@@ -307,7 +307,7 @@ const isDev = import.meta.env.DEV;
             thickness: 80,
             bezel: 20,
             ior: 1.5,
-            uniformShift: -4.5,
+            uniformShift: 0,
             // SVG-side knobs — direct attribute set
             internalSat: 4,
             specStrength: 0.4,

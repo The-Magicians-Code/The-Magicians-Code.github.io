@@ -326,7 +326,7 @@ function initElement(el: Element): void {
   const thickness = readCssNumber(htmlEl, '--lg-thickness', 80);
   const bezelWidth = readCssNumber(htmlEl, '--lg-bezel', 20);
   const ior = readCssNumber(htmlEl, '--lg-ior', 1.5);
-  const uniformShift = readCssNumber(htmlEl, '--lg-uniform-shift', -4.5);
+  const uniformShift = readCssNumber(htmlEl, '--lg-uniform-shift', 0);
   const blur = readCssNumber(htmlEl, '--lg-blur', 4);
   const saturate = readCssNumber(htmlEl, '--lg-saturate', 100);
   const svgSaturate = readCssNumber(htmlEl, '--lg-svg-saturate', 4);
