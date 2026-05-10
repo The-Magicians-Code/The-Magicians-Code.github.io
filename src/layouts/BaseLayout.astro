@@ -1,8 +1,4 @@
 ---
-import '@fontsource/inter/400.css';
-import '@fontsource/inter/500.css';
-import '@fontsource/inter/600.css';
-import '@fontsource/inter/700.css';
 import '../styles/global.css';
 import '../styles/liquid-glass.css';
 
@@ -72,6 +68,13 @@ const personSchema = {
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..600&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+
     {includePersonSchema && (
       <script is:inline type="application/ld+json" set:html={JSON.stringify(personSchema)} />
     )}
@@ -112,7 +115,7 @@ const personSchema = {
       import '../scripts/liquid-glass';
     </script>
   </head>
-  <body class="bg-gray-50 text-gray-800 leading-relaxed dark:bg-black dark:text-gray-100 pt-28">
+  <body class="pt-28">
     <Nav />
     <MobileMenu />
     <slot />

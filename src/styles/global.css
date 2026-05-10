@@ -3,55 +3,173 @@
 /* ===== Class-based dark mode (Tailwind v4) ===== */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* ===== Theme tokens ===== */
+/* ===== Theme tokens (Tailwind side) ===== */
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system,
+  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system,
     BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
     "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
     "Segoe UI Symbol", "Noto Color Emoji";
+  --font-serif: "Fraunces", Georgia, "Times New Roman", serif;
+  --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", "Courier New", monospace;
 }
 
-/* ===== Base body ===== */
-body {
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-/* ===== Liquid Glass Tokens ===== */
+/* ===== Design tokens =====
+   Editorial direction: warm paper bg, terracotta accent, glass surfaces.
+   Token names that the liquid-glass nav reads (--ink, --ink-dim, --glass-*)
+   are intentionally preserved; only their values change so the nav module
+   inherits the new look without source edits. */
 :root {
-  --glass-bg: rgba(255, 255, 255, 0.28);
-  --glass-brd: rgba(255, 255, 255, 0.45);
-  --glass-inner: inset 0 1px 0 rgba(255, 255, 255, .35);
-  --glass-shadow: 0 8px 24px rgba(0, 0, 0, .18);
-  --ink: #1f2937;
-  --ink-dim: #4b5563;
-  --glow-fade-opaque: rgba(255, 255, 255, 1);
-  --glow-fade-transparent: rgba(255, 255, 255, 0);
-  --glow-alpha: 0.35;
+  --bg: #f6f3ed;
+  --paper: #faf8f3;
+  --ink: #1a1a1c;
+  --ink-dim: #4d4d52;
+  --ink-3: #8e8a82;
+  --rule: rgba(26, 26, 28, 0.12);
+  --accent: oklch(64% 0.18 28);
+  --accent-soft: oklch(64% 0.18 28 / 0.14);
 
+  /* Glass primitive: shared by .card and the nav fallback. */
+  --glass-bg: rgba(255, 252, 246, 0.45);
+  --glass-brd: rgba(255, 255, 255, 0.55);
+  --glass-inner: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  --glass-shadow: 0 16px 40px -16px rgba(26, 26, 28, 0.18);
+
+  --radius-card: 14px;
+  --pad-card: 28px;
+
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 html.dark {
-  --glass-bg: rgba(23, 23, 23, 0.42);
-  --glass-brd: rgba(255, 255, 255, 0.12);
-  --glass-inner: inset 0 1px 0 rgba(255, 255, 255, .07);
-  --glass-shadow: 0 10px 28px rgba(0, 0, 0, .6);
-  --ink: #f5f5f5;
-  --ink-dim: #a3a3a3;
-  --glow-fade-opaque: rgba(0, 0, 0, 1);
-  --glow-fade-transparent: rgba(0, 0, 0, 0);
-  --glow-alpha: 0.40;
+  --bg: #0a0a0d;
+  --paper: #14141a;
+  --ink: #f0f0f5;
+  --ink-dim: #a8a8b3;
+  --ink-3: #5c5c68;
+  --rule: rgba(255, 255, 255, 0.10);
+  --accent: oklch(72% 0.16 28);
+  --accent-soft: oklch(72% 0.16 28 / 0.18);
+
+  --glass-bg: rgba(255, 255, 255, 0.04);
+  --glass-brd: rgba(255, 255, 255, 0.10);
+  --glass-inner: inset 0 1px 0 rgba(255, 255, 255, 0.10);
+  --glass-shadow: 0 20px 60px -20px rgba(0, 0, 0, 0.6);
 }
 
-/* ===== Glass Primitive ===== */
+/* ===== Base ===== */
+html {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+}
+
+::selection { background: var(--ink); color: var(--bg); }
+
+/* Quiet linear gradient wash, base → faint accent at the bottom-right corner. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(160deg, transparent 30%, var(--accent-soft) 100%);
+}
+
+/* ===== Typography ===== */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+/* Editorial italic emphasis — accent-tinted */
+em {
+  font-style: italic;
+  color: var(--accent);
+}
+
+code, kbd, pre, samp {
+  font-family: var(--font-mono);
+}
+
+/* ===== Glass primitive (used by .card and nav fallback) ===== */
 .glass {
   background: var(--glass-bg);
-  -webkit-backdrop-filter: blur(18px) saturate(140%);
-  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  backdrop-filter: blur(20px) saturate(140%);
   box-shadow: var(--glass-inner), var(--glass-shadow);
   border: 1px solid var(--glass-brd);
+}
+
+/* ===== Card primitive ===== */
+.card {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  backdrop-filter: blur(20px) saturate(140%);
+  border: 1px solid var(--glass-brd);
+  box-shadow: var(--glass-inner), var(--glass-shadow);
+  border-radius: var(--radius-card);
+  padding: var(--pad-card);
+  transition: transform 220ms var(--ease), box-shadow 220ms var(--ease);
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--glass-inner),
+              0 22px 48px -16px rgba(26, 26, 28, 0.22);
+}
+
+html.dark .card:hover {
+  box-shadow: var(--glass-inner),
+              0 24px 60px -20px rgba(0, 0, 0, 0.7);
+}
+
+/* Accent link */
+.link-accent {
+  color: var(--accent);
+  transition: color 0.2s ease, opacity 0.2s ease;
+}
+.link-accent:hover { opacity: 0.82; }
+
+/* Editorial section eyebrow ("01 · Hero" mono caps) */
+.section-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--ink-3);
+  margin-bottom: 12px;
+}
+
+/* Stack pills (used in Skills & Tools). Lightweight chip — borrows the
+   hairline border and tint from the .card primitive but stays inline. */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-brd);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  backdrop-filter: blur(20px) saturate(140%);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-dim);
+  line-height: 1.2;
 }
 
 /* ===== Nav Layout ===== */
@@ -93,8 +211,8 @@ html.dark {
        saturation is pumped hard so refracted colors read vivid. */
     background: rgba(255, 255, 255, 0.06);
     box-shadow:
-      inset 0 0 12px -3px rgba(255, 255, 255, 0.60),  /* soft inner glow */
-      0 18px 30px -10px rgba(0, 0, 0, 0.35);           /* lifted drop shadow */
+      inset 0 0 12px -3px rgba(255, 255, 255, 0.60),
+      0 18px 30px -10px rgba(0, 0, 0, 0.35);
   }
 
   html.dark #nav-pill {
@@ -177,8 +295,10 @@ html.dark {
 }
 
 .brand-name {
-  font-weight: 600;
+  font-family: var(--font-serif);
+  font-weight: 500;
   font-size: 1.125rem;
+  letter-spacing: -0.01em;
   color: var(--ink);
 }
 
@@ -191,23 +311,6 @@ html.dark {
 
 .brand-text {
   display: inline;
-}
-
-/* Animated rainbow gradient name */
-.name-gradient {
-  background: linear-gradient(to right, #8a2be2, #4169e1, #00ced1, #3cb371, #8a2be2);
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  -webkit-text-fill-color: transparent;
-  display: inline-block;
-  animation: gradient-shift 8s linear infinite;
-}
-
-@keyframes gradient-shift {
-  0%   { background-position: 0% 50%; }
-  100% { background-position: 200% 50%; }
 }
 
 /* ===== Nav Actions ===== */
@@ -312,7 +415,7 @@ html.dark #theme-toggle-button .icon-sun  { display: none; }
   display: block;
   padding: .875rem 1rem;
   border-radius: 12px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--ink);
 }
 
@@ -423,32 +526,4 @@ html.dark #theme-toggle-button .icon-sun  { display: none; }
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-/* ===== Rainbow glow at top ===== */
-body::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 12vh;
-  background: linear-gradient(90deg,
-    rgba(255, 0, 0, var(--glow-alpha)),
-    rgba(255, 140, 0, var(--glow-alpha)),
-    rgba(255, 255, 0, var(--glow-alpha)),
-    rgba(0, 255, 0, var(--glow-alpha)),
-    rgba(0, 207, 255, var(--glow-alpha)),
-    rgba(123, 0, 255, var(--glow-alpha)),
-    rgba(255, 0, 0, var(--glow-alpha)));
-  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%);
-  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%);
-  background-size: 800% 100%;
-  animation: rainbowFlow 15s linear infinite alternate;
-  pointer-events: none;
-}
-
-@keyframes rainbowFlow {
-  from { background-position: 0% 0; }
-  to   { background-position: 100% 0; }
 }

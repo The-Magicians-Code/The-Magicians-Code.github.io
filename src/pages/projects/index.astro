@@ -13,12 +13,13 @@ const projects = (await getCollection('projects'))
   description="Software engineering projects by Tanel Treuberg, including TensorRT-optimised computer vision and embedded controllers."
   canonicalPath="/projects/"
 >
-  <main class="max-w-4xl mx-auto p-6 md:p-10 space-y-8">
-    <header class="text-center section-fade-in pt-6 md:pt-10" style="--delay: 0.1s">
-      <h1 class="text-4xl md:text-5xl font-bold mb-2 dark:text-white">Projects</h1>
+  <main class="projects-page">
+    <header class="projects-header section-fade-in" style="--delay: 0.1s">
+      <div class="section-eyebrow">Index</div>
+      <h1 class="projects-title">Selected <em>work</em>.</h1>
     </header>
     <section class="section-fade-in" style="--delay: 0.2s">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="projects-grid">
         {projects.map((project) => (
           <ProjectCard
             title={project.data.title}
@@ -31,3 +32,33 @@ const projects = (await getCollection('projects'))
     </section>
   </main>
 </BaseLayout>
+
+<style>
+  .projects-page {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+  }
+  @media (min-width: 720px) {
+    .projects-page { padding: 0 40px; }
+  }
+  .projects-header { padding-top: 24px; }
+  .projects-title {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: clamp(2.25rem, 4vw + 1rem, 3.5rem);
+    line-height: 1.05;
+    letter-spacing: -0.015em;
+  }
+  .projects-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  @media (min-width: 720px) {
+    .projects-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>

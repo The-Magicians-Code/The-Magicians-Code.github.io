@@ -1,9 +1,28 @@
 ---
 ---
 
-<header class="text-center section-fade-in pt-6 md:pt-10" style="--delay: 0.1s">
-  <h1 class="text-4xl md:text-5xl font-bold mb-2 name-gradient">Tanel</h1>
-  <p class="text-xl md:text-2xl text-gray-600 dark:text-neutral-400">
-    Software engineer, with data driven results.
-  </p>
+<header class="hero section-fade-in pt-6 md:pt-10" style="--delay: 0.1s">
+  <div class="section-eyebrow">01 · Hero</div>
+  <h1 class="hero-headline">Tanel <em>Treuberg</em></h1>
+  <p class="hero-sub">Software engineer working across backend, infrastructure, and applied ML.</p>
 </header>
+
+<style>
+  .hero {
+    padding-bottom: 8px;
+  }
+  .hero-headline {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: clamp(2.5rem, 5vw + 1rem, 4.5rem);
+    line-height: 1.04;
+    letter-spacing: -0.015em;
+    margin-bottom: 18px;
+  }
+  .hero-sub {
+    font-size: clamp(1rem, 0.7vw + 0.9rem, 1.25rem);
+    color: var(--ink-dim);
+    max-width: 540px;
+    line-height: 1.55;
+  }
+</style>

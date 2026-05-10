@@ -9,11 +9,9 @@ const projects = (await getCollection('projects'))
 ---
 
 <section id="projects" class="section-fade-in" style="--delay: 0.2s">
-  <h2 class="text-2xl md:text-3xl font-semibold mb-6 flex items-center dark:text-white">
-    <Icon name="lucide:folder-git-2" class="inline-block w-6 h-6 mr-3 text-blue-600 dark:text-blue-400" aria-hidden="true" />
-    Projects
-  </h2>
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+  <div class="section-eyebrow">03 · Selected work</div>
+  <h2 class="section-title">Projects <em>worth</em> showing.</h2>
+  <div class="projects-grid">
     {projects.map((project) => (
       <ProjectCard
         title={project.data.title}
@@ -22,17 +20,58 @@ const projects = (await getCollection('projects'))
         slug={project.id}
       />
     ))}
-    <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-300 md:col-span-2 text-center dark:bg-neutral-800 dark:border-neutral-700">
-      <a
-        href="https://github.com/The-Magicians-Code/"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="text-gray-700 hover:text-black dark:text-neutral-300 dark:hover:text-white font-medium inline-flex items-center"
-        aria-label="View all projects on GitHub"
-      >
-        <Icon name="lucide:github" class="inline-block w-5 h-5 mr-2" aria-hidden="true" />
-        See all projects on GitHub
-      </a>
-    </div>
+    <a
+      href="https://github.com/The-Magicians-Code/"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="card all-projects"
+      aria-label="View all projects on GitHub"
+    >
+      <Icon name="lucide:github" class="w-5 h-5" aria-hidden="true" />
+      <span>See all projects on GitHub</span>
+      <Icon name="lucide:arrow-up-right" class="w-4 h-4 trail" aria-hidden="true" />
+    </a>
   </div>
 </section>
+
+<style>
+  .section-title {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: clamp(1.75rem, 1.5vw + 1.25rem, 2.5rem);
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    margin-bottom: 24px;
+  }
+  .projects-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  @media (min-width: 720px) {
+    .projects-grid { grid-template-columns: 1fr 1fr; }
+  }
+
+  .all-projects {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: var(--ink-dim);
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    letter-spacing: 0.04em;
+    text-decoration: none;
+    transition: color 0.2s ease, transform 220ms var(--ease), box-shadow 220ms var(--ease);
+  }
+  .all-projects:hover {
+    color: var(--ink);
+  }
+  .all-projects .trail {
+    transition: transform 0.2s ease;
+  }
+  .all-projects:hover .trail {
+    transform: translate(2px, -2px);
+  }
+</style>
