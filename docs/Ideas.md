@@ -18,6 +18,13 @@
 - [CV](https://www.overleaf.com)
 - https://www.agentation.com
 
+### Glass
+- https://themagicianscode.dev/prototypes/liquid-glass-pill/
+- https://kube.io/blog/liquid-glass-css-svg/
+
+## Prompting
+- https://thariqs.github.io/html-effectiveness/
+
 ### Extras to think about
 - Claude playing radio on schedule?
 - [Weekly survival guide](https://www.reddit.com/r/ClaudeAI/wiki/survivalguideweekly/)
