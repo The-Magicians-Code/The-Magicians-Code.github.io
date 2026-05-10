@@ -18,6 +18,9 @@
 - [CV](https://www.overleaf.com)
 - https://www.agentation.com
 
+### Design
+- https://emilkowal.ski/ui/7-practical-animation-tips
+
 ### Glass
 - https://themagicianscode.dev/prototypes/liquid-glass-pill/
 - https://kube.io/blog/liquid-glass-css-svg/
