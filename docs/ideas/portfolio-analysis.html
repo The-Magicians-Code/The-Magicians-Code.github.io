@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design Analysis — themagicianscode.dev</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F6F4F0;
+    --surface: #FFFFFF;
+    --surface2: #EFEFEB;
+    --ink: #1A1916;
+    --ink2: #6B6860;
+    --ink3: #A8A69F;
+    --accent: #C8502A;
+    --accent-light: #F5E8E3;
+    --amber: #B07A1A;
+    --amber-light: #FAF3E0;
+    --green: #2D6A3F;
+    --green-light: #E6F4EB;
+    --border: rgba(26,25,22,0.1);
+    --border-strong: rgba(26,25,22,0.2);
+    --mono: 'DM Mono', monospace;
+    --serif: 'Fraunces', serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    min-height: 100vh;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    background: var(--ink);
+    color: #E8E6E2;
+    padding: 2rem 1.5rem;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sidebar-logo {
+    font-family: var(--serif);
+    font-size: 11px;
+    font-style: italic;
+    color: #6B6860;
+    letter-spacing: 0.02em;
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 0.5px solid rgba(255,255,255,0.1);
+  }
+
+  .sidebar-title {
+    font-family: var(--serif);
+    font-size: 20px;
+    font-weight: 300;
+    line-height: 1.3;
+    margin-bottom: 0.25rem;
+    color: #F0EDE8;
+  }
+
+  .sidebar-sub {
+    font-size: 11px;
+    color: #6B6860;
+    margin-bottom: 2rem;
+  }
+
+  .score-big {
+    background: rgba(255,255,255,0.05);
+    border: 0.5px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 2rem;
+    text-align: center;
+  }
+
+  .score-big-num {
+    font-family: var(--serif);
+    font-size: 48px;
+    font-weight: 300;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: 0.25rem;
+  }
+
+  .score-big-label {
+    font-size: 10px;
+    color: #6B6860;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .nav-section {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #4A4844;
+    margin-bottom: 0.5rem;
+    margin-top: 1.5rem;
+  }
+
+  .nav-section:first-of-type { margin-top: 0; }
+
+  .nav-item {
+    display: block;
+    padding: 7px 10px;
+    font-size: 12px;
+    color: #9B9890;
+    border-radius: 5px;
+    cursor: pointer;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    font-family: var(--mono);
+    transition: background 0.15s, color 0.15s;
+    margin-bottom: 2px;
+  }
+
+  .nav-item:hover { background: rgba(255,255,255,0.06); color: #E8E6E2; }
+  .nav-item.active { background: rgba(200,80,42,0.2); color: #F5A882; }
+
+  .nav-item .dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-right: 8px;
+    background: currentColor;
+    opacity: 0.5;
+    vertical-align: middle;
+  }
+
+  .nav-item.active .dot { opacity: 1; }
+
+  .sidebar-footer {
+    margin-top: auto;
+    padding-top: 1.5rem;
+    border-top: 0.5px solid rgba(255,255,255,0.08);
+    font-size: 10px;
+    color: #4A4844;
+    line-height: 1.6;
+  }
+
+  /* Main content */
+  .main {
+    padding: 2.5rem 3rem;
+    max-width: 800px;
+  }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .panel-header {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 0.5px solid var(--border);
+  }
+
+  .panel-title {
+    font-family: var(--serif);
+    font-size: 28px;
+    font-weight: 300;
+    font-style: italic;
+  }
+
+  .panel-tag {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink3);
+  }
+
+  /* Overview metrics */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 2.5rem;
+  }
+
+  .metric {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+
+  .metric-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink3);
+    margin-bottom: 6px;
+  }
+
+  .metric-value {
+    font-family: var(--serif);
+    font-size: 28px;
+    font-weight: 300;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .metric-sub {
+    font-size: 10px;
+    color: var(--ink3);
+    line-height: 1.4;
+  }
+
+  /* Score rows */
+  .score-table { width: 100%; border-collapse: collapse; }
+
+  .score-row {
+    display: grid;
+    grid-template-columns: 200px 50px 1fr;
+    gap: 16px;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 0.5px solid var(--border);
+  }
+
+  .score-row:last-child { border-bottom: none; }
+
+  .score-dimension { font-size: 12px; color: var(--ink2); }
+
+  .score-num {
+    font-family: var(--serif);
+    font-size: 20px;
+    font-weight: 300;
+    text-align: right;
+  }
+
+  .score-num.danger { color: var(--accent); }
+  .score-num.warn { color: var(--amber); }
+  .score-num.ok { color: var(--green); }
+
+  .bar-track {
+    height: 3px;
+    background: var(--surface2);
+    border-radius: 2px;
+    margin-bottom: 5px;
+  }
+
+  .bar-fill { height: 3px; border-radius: 2px; }
+
+  .score-note { font-size: 11px; color: var(--ink3); }
+
+  /* Tags */
+  .tag {
+    display: inline-block;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-family: var(--mono);
+  }
+
+  .tag-red { background: var(--accent-light); color: var(--accent); }
+  .tag-amber { background: var(--amber-light); color: var(--amber); }
+  .tag-green { background: var(--green-light); color: var(--green); }
+  .tag-gray { background: var(--surface2); color: var(--ink3); }
+
+  /* Section cards */
+  .section-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 10px;
+    margin-bottom: 2rem;
+  }
+
+  .section-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+
+  .section-name {
+    font-size: 12px;
+    font-weight: 500;
+    margin-bottom: 5px;
+    color: var(--ink);
+  }
+
+  .section-desc {
+    font-size: 11px;
+    color: var(--ink3);
+    line-height: 1.5;
+    margin-bottom: 8px;
+  }
+
+  /* Finding rows */
+  .finding {
+    display: flex;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 0.5px solid var(--border);
+  }
+
+  .finding:last-child { border-bottom: none; }
+
+  .finding-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+    margin-top: 1px;
+    width: 24px;
+    text-align: center;
+  }
+
+  .finding-title {
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 4px;
+    color: var(--ink);
+  }
+
+  .finding-body {
+    font-size: 12px;
+    color: var(--ink2);
+    line-height: 1.6;
+  }
+
+  /* Severity indicators */
+  .sev-critical { color: var(--accent); }
+  .sev-warn { color: var(--amber); }
+  .sev-ok { color: var(--green); }
+
+  /* Rec cards */
+  .rec {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+    margin-bottom: 10px;
+  }
+
+  .rec-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .rec-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink);
+  }
+
+  .rec-body {
+    font-size: 12px;
+    color: var(--ink2);
+    line-height: 1.65;
+  }
+
+  /* Brief */
+  .brief-field { margin-bottom: 1.5rem; }
+
+  .brief-q {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink3);
+    margin-bottom: 6px;
+  }
+
+  .brief-a {
+    font-size: 12px;
+    color: var(--ink);
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    line-height: 1.6;
+  }
+
+  .brief-a.empty {
+    color: var(--ink3);
+    font-style: italic;
+  }
+
+  .brief-a.filled {
+    border-left: 2px solid var(--accent);
+    border-radius: 0 6px 6px 0;
+  }
+
+  /* Progress overview */
+  .progress-list { list-style: none; }
+
+  .progress-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 0.5px solid var(--border);
+    font-size: 12px;
+  }
+
+  .progress-item:last-child { border-bottom: none; }
+
+  .check { color: var(--green); }
+  .cross { color: var(--accent); }
+  .dash { color: var(--amber); }
+
+  /* Divider */
+  .divider {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink3);
+    margin: 1.75rem 0 1rem;
+    padding-bottom: 8px;
+    border-bottom: 0.5px solid var(--border);
+  }
+
+  /* Tooltip-style note */
+  .callout {
+    background: var(--accent-light);
+    border-left: 3px solid var(--accent);
+    padding: 10px 14px;
+    border-radius: 0 6px 6px 0;
+    font-size: 12px;
+    color: var(--accent);
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+  }
+
+  @media (max-width: 700px) {
+    .layout { grid-template-columns: 1fr; }
+    .sidebar { position: static; height: auto; }
+    .main { padding: 1.5rem; }
+    .metrics-grid { grid-template-columns: repeat(2,1fr); }
+    .score-row { grid-template-columns: 1fr 40px; }
+    .score-note { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">Design audit report</div>
+    <div class="sidebar-title">themagicianscode<br>.dev</div>
+    <div class="sidebar-sub">Tanel Treuberg — May 2026</div>
+
+    <div class="score-big">
+      <div class="score-big-num">3.1</div>
+      <div class="score-big-label">Overall score / 10</div>
+    </div>
+
+    <div class="nav-section">Report sections</div>
+    <button class="nav-item active" onclick="show('overview', this)"><span class="dot"></span>Overview</button>
+    <button class="nav-item" onclick="show('scores', this)"><span class="dot"></span>Dimension scores</button>
+    <button class="nav-item" onclick="show('sections', this)"><span class="dot"></span>Section breakdown</button>
+    <button class="nav-item" onclick="show('findings', this)"><span class="dot"></span>Findings</button>
+    <button class="nav-item" onclick="show('recs', this)"><span class="dot"></span>Recommendations</button>
+    <button class="nav-item" onclick="show('brief', this)"><span class="dot"></span>Designer brief</button>
+
+    <div class="sidebar-footer">
+      Generated by Claude · Anthropic<br>
+      Source: themagicianscode.dev<br>
+      Audit scope: visual, content, IA, SEO
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- OVERVIEW -->
+    <div id="overview" class="panel active">
+      <div class="panel-header">
+        <div class="panel-title">Overview</div>
+        <div class="panel-tag">Summary</div>
+      </div>
+
+      <div class="metrics-grid">
+        <div class="metric">
+          <div class="metric-label">Score</div>
+          <div class="metric-value" style="color:var(--accent)">3.1<span style="font-size:14px;color:var(--ink3)">/10</span></div>
+          <div class="metric-sub">Full redesign needed</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Sections</div>
+          <div class="metric-value">4</div>
+          <div class="metric-sub">Hero · Projects · Skills · Contact</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Identity signals</div>
+          <div class="metric-value" style="color:var(--accent)">0</div>
+          <div class="metric-sub">No photo, color, or personality</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Stack accuracy</div>
+          <div class="metric-value" style="color:var(--amber)">40%</div>
+          <div class="metric-sub">Listed skills ≠ current work</div>
+        </div>
+      </div>
+
+      <div class="callout">
+        Critical: Skills section lists Python, Docker, BASH, Swift — but current daily work is TypeScript, Astro, Cloudflare Workers, Supabase, and Swift. This is a content problem that must be fixed before design work begins, otherwise the designer is optimizing a false foundation.
+      </div>
+
+      <div class="divider">What exists</div>
+
+      <ul class="progress-list">
+        <li class="progress-item"><span class="check">✓</span> Single-page layout with logical section order</li>
+        <li class="progress-item"><span class="check">✓</span> Mobile viewport meta tag present</li>
+        <li class="progress-item"><span class="check">✓</span> Full OG / Twitter card meta tags</li>
+        <li class="progress-item"><span class="check">✓</span> Robots meta tag (index, follow)</li>
+        <li class="progress-item"><span class="check">✓</span> Canonical URL set correctly</li>
+        <li class="progress-item"><span class="cross">✗</span> No visual identity (color, typography, personality)</li>
+        <li class="progress-item"><span class="cross">✗</span> No photo, avatar, or bio</li>
+        <li class="progress-item"><span class="cross">✗</span> No primary call-to-action</li>
+        <li class="progress-item"><span class="cross">✗</span> No hover states or animations</li>
+        <li class="progress-item"><span class="cross">✗</span> No project screenshots or outcomes</li>
+        <li class="progress-item"><span class="cross">✗</span> No About section</li>
+        <li class="progress-item"><span class="cross">✗</span> No JSON-LD structured data</li>
+        <li class="progress-item"><span class="dash">–</span> Skills content is outdated (40% accurate)</li>
+        <li class="progress-item"><span class="dash">–</span> Only 2 projects shown (recommend 4–6)</li>
+        <li class="progress-item"><span class="dash">–</span> Tagline is generic and has a grammar error</li>
+      </ul>
+    </div>
+
+    <!-- SCORES -->
+    <div id="scores" class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Dimension scores</div>
+        <div class="panel-tag">10 dimensions · 1–10 scale</div>
+      </div>
+
+      <div>
+        <div class="score-row">
+          <div>
+            <div class="score-dimension">Visual identity</div>
+            <div class="bar-track"><div class="bar-fill" style="width:10%;background:var(--accent)"></div></div>
+          </div>
+          <div class="score-num danger">1</div>
+          <div class="score-note">No color palette, no type scale, no personality. Looks like an unstyled template.</div>
+        </div>
+
+        <div class="score-row">
+          <div>
+            <div class="score-dimension">Human presence</div>
+            <div class="bar-track"><div class="bar-fill" style="width:10%;background:var(--accent)"></div></div>
+          </div>
+          <div class="score-num danger">1</div>
+          <div class="score-note">No photo, no avatar, no bio. Reads as a skeleton, not a person.</div>
+        </div>
+
+        <div class="score-row">
+          <div>
+            <div class="score-dimension">Motion and interaction</div>
+            <div class="bar-track"><div class="bar-fill" style="width:10%;background:var(--accent)"></div></div>
+          </div>
+          <div class="score-num danger">1</div>
+          <div class="score-note">No hover states, no scroll animation, no transitions of any kind.</div>
+        </div>
+
+        <div class="score-row">
+          <div>
+            <div class="score-dimension">Typography</div>
+            <div class="bar-track"><div class="bar-fill" style="width:20%;background:var(--accent)"></div></div>
+          </div>
+          <div class="score-num danger">2</div>
+          <div class="score-note">H1 + body text only. No hierarchy, no font personality.</div>
+        </div>
+
+        <div class="score-row">
+          <div>
+            <div class="score-dimension">Conversion / CTA</div>
+            <div class="bar-track"><div class="bar-fill" style="width:20%;background:var(--accent)"></div></div>
+          </div>
+          <div class="score-num danger">2</div>
+          <div class="score-note">No primary CTA anywhere. LinkedIn + GitHub at the bottom don't guide intent.</div>
+        </div>
+
+        <div class="score-row">
+          <div>
+            <div class="score-dimension">Project showcase</div>
+            <div class="bar-track"><div class="bar-fill" style="width:30%;background:var(--accent)"></div></div>
+          </div>
+          <div class="score-num danger">3</div>
+          <div class="score-note">2 projects, one-line descriptions, GitHub link only. No visuals or outcomes.</div>
+        </div>
+
+        <div class="score-row">
+          <div>
+            <div class="score-dimension">Content accuracy</div>
+            <div class="bar-track"><div class="bar-fill" style="width:30%;background:var(--accent)"></div></div>
+          </div>
+          <div class="score-num danger">3</div>
+          <div class="score-note">Stack listed (Python, Docker, BASH) is outdated vs real work (TS, Astro, Cloudflare).</div>
+        </div>
+
+        <div class="score-row">
+          <div>
+            <div class="score-dimension">Information architecture</div>
+            <div class="bar-track"><div class="bar-fill" style="width:50%;background:var(--amber)"></div></div>
+          </div>
+          <div class="score-num warn">5</div>
+          <div class="score-note">Correct sections exist; order needs work. Projects should lead stronger.</div>
+        </div>
+
+        <div class="score-row">
+          <div>
+            <div class="score-dimension">Mobile readiness</div>
+            <div class="bar-track"><div class="bar-fill" style="width:60%;background:var(--amber)"></div></div>
+          </div>
+          <div class="score-num warn">6</div>
+          <div class="score-note">Viewport meta present, single-column layout. Passes basics, untested in depth.</div>
+        </div>
+
+        <div class="score-row">
+          <div>
+            <div class="score-dimension">SEO and meta tags</div>
+            <div class="bar-track"><div class="bar-fill" style="width:60%;background:var(--amber)"></div></div>
+          </div>
+          <div class="score-num warn">6</div>
+          <div class="score-note">Title, OG, Twitter card, robots all correct. Missing JSON-LD Person schema.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTIONS -->
+    <div id="sections" class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Section breakdown</div>
+        <div class="panel-tag">Per-section status</div>
+      </div>
+
+      <div class="section-grid">
+        <div class="section-card">
+          <div class="section-name">Hero</div>
+          <div class="section-desc">Name + tagline. No photo, no CTA, no sub-headline, no visual anchor.</div>
+          <span class="tag tag-red">critical</span>
+        </div>
+        <div class="section-card">
+          <div class="section-name">Navigation</div>
+          <div class="section-desc">Anchor links and mobile hamburger present. No active state, no visual emphasis.</div>
+          <span class="tag tag-amber">minor</span>
+        </div>
+        <div class="section-card">
+          <div class="section-name">Projects</div>
+          <div class="section-desc">2 projects, one-line descriptions, GitHub link only. No screenshots or tech context.</div>
+          <span class="tag tag-red">critical</span>
+        </div>
+        <div class="section-card">
+          <div class="section-name">Skills & tools</div>
+          <div class="section-desc">Flat bullet list. Outdated stack. No grouping, no depth signal.</div>
+          <span class="tag tag-red">critical</span>
+        </div>
+        <div class="section-card">
+          <div class="section-name">Contact</div>
+          <div class="section-desc">LinkedIn + GitHub links only. No email, no form, no CTA copy above the links.</div>
+          <span class="tag tag-amber">needs work</span>
+        </div>
+        <div class="section-card">
+          <div class="section-name">About / bio</div>
+          <div class="section-desc">Entirely absent. No context for who Tanel is, where he's based, or what drives him.</div>
+          <span class="tag tag-red">missing</span>
+        </div>
+        <div class="section-card">
+          <div class="section-name">Footer</div>
+          <div class="section-desc">Copyright line only. Could carry social links, last-updated, or tech stack credit.</div>
+          <span class="tag tag-gray">low priority</span>
+        </div>
+      </div>
+
+      <div class="divider">Hero section — detailed teardown</div>
+
+      <div class="finding">
+        <div class="finding-icon sev-critical">✕</div>
+        <div>
+          <div class="finding-title">No visual anchor</div>
+          <div class="finding-body">A hero is the first frame a visitor sees. Without a photo, illustration, or strong typographic statement, there is nothing to form a memory around. "Tanel" in large type alone doesn't create identity.</div>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="finding-icon sev-critical">✕</div>
+        <div>
+          <div class="finding-title">Tagline is generic and grammatically broken</div>
+          <div class="finding-body">"Software engineer, with data driven results." — the comma before "with" is a comma-splice error. Beyond that, "data driven results" is vague to the point of meaninglessness. Any engineer could write this. It signals nothing about domain, style, or approach.</div>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="finding-icon sev-critical">✕</div>
+        <div>
+          <div class="finding-title">No call-to-action</div>
+          <div class="finding-body">A hero with no CTA is a page with no declared intent. The visitor has nowhere obvious to go. Whether the CTA is "See my work", "Get in touch", or "Download CV" depends on the audience — but something must be there.</div>
+        </div>
+      </div>
+
+      <div class="divider">Recommended section order</div>
+
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;align-items:center;gap:10px;font-size:12px">
+          <span style="width:22px;height:22px;border-radius:50%;background:var(--ink);color:var(--bg);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0">1</span>
+          <span>Hero — name, photo, specific tagline, primary CTA</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:12px">
+          <span style="width:22px;height:22px;border-radius:50%;background:var(--ink);color:var(--bg);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0">2</span>
+          <span>About — 3–4 sentences, human voice, location</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:12px">
+          <span style="width:22px;height:22px;border-radius:50%;background:var(--ink);color:var(--bg);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0">3</span>
+          <span>Projects — 4–6 with screenshots, stack, and outcomes</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:12px">
+          <span style="width:22px;height:22px;border-radius:50%;background:var(--ink);color:var(--bg);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0">4</span>
+          <span>Skills — grouped by domain, anchored to visible project work</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:12px">
+          <span style="width:22px;height:22px;border-radius:50%;background:var(--ink);color:var(--bg);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0">5</span>
+          <span>Contact — clear CTA copy, email or form, social links</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- FINDINGS -->
+    <div id="findings" class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Findings</div>
+        <div class="panel-tag">8 issues · ranked by severity</div>
+      </div>
+
+      <div class="finding">
+        <div class="finding-icon sev-critical">✕</div>
+        <div>
+          <div class="finding-title">Stack is outdated and misleading <span class="tag tag-red" style="margin-left:6px">P0</span></div>
+          <div class="finding-body">Listed: Python, Docker, BASH, Swift. Reality: TypeScript, Astro, Cloudflare Workers, Supabase, GitHub Actions, Swift. A recruiter or client who lands here gets the wrong picture of capabilities. This must be corrected before a designer is briefed — otherwise every content decision is built on a false foundation.</div>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="finding-icon sev-critical">✕</div>
+        <div>
+          <div class="finding-title">Zero visual identity <span class="tag tag-red" style="margin-left:6px">P0</span></div>
+          <div class="finding-body">No defined color palette. No accent color. No typographic personality. No deliberate spatial decisions. The site uses a framework's default render with no design layer applied. The aesthetic could belong to any developer who spun up an Astro project and added content.</div>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="finding-icon sev-critical">✕</div>
+        <div>
+          <div class="finding-title">No human signal <span class="tag tag-red" style="margin-left:6px">P0</span></div>
+          <div class="finding-body">No photo, no avatar, no bio. Research consistently shows that portfolios without a human presence score lower on trust metrics — visitors cannot form a mental model of who they'd be working with. A face anchors everything else.</div>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="finding-icon sev-critical">✕</div>
+        <div>
+          <div class="finding-title">Projects are underpowered <span class="tag tag-red" style="margin-left:6px">P1</span></div>
+          <div class="finding-body">Two projects shown, each with a one-line description and a GitHub link. No screenshots. No stack context. No problem/outcome framing. The most important section of any developer portfolio — the proof of work — is the site's weakest section. A portfolio with zero project visuals is asking visitors to take everything on faith.</div>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="finding-icon sev-warn">!</div>
+        <div>
+          <div class="finding-title">No interaction design <span class="tag tag-amber" style="margin-left:6px">P1</span></div>
+          <div class="finding-body">No hover states on any interactive element. No scroll-triggered animations. No micro-interactions. For a developer actively marketing infrastructure and frontend skills, a portfolio with zero interaction design is a contradiction — it implies either a lack of care or a lack of capability.</div>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="finding-icon sev-warn">!</div>
+        <div>
+          <div class="finding-title">No defined audience or primary intent <span class="tag tag-amber" style="margin-left:6px">P1</span></div>
+          <div class="finding-body">The site doesn't signal who it's for — a hiring manager, a startup founder, an open-source collaborator, a freelance client. These audiences have different decision criteria and need different emphasis. Without this decision made explicitly, nothing else can be properly optimized.</div>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="finding-icon sev-warn">!</div>
+        <div>
+          <div class="finding-title">IA order is workable but suboptimal <span class="tag tag-amber" style="margin-left:6px">P2</span></div>
+          <div class="finding-body">Current: Hero → Projects → Skills → Contact. Recommended: Hero → About → Projects → Skills → Contact. Skills listed after projects are contextually anchored — a visitor who's just seen what you've built will find the skills section meaningful rather than abstract.</div>
+        </div>
+      </div>
+
+      <div class="finding">
+        <div class="finding-icon sev-ok">✓</div>
+        <div>
+          <div class="finding-title">Meta and SEO are genuinely functional <span class="tag tag-green" style="margin-left:6px">keep</span></div>
+          <div class="finding-body">Title tag, meta description, Open Graph tags, Twitter card, canonical URL, viewport meta, robots — all present and correct. This is real infrastructure that works. The only missing piece is a JSON-LD Person schema block, which is a minor 10-line enhancement.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RECOMMENDATIONS -->
+    <div id="recs" class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Recommendations</div>
+        <div class="panel-tag">Prioritized action list</div>
+      </div>
+
+      <div class="rec">
+        <div class="rec-header">
+          <span class="tag tag-red">P0 — before designer</span>
+          <span class="rec-title">Fix the skills and stack content</span>
+        </div>
+        <div class="rec-body">Replace Python, Docker, BASH with TypeScript, Astro, Cloudflare Workers, Supabase, D1, GitHub Actions. Swift stays. Add categorical grouping: Frontend (Astro, TypeScript, Tailwind) · Backend (Supabase, D1) · Infrastructure (Cloudflare Workers, GitHub Actions) · Mobile (Swift, SwiftUI, AVFoundation). A designer cannot make informed layout decisions for this section without accurate content.</div>
+      </div>
+
+      <div class="rec">
+        <div class="rec-header">
+          <span class="tag tag-red">P0 — before designer</span>
+          <span class="rec-title">Define the primary audience and CTA</span>
+        </div>
+        <div class="rec-body">Answer these before the first design meeting: (1) Who lands here — hiring manager, startup founder, freelance client, open-source collaborator? (2) What action do you want them to take? (3) What do you want them to feel? These three answers determine tone, hierarchy, and every layout decision that follows.</div>
+      </div>
+
+      <div class="rec">
+        <div class="rec-header">
+          <span class="tag tag-red">P1 — visual identity</span>
+          <span class="rec-title">Define a color and type system</span>
+        </div>
+        <div class="rec-body">Pick one accent color that reflects personality — not blue (default) or purple (cliché for tech). Consider something warmer (ochre, rust, deep green) that stands out while feeling deliberate. Pair it with a neutral off-white or warm gray background. For typography: one display typeface with character for headings, one clean mono or sans for body. Two fonts maximum. This single decision transforms the site's perceived quality more than any layout change.</div>
+      </div>
+
+      <div class="rec">
+        <div class="rec-header">
+          <span class="tag tag-red">P1 — hero</span>
+          <span class="rec-title">Add photo and rewrite the tagline</span>
+        </div>
+        <div class="rec-body">A professional photo (or carefully designed illustrated avatar). Rewrite the tagline to be specific: instead of "software engineer with data driven results," try something like "I build fast, reliable systems — Cloudflare edges to iOS apps" or "Full-stack engineer specializing in Astro, Cloudflare Workers, and Swift." Specific beats generic. Accurate beats aspirational.</div>
+      </div>
+
+      <div class="rec">
+        <div class="rec-header">
+          <span class="tag tag-red">P1 — projects</span>
+          <span class="rec-title">Expand each project into a mini case study</span>
+        </div>
+        <div class="rec-body">For each of 4–6 projects: one screenshot or short demo GIF, tech stack badges (Astro / Cloudflare / Supabase / etc.), a two-paragraph problem + solution/outcome block, links to both GitHub and a live demo where available. The yolo-dualdev and Strato_Pi projects are good starting points but the current work (organicflow, crockpot recipe site, iOS video editor) is far more representative of current capability.</div>
+      </div>
+
+      <div class="rec">
+        <div class="rec-header">
+          <span class="tag tag-amber">P2 — new section</span>
+          <span class="rec-title">Add a short About / bio section</span>
+        </div>
+        <div class="rec-body">3–4 sentences. Not a CV summary — a human perspective. Where you're based (Warsaw), what you care about in your work, what makes your approach distinctive. Optional: a brief mention of non-work interests (dance, philosophy) creates memorability. This is what clients and collaborators actually read and remember.</div>
+      </div>
+
+      <div class="rec">
+        <div class="rec-header">
+          <span class="tag tag-amber">P2 — interaction</span>
+          <span class="rec-title">Add intentional hover and scroll states</span>
+        </div>
+        <div class="rec-body">Project cards should have clear hover states (subtle lift, border highlight, or color shift). Section entrances can fade-in on scroll (Intersection Observer, simple CSS). Navigation links should show active state as the user scrolls. Contact link should have a distinct hover treatment. These are table stakes for a developer portfolio in 2026 and should cost the designer nothing to spec.</div>
+      </div>
+
+      <div class="rec">
+        <div class="rec-header">
+          <span class="tag tag-gray">P3 — SEO enhancement</span>
+          <span class="rec-title">Add JSON-LD Person structured data</span>
+        </div>
+        <div class="rec-body">A small script block in the head helps search engines understand the page represents a specific person. Include: name, url, jobTitle, sameAs (LinkedIn, GitHub). Takes 10 minutes to add to the Astro layout and provides meaningful semantic signal to crawlers. The existing OG/meta work is good — this completes it.</div>
+      </div>
+    </div>
+
+    <!-- BRIEF -->
+    <div id="brief" class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Designer brief</div>
+        <div class="panel-tag">Ready-to-hand-off template</div>
+      </div>
+
+      <div class="callout">
+        Items marked in orange are open — fill them in before sending to the designer. Everything else is pre-populated from the audit.
+      </div>
+
+      <div class="brief-field">
+        <div class="brief-q">Project type</div>
+        <div class="brief-a filled">Personal portfolio website — single-page scroll, developer context. Astro on Cloudflare Workers. Designer delivers Figma; implementation in Astro + Tailwind.</div>
+      </div>
+
+      <div class="brief-field">
+        <div class="brief-q">Current state summary</div>
+        <div class="brief-a filled">Functional skeleton with correct information architecture but no visual identity, outdated skills content, no bio, no CTA, and no interaction design. Needs full redesign — not a facelift.</div>
+      </div>
+
+      <div class="brief-field">
+        <div class="brief-q">Primary audience — open item</div>
+        <div class="brief-a empty">Who should this site speak to? Options: hiring managers at product companies / startup founders looking for a technical partner / freelance clients / open-source collaborators. One primary audience only — others are secondary.</div>
+      </div>
+
+      <div class="brief-field">
+        <div class="brief-q">Tone direction — open item</div>
+        <div class="brief-a empty">Two adjectives describing the feel: e.g. "precise and warm" / "bold and minimal" / "technical but approachable" / "serious but human." This drives every color, font, and copy decision.</div>
+      </div>
+
+      <div class="brief-field">
+        <div class="brief-q">Reference sites — open item</div>
+        <div class="brief-a empty">2–3 sites whose visual feel resonates. Doesn't need to be developer portfolios — any website, magazine, or product whose aesthetic you admire. This is faster and more accurate than describing the look in words.</div>
+      </div>
+
+      <div class="brief-field">
+        <div class="brief-q">The one sentence — open item</div>
+        <div class="brief-a empty">"After visiting this site, I should feel that Tanel is ___." Fill this in. It becomes the brief's north star and the test every design decision gets measured against.</div>
+      </div>
+
+      <div class="brief-field">
+        <div class="brief-q">Sections to include</div>
+        <div class="brief-a filled">Navigation · Hero (photo + tagline + CTA) · About / bio · Projects (4–6 with screenshots) · Skills and tools (grouped) · Contact · Footer</div>
+      </div>
+
+      <div class="brief-field">
+        <div class="brief-q">Corrected stack to show</div>
+        <div class="brief-a filled">TypeScript · Astro · Cloudflare Workers · Supabase · D1 · Swift / SwiftUI · GitHub Actions · Docker · Python — grouped by: Frontend · Backend · Infrastructure · Mobile</div>
+      </div>
+
+      <div class="brief-field">
+        <div class="brief-q">Technical constraints for the designer</div>
+        <div class="brief-a filled">Must support dark mode · Mobile-first (most traffic likely mobile) · No autoplay video or audio · Fast initial load (target < 1s on Cloudflare edge) · WCAG AA accessible · No cookie banners or consent popups · Deliver in Figma with component variants for hover/active states</div>
+      </div>
+
+      <div class="brief-field">
+        <div class="brief-q">Must-not-haves</div>
+        <div class="brief-a filled">No generic purple-gradient-on-white aesthetic · No hero background video · No typewriter effects · No "I am a [spinning text]" animations · No infinite scroll or heavy JS on the landing shell</div>
+      </div>
+
+      <div class="brief-field">
+        <div class="brief-q">Deliverables expected from designer</div>
+        <div class="brief-a filled">Figma file with: (1) desktop + mobile frames for all sections, (2) component library with all interactive states (default, hover, active, focus), (3) color system and type scale documented, (4) a brief design rationale note (1 paragraph — why these choices).</div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+function show(id, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+</script>
+
+</body>
+</html>
