@@ -20,6 +20,9 @@
 
 ### Design
 - https://emilkowal.ski/ui/7-practical-animation-tips
+- https://pixelwrld.co
+- https://godly.website/website/roman-tesliuk-947
+- https://mchiu.co.uk
 
 ### Glass
 - https://themagicianscode.dev/prototypes/liquid-glass-pill/

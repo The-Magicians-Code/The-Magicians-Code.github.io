@@ -46,6 +46,23 @@ const isDev = import.meta.env.DEV;
   </div>
 </nav>
 
+<script>
+  // When the Home brand is clicked AND we're already on the home page,
+  // scroll to top instead of triggering a full reload. Other pages keep
+  // the normal navigation behavior.
+  const brand = document.querySelector<HTMLAnchorElement>('#site-nav .brand-pill');
+  brand?.addEventListener('click', (e) => {
+    const onHome = window.location.pathname === '/' || window.location.pathname === '/index.html';
+    if (!onHome) return;
+    e.preventDefault();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Drop any anchor hash so the URL stays clean.
+    if (window.location.hash) {
+      history.replaceState(null, '', window.location.pathname);
+    }
+  });
+</script>
+
 {isDev && (
   <Fragment>
     <div class="nav-progressive-blur" aria-hidden="true"></div>

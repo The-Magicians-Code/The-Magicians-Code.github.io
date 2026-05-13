@@ -137,6 +137,29 @@ html.dark .card:hover {
               0 24px 60px -20px rgba(0, 0, 0, 0.7);
 }
 
+/* ===== Bento primitive (solid surface, sibling of .card glass) =====
+   Use when a section wants a confident card on the page rather than a
+   translucent overlay. Bigger radius, solid paper bg, hairline rule.
+   No backdrop-filter — saves paint cost on grids of cards. */
+.bento {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 20px;
+  padding: 24px;
+  transition:
+    transform 220ms var(--ease),
+    box-shadow 220ms var(--ease),
+    border-color 220ms var(--ease);
+}
+.bento:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent-soft);
+  box-shadow: 0 16px 40px -16px rgba(26, 26, 28, 0.10);
+}
+html.dark .bento:hover {
+  box-shadow: 0 22px 56px -20px rgba(0, 0, 0, 0.55);
+}
+
 /* Accent link */
 .link-accent {
   color: var(--accent);
