@@ -68,10 +68,10 @@ const isDev = import.meta.env.DEV;
   <Fragment>
     <div class="nav-progressive-blur" aria-hidden="true"></div>
 
-    <aside id="nav-tuner-panel" class="nav-tuner mode-simple" aria-label="Liquid glass tuner">
+    <aside id="nav-tuner-panel" class="nav-tuner mode-simple collapsed" aria-label="Liquid glass tuner">
       <header class="nav-tuner__head">
         <span>Nav glass tuner</span>
-        <button type="button" id="nav-tuner-toggle" aria-label="Collapse tuner">−</button>
+        <button type="button" id="nav-tuner-toggle" aria-label="Expand tuner">+</button>
       </header>
       <div class="nav-tuner__body">
         <div class="nav-tuner__mode-toggle" role="tablist" aria-label="Tuner mode">
@@ -454,8 +454,9 @@ const isDev = import.meta.env.DEV;
           });
 
           document.getElementById('nav-tuner-toggle').addEventListener('click', (ev) => {
-            panel.classList.toggle('collapsed');
-            ev.target.textContent = panel.classList.contains('collapsed') ? '+' : '−';
+            const collapsed = panel.classList.toggle('collapsed');
+            ev.target.textContent = collapsed ? '+' : '−';
+            ev.target.setAttribute('aria-label', collapsed ? 'Expand tuner' : 'Collapse tuner');
           });
 
           pushCssVars();
