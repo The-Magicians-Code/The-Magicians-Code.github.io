@@ -38,10 +38,21 @@
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html {
-    /* Always reserve scrollbar space so locking body scroll on case-study
-       open doesn't shift the grid right by the scrollbar's width. */
-    scrollbar-gutter: stable;
+    /* Style the scrollbar so it blends into the page bg with just a subtle
+       ink thumb. No `scrollbar-gutter` here — we compensate for the
+       scrollbar via body padding in JS when locking scroll, so the page
+       doesn't reserve gutter space when not needed. */
+    scrollbar-color: rgba(26, 26, 28, 0.22) transparent;
   }
+  ::-webkit-scrollbar { width: 12px; height: 12px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background-color: rgba(26, 26, 28, 0.22);
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover { background-color: rgba(26, 26, 28, 0.35); }
   html, body {
     background: var(--bg);
     color: var(--ink);
@@ -589,6 +600,29 @@
 
   let openState = null;
 
+  /* Lock body scroll without causing the page to shift right when the
+     scrollbar disappears. Measure the scrollbar width via the difference
+     between window.innerWidth and the document's clientWidth, then ADD
+     that to the body's current computed paddingRight — replacing the
+     value would overwrite the body's own CSS padding and cause its own
+     shift. On unlock, restore whatever inline value was there before. */
+  function lockBodyScroll() {
+    const sbw = window.innerWidth - document.documentElement.clientWidth;
+    if (sbw > 0) {
+      const current = parseFloat(getComputedStyle(document.body).paddingRight) || 0;
+      document.body.dataset.prevPaddingRight = document.body.style.paddingRight || '';
+      document.body.style.paddingRight = `${current + sbw}px`;
+    }
+    document.body.classList.add('cs-open');
+  }
+  function unlockBodyScroll() {
+    document.body.classList.remove('cs-open');
+    if ('prevPaddingRight' in document.body.dataset) {
+      document.body.style.paddingRight = document.body.dataset.prevPaddingRight;
+      delete document.body.dataset.prevPaddingRight;
+    }
+  }
+
   function openCaseStudy(card) {
     if (openState) return;
     const rect = card.getBoundingClientRect();
@@ -642,7 +676,7 @@
 
     document.body.appendChild(clone);
     card.classList.add('cs-card-ghost');
-    document.body.classList.add('cs-open');
+    lockBodyScroll();
 
     void clone.offsetHeight;
     requestAnimationFrame(() => {
@@ -683,7 +717,7 @@
       requestAnimationFrame(() => {
         clone.remove();
         backdrop.remove();
-        document.body.classList.remove('cs-open');
+        unlockBodyScroll();
         openState = null;
       });
     }, 520);
