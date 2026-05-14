@@ -37,6 +37,11 @@
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  html {
+    /* Always reserve scrollbar space so locking body scroll on case-study
+       open doesn't shift the grid right by the scrollbar's width. */
+    scrollbar-gutter: stable;
+  }
   html, body {
     background: var(--bg);
     color: var(--ink);
