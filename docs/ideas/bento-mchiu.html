@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bento — mchiu-inspired (editorial palette)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,400&family=Geist+Mono:wght@400;500&family=Geist:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --font-serif: 'Fraunces', Georgia, serif;
+    --font-sans: 'Geist', ui-sans-serif, system-ui, sans-serif;
+    --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+    --bg: #f0ede8;
+    --paper: #faf9f7;
+    --paper-2: #f5f2ec;
+    --ink: #1a1a1c;
+    --ink-dim: #4d4d52;
+    --ink-3: #8e8a82;
+    --rule: rgba(26, 26, 28, 0.10);
+    --rule-soft: rgba(26, 26, 28, 0.05);
+    --accent: oklch(64% 0.18 28);
+
+    --card-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.04),
+      0 1px 2px rgba(0, 0, 0, 0.04),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.02);
+
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-snappy: cubic-bezier(0.9, 0, 0.1, 1);
+
+    --cell: 252px;
+    --gap: 18px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  body { padding: 32px 24px 96px; }
+
+  /* ===== Page header ===== */
+  header.page {
+    max-width: calc(4 * var(--cell) + 3 * var(--gap));
+    margin: 0 auto 28px;
+  }
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px; font-weight: 500; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--ink-3);
+    margin-bottom: 8px;
+  }
+  h1 {
+    font-family: var(--font-serif);
+    font-weight: 400; font-size: clamp(28px, 3vw + 12px, 40px);
+    letter-spacing: -0.01em; line-height: 1.05;
+  }
+  h1 em { font-style: italic; color: var(--accent); }
+  .lede {
+    margin-top: 12px; color: var(--ink-dim);
+    font-size: 15px; max-width: 60ch; line-height: 1.5;
+  }
+
+  /* ===== Filter pill nav (decorative) ===== */
+  .filters {
+    display: flex; justify-content: center;
+    gap: 4px; padding: 4px;
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    margin: 0 auto 36px;
+    width: max-content;
+    box-shadow: var(--card-shadow);
+  }
+  .filters button {
+    appearance: none; border: 0; cursor: pointer;
+    font: 500 13px/1 var(--font-sans);
+    color: var(--ink-dim);
+    padding: 10px 16px;
+    border-radius: 999px;
+    background: transparent;
+    transition: background 200ms var(--ease), color 200ms var(--ease);
+  }
+  .filters button[aria-pressed="true"] {
+    background: var(--ink); color: var(--bg);
+  }
+  .filters button:not([aria-pressed="true"]):hover {
+    background: var(--paper-2); color: var(--ink);
+  }
+
+  /* ===== Bento grid ===== */
+  .bento-grid {
+    display: grid;
+    grid-template-columns: repeat(4, var(--cell));
+    grid-auto-rows: var(--cell);
+    gap: var(--gap);
+    justify-content: center;
+    align-content: start;
+  }
+  @media (max-width: 1140px) { :root { --cell: 220px; } }
+  @media (max-width: 920px) {
+    .bento-grid { grid-template-columns: repeat(2, var(--cell)); }
+    .span-4 { grid-column: span 2 !important; }
+  }
+  @media (max-width: 540px) {
+    :root { --cell: 88vw; }
+    .bento-grid { grid-template-columns: var(--cell); }
+    .span-2, .span-4, .square-2 { grid-column: span 1 !important; }
+    .square-2 { grid-row: span 1 !important; }
+  }
+
+  .span-2   { grid-column: span 2; }
+  .span-4   { grid-column: span 4; }
+  .tall-2   { grid-row: span 2; }
+  .square-2 { grid-column: span 2; grid-row: span 2; }
+
+  /* ===== Card base ===== */
+  .bento-card {
+    position: relative;
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: 32px;
+    box-shadow: var(--card-shadow);
+    overflow: hidden;
+    transition:
+      transform 200ms var(--ease),
+      box-shadow 240ms var(--ease),
+      border-color 240ms var(--ease);
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  .bento-card.in {
+    animation: card-enter 720ms var(--ease) forwards;
+    animation-delay: var(--card-enter-delay, 0s);
+  }
+  @keyframes card-enter {
+    0%   { opacity: 0; transform: translateY(24px); }
+    100% { opacity: 1; transform: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .bento-card { opacity: 1; transform: none; }
+    .bento-card.in { animation: none; }
+  }
+
+  .bento-card[data-clickable="true"] { cursor: pointer; }
+  .bento-card[data-clickable="true"]:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      0 6px 24px rgba(0, 0, 0, 0.06),
+      0 2px 6px rgba(0, 0, 0, 0.04),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    border-color: rgba(26, 26, 28, 0.18);
+  }
+
+  .card-body {
+    padding: 28px; height: 100%;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .card-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 10px; text-transform: uppercase;
+    letter-spacing: 0.10em; color: var(--ink-3);
+  }
+  .card-title {
+    font-family: var(--font-serif);
+    font-weight: 400; font-size: 24px; line-height: 1.15;
+    letter-spacing: -0.01em;
+  }
+  .card-title em { font-style: italic; color: var(--accent); }
+  .card-text { font-size: 14px; line-height: 1.5; color: var(--ink-dim); }
+  .card-spacer { flex: 1; }
+  .card-meta {
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--font-mono); font-size: 11px; color: var(--ink-3);
+  }
+  .card-arrow {
+    width: 28px; height: 28px; border-radius: 999px;
+    border: 1px solid var(--rule);
+    display: grid; place-items: center;
+    transition: transform 200ms var(--ease), background 200ms var(--ease);
+  }
+  .bento-card[data-clickable="true"]:hover .card-arrow {
+    transform: translate(2px, -2px);
+    background: var(--ink); color: var(--bg); border-color: var(--ink);
+  }
+  .card-arrow svg { width: 14px; height: 14px; }
+
+  /* ===== Variants ===== */
+  .bento-card.dark {
+    background: #16140f; color: #f5f1e7;
+    border-color: rgba(245, 241, 231, 0.10);
+  }
+  .bento-card.dark .card-eyebrow,
+  .bento-card.dark .card-text,
+  .bento-card.dark .card-meta { color: #8b8678; }
+  .bento-card.dark .card-arrow { border-color: rgba(245, 241, 231, 0.16); color: #f5f1e7; }
+
+  .about-card .row { display: flex; align-items: center; gap: 18px; }
+  .avatar {
+    width: 72px; height: 72px; border-radius: 999px;
+    background: linear-gradient(140deg, #f5d6c4 0%, #e8a08a 100%);
+    flex-shrink: 0;
+    border: 2px solid var(--paper);
+    box-shadow: inset 0 -2px 0 rgba(0,0,0,0.05);
+  }
+  .about-card .hi {
+    font-family: var(--font-serif);
+    font-size: 24px; font-style: italic; color: var(--accent);
+  }
+
+  .quote-card .card-body { justify-content: center; align-items: center; text-align: center; }
+  .quote-card .qmark {
+    font-family: var(--font-serif); font-size: 64px; line-height: 0.4;
+    color: var(--accent); opacity: 0.6;
+    height: 28px;
+  }
+  .quote-card blockquote {
+    font-family: var(--font-serif);
+    font-size: 18px; font-style: italic; line-height: 1.4; color: var(--ink);
+  }
+  .quote-card blockquote strong {
+    background: linear-gradient(180deg, transparent 62%, oklch(64% 0.18 28 / 0.22) 62%);
+    font-weight: 400;
+  }
+  .quote-card .principle {
+    font-family: var(--font-mono); font-size: 10px;
+    text-transform: uppercase; letter-spacing: 0.10em;
+    color: var(--ink-3); margin-top: 12px;
+  }
+
+  .stack-card .card-body { padding-bottom: 0; }
+  .marquee {
+    position: absolute; left: 0; right: 0; bottom: 24px;
+    overflow: hidden; padding: 8px 0;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+            mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  }
+  .marquee-track {
+    display: flex; gap: 12px; width: max-content;
+    animation: marquee 38s linear infinite;
+  }
+  .bento-card:hover .marquee-track { animation-play-state: paused; }
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+  .stack-tile {
+    flex-shrink: 0; width: 54px; height: 54px;
+    border-radius: 14px;
+    background: var(--bg-color, #333);
+    display: grid; place-items: center;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.18),
+      0 4px 10px -6px rgba(0, 0, 0, 0.4);
+  }
+  .stack-tile img { width: 56%; height: 56%; object-fit: contain; }
+
+  .project-card .cover {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(120% 120% at 0% 0%, oklch(72% 0.16 28 / 0.35), transparent 60%),
+      radial-gradient(120% 120% at 100% 100%, oklch(60% 0.14 250 / 0.35), transparent 60%),
+      #16140f;
+  }
+  .project-card .cover::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(180deg, transparent 30%, rgba(0,0,0,0.55) 100%);
+  }
+  .project-card .card-body { position: relative; z-index: 1; justify-content: flex-end; }
+  .project-card .card-eyebrow { color: rgba(245,241,231,0.7); }
+  .project-card .card-title { color: #f5f1e7; }
+  .project-card .card-text { color: rgba(245,241,231,0.7); }
+  .project-card .card-arrow {
+    border-color: rgba(245,241,231,0.3); color: #f5f1e7;
+    background: rgba(0,0,0,0.25); backdrop-filter: blur(8px);
+  }
+  .project-card[data-clickable="true"]:hover .card-arrow {
+    background: #f5f1e7; color: #16140f; border-color: #f5f1e7;
+  }
+  .project-card.alt .cover {
+    background:
+      radial-gradient(120% 120% at 0% 0%, oklch(72% 0.14 140 / 0.35), transparent 60%),
+      radial-gradient(120% 120% at 100% 100%, oklch(64% 0.18 28 / 0.40), transparent 60%),
+      #1f1c16;
+  }
+
+  .brand-card .card-body { align-items: center; justify-content: center; gap: 14px; }
+  .brand-card .brand-mark {
+    width: 72px; height: 72px; border-radius: 22px;
+    display: grid; place-items: center;
+    background: var(--bg-color);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.18),
+      0 6px 16px -8px rgba(0, 0, 0, 0.3);
+  }
+  .brand-card .brand-mark img { width: 58%; height: 58%; }
+  .brand-card .brand-label {
+    font-family: var(--font-mono); font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3);
+  }
+
+  /* ===== Case-study overlay ===== */
+  .cs-backdrop {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(26, 26, 28, 0.4);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    animation: cs-backdrop-in 320ms ease forwards;
+    cursor: pointer;
+  }
+  .cs-backdrop.closing { animation: cs-backdrop-out 280ms ease forwards; }
+  @keyframes cs-backdrop-in  { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes cs-backdrop-out { from { opacity: 1; } to { opacity: 0; } }
+
+  /* Ghost holds the source tile's grid slot while the clone is open.
+     We hide via visibility (not opacity/animation), so the source card's
+     settled post-entry state is preserved — removing the class restores it
+     instantly with no re-trigger of card-enter and no flicker on close. */
+  .cs-card-ghost { visibility: hidden; pointer-events: none; }
+
+  .cs-clone {
+    position: fixed; z-index: 201;
+    border-radius: 32px;
+    /* Override .bento-card's entry-stagger hidden state — the clone is
+       always meant to be visible the moment it's mounted. */
+    opacity: 1;
+    transform: none;
+    animation: none !important;
+    transition:
+      top    520ms var(--ease-snappy),
+      left   520ms var(--ease-snappy),
+      width  520ms var(--ease-snappy),
+      height 520ms var(--ease-snappy);
+    will-change: top, left, width, height;
+    overflow: hidden;
+    box-shadow:
+      0 30px 60px -20px rgba(0, 0, 0, 0.25),
+      0 12px 24px -8px rgba(0, 0, 0, 0.12);
+  }
+  .cs-content {
+    position: absolute; inset: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 56px 48px 48px;
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 300ms 200ms var(--ease), transform 300ms 200ms var(--ease);
+  }
+  .cs-clone.open .cs-content { opacity: 1; transform: none; }
+  .cs-content h2 {
+    font-family: var(--font-serif);
+    font-weight: 400; font-size: 36px;
+    letter-spacing: -0.01em; line-height: 1.1;
+    margin: 4px 0 8px;
+  }
+  .cs-content .lede { margin-bottom: 24px; max-width: 60ch; }
+  .cs-content p { margin: 14px 0; line-height: 1.55; color: var(--ink-dim); max-width: 64ch; }
+  .cs-clone.dark, .cs-clone.dark .cs-content { color: #f5f1e7; }
+  .cs-clone.dark .cs-content p { color: rgba(245,241,231,0.75); }
+  .cs-clone.dark h2 { color: #f5f1e7; }
+
+  .cs-close {
+    position: absolute; top: 16px; right: 16px;
+    width: 40px; height: 40px;
+    border-radius: 999px;
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    display: grid; place-items: center;
+    cursor: pointer; z-index: 2;
+    box-shadow: var(--card-shadow);
+    transition: transform 200ms var(--ease), background 200ms var(--ease);
+  }
+  .cs-clone.dark .cs-close {
+    background: rgba(245, 241, 231, 0.10);
+    border-color: rgba(245, 241, 231, 0.18);
+    color: #f5f1e7;
+  }
+  .cs-close:hover { transform: rotate(90deg); }
+  .cs-close svg { width: 16px; height: 16px; }
+
+  body.cs-open { overflow: hidden; }
+</style>
+</head>
+<body>
+
+<header class="page">
+  <div class="eyebrow">Docs · Ideas · 2026-05-14</div>
+  <h1>Bento — <em>mchiu-inspired</em>, editorial palette</h1>
+  <p class="lede">
+    Fixed 4 × 252px cell grid, 18px gap, mix of 1×/2×/4× spans. On-scroll <code>card-enter</code> stagger.
+    Click any tile marked "Case study" to see the expand-in-place mechanic.
+  </p>
+</header>
+
+<nav class="filters" aria-label="Bento filter">
+  <button aria-pressed="true">All</button>
+  <button aria-pressed="false">About</button>
+  <button aria-pressed="false">Work</button>
+  <button aria-pressed="false">Side Quests</button>
+</nav>
+
+<section class="bento-grid" id="grid">
+
+  <article class="bento-card about-card span-2">
+    <div class="card-body">
+      <div class="row">
+        <div class="avatar"></div>
+        <div>
+          <div class="hi">Heyyy.</div>
+          <p class="card-text" style="margin-top:4px">
+            I'm Tanel — a CV/ML engineer working at the seam of vision systems, edge inference,
+            and the occasional liquid-glass UI experiment.
+          </p>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <article class="bento-card brand-card">
+    <div class="card-body">
+      <div class="brand-mark" style="--bg-color:#fff; border:1px solid var(--rule);">
+        <img src="https://cdn.simpleicons.org/gmail" alt="Gmail">
+      </div>
+      <span class="brand-label">Get in touch</span>
+    </div>
+  </article>
+
+  <article class="bento-card brand-card">
+    <div class="card-body">
+      <div class="brand-mark" style="--bg-color:#0d1117">
+        <img src="https://cdn.simpleicons.org/github/white" alt="GitHub">
+      </div>
+      <span class="brand-label">Code</span>
+    </div>
+  </article>
+
+  <article class="bento-card project-card square-2 cs-card" data-clickable="true"
+           data-cs-title="Vision pipeline for edge inference"
+           data-cs-eyebrow="Case study · 2024"
+           data-cs-dark="true"
+           data-cs-body="A real-time CV pipeline running on Jetson AGX, processing 4 camera streams at 30fps with sub-100ms end-to-end latency. Reduced GPU utilization 38% by rewriting the post-processing kernel and switching to ONNX-Runtime with TensorRT EP.|We replaced a stack of OpenCV passes with a single fused CUDA kernel, moved color conversion to the camera ISP, and cached intermediate tensors across frames where motion was below threshold.|The deployment runs on a fleet of 200+ devices and has been in production since Q3 2024.">
+    <div class="cover"></div>
+    <div class="card-body">
+      <div class="card-eyebrow">Case study · 2024</div>
+      <div class="card-title">Vision pipeline for <em>edge inference</em></div>
+      <p class="card-text">Real-time CV on Jetson — 4 streams, 30 fps, &lt;100ms latency.</p>
+      <div class="card-spacer"></div>
+      <div class="card-meta">
+        <span>Open case study</span>
+        <span class="card-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></span>
+      </div>
+    </div>
+  </article>
+
+  <article class="bento-card stack-card square-2">
+    <div class="card-body">
+      <div class="card-eyebrow">04 · Stack</div>
+      <div class="card-title">Tools I <em>actually</em> reach for</div>
+      <p class="card-text">Languages, ML frameworks, infra. Hover to pause.</p>
+    </div>
+    <div class="marquee" aria-hidden="true"><div class="marquee-track" id="stackTrack"></div></div>
+  </article>
+
+  <article class="bento-card quote-card">
+    <div class="card-body">
+      <div class="qmark">"</div>
+      <blockquote>The fix lives in the data, <strong>not the model</strong>.</blockquote>
+      <div class="principle">My engineering principle</div>
+    </div>
+  </article>
+
+  <article class="bento-card project-card alt span-2 cs-card" data-clickable="true"
+           data-cs-title="Liquid-glass nav module"
+           data-cs-eyebrow="Case study · 2026"
+           data-cs-dark="true"
+           data-cs-body="A custom backdrop-filter pipeline that simulates Snell's-law refraction on a navigation pill, with a graceful Safari/Firefox fallback to a mobile-icon-style frosted glass.|Three layers: a pre-paint UA sniff sets a class on html before styled HTML paints, a runtime discovers .liquid-glass elements and rasterizes displacement and specular PNGs via Canvas, and a stylesheet provides the default tokens and Safari fallback.|Read the spec at docs/superpowers/specs/2026-05-08-liquid-glass-module-design.md.">
+    <div class="cover"></div>
+    <div class="card-body">
+      <div class="card-eyebrow">Case study · 2026</div>
+      <div class="card-title">Liquid-glass <em>nav module</em></div>
+      <p class="card-text">CSS + SVG + Canvas refraction with a Safari fallback.</p>
+      <div class="card-spacer"></div>
+      <div class="card-meta">
+        <span>Open case study</span>
+        <span class="card-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></span>
+      </div>
+    </div>
+  </article>
+
+  <article class="bento-card">
+    <div class="card-body">
+      <div class="card-eyebrow">Side quest</div>
+      <div class="card-title">Editorial <em>type rig</em></div>
+      <p class="card-text">Fraunces opsz + Geist Mono, calibrated.</p>
+    </div>
+  </article>
+
+  <article class="bento-card quote-card">
+    <div class="card-body">
+      <div class="qmark">"</div>
+      <blockquote>The simplest pipeline that works <strong>is the spec</strong>.</blockquote>
+      <div class="principle">My delivery principle</div>
+    </div>
+  </article>
+
+</section>
+
+<script>
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  function svgEl(name, attrs) {
+    const el = document.createElementNS(SVG_NS, name);
+    for (const k in attrs) el.setAttribute(k, attrs[k]);
+    return el;
+  }
+  function makeCloseIcon() {
+    const svg = svgEl('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '1.8', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' });
+    const a = svgEl('line', { x1: '6', y1: '6', x2: '18', y2: '18' });
+    const b = svgEl('line', { x1: '18', y1: '6', x2: '6', y2: '18' });
+    svg.appendChild(a); svg.appendChild(b);
+    return svg;
+  }
+
+  /* Tech-stack tile data (reused for the marquee) */
+  const STACK = [
+    { slug:'python',     hex:'3776AB' },
+    { slug:'pytorch',    hex:'EE4C2C' },
+    { slug:'tensorflow', hex:'FF6F00' },
+    { slug:'docker',     hex:'2496ED' },
+    { slug:'kubernetes', hex:'326CE5' },
+    { slug:'postgresql', hex:'4169E1' },
+    { slug:'git',        hex:'F05032' },
+    { slug:'grafana',    hex:'F46800' },
+    { slug:'nvidia',     hex:'76B900' },
+    { slug:'jenkins',    hex:'D24939' },
+    { slug:'opencv',     hex:'5C3EE8' },
+    { slug:'onnx',       hex:'005CED' },
+  ];
+  const track = document.getElementById('stackTrack');
+  [...STACK, ...STACK].forEach(t => {
+    const tile = document.createElement('div');
+    tile.className = 'stack-tile';
+    tile.style.setProperty('--bg-color', `#${t.hex}`);
+    const img = document.createElement('img');
+    img.src = `https://cdn.simpleicons.org/${t.slug}/white`;
+    img.alt = '';
+    img.loading = 'lazy';
+    tile.appendChild(img);
+    track.appendChild(tile);
+  });
+
+  /* Card-enter stagger on scroll */
+  const cards = [...document.querySelectorAll('.bento-card')];
+  cards.forEach((c, i) => {
+    c.style.setProperty('--card-enter-delay', `${Math.min(i, 8) * 0.08}s`);
+  });
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('in');
+        io.unobserve(e.target);
+      }
+    });
+  }, { rootMargin: '0px 0px -10% 0px', threshold: 0.05 });
+  cards.forEach(c => io.observe(c));
+
+  /* Click-to-expand case study */
+  function getViewportRect() {
+    const pad = Math.max(24, Math.min(48, window.innerWidth * 0.05));
+    const maxW = 920;
+    const w = Math.min(window.innerWidth - pad * 2, maxW);
+    const h = Math.min(window.innerHeight - pad * 2, 720);
+    return {
+      left: (window.innerWidth - w) / 2,
+      top:  (window.innerHeight - h) / 2,
+      width: w, height: h,
+    };
+  }
+
+  let openState = null;
+
+  function openCaseStudy(card) {
+    if (openState) return;
+    const rect = card.getBoundingClientRect();
+    const isDark = card.dataset.csDark === 'true';
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'cs-backdrop';
+    document.body.appendChild(backdrop);
+
+    const clone = document.createElement('div');
+    clone.className = 'cs-clone bento-card' + (isDark ? ' dark' : '');
+    clone.style.top = rect.top + 'px';
+    clone.style.left = rect.left + 'px';
+    clone.style.width = rect.width + 'px';
+    clone.style.height = rect.height + 'px';
+    clone.style.background = isDark ? '#16140f' : 'var(--paper)';
+
+    if (card.classList.contains('project-card')) {
+      const srcCover = card.querySelector('.cover');
+      if (srcCover) {
+        const cover = document.createElement('div');
+        cover.className = 'cover';
+        cover.style.cssText = getComputedStyle(srcCover).cssText;
+        clone.appendChild(cover);
+      }
+    }
+
+    const content = document.createElement('div');
+    content.className = 'cs-content';
+    const eyebrow = document.createElement('div');
+    eyebrow.className = 'card-eyebrow';
+    eyebrow.textContent = card.dataset.csEyebrow || '';
+    const h2 = document.createElement('h2');
+    h2.textContent = card.dataset.csTitle || '';
+    content.appendChild(eyebrow);
+    content.appendChild(h2);
+    const paras = (card.dataset.csBody || '').split('|').filter(Boolean);
+    paras.forEach((p, i) => {
+      const el = document.createElement('p');
+      if (i === 0) el.className = 'lede';
+      el.textContent = p;
+      content.appendChild(el);
+    });
+    clone.appendChild(content);
+
+    const close = document.createElement('button');
+    close.className = 'cs-close';
+    close.setAttribute('aria-label', 'Close case study');
+    close.appendChild(makeCloseIcon());
+    clone.appendChild(close);
+
+    document.body.appendChild(clone);
+    card.classList.add('cs-card-ghost');
+    document.body.classList.add('cs-open');
+
+    void clone.offsetHeight;
+    requestAnimationFrame(() => {
+      const vr = getViewportRect();
+      clone.style.top = vr.top + 'px';
+      clone.style.left = vr.left + 'px';
+      clone.style.width = vr.width + 'px';
+      clone.style.height = vr.height + 'px';
+      clone.classList.add('open');
+    });
+
+    openState = { card, clone, backdrop };
+    backdrop.addEventListener('click', closeCaseStudy);
+    close.addEventListener('click', (e) => { e.stopPropagation(); closeCaseStudy(); });
+    document.addEventListener('keydown', escClose);
+  }
+
+  function escClose(e) { if (e.key === 'Escape') closeCaseStudy(); }
+
+  function closeCaseStudy() {
+    if (!openState) return;
+    const { card, clone, backdrop } = openState;
+    // Read the source rect BEFORE doing anything else — and read it from the
+    // ghosted source card, which still occupies its grid slot.
+    const rect = card.getBoundingClientRect();
+    clone.classList.remove('open');
+    clone.style.top = rect.top + 'px';
+    clone.style.left = rect.left + 'px';
+    clone.style.width = rect.width + 'px';
+    clone.style.height = rect.height + 'px';
+    backdrop.classList.add('closing');
+    document.removeEventListener('keydown', escClose);
+    setTimeout(() => {
+      // Restore the source card first, force a paint, then remove the clone —
+      // otherwise both happen on the same frame and there's a 1-frame gap
+      // where neither the clone nor the source card is visible.
+      card.classList.remove('cs-card-ghost');
+      requestAnimationFrame(() => {
+        clone.remove();
+        backdrop.remove();
+        document.body.classList.remove('cs-open');
+        openState = null;
+      });
+    }, 520);
+  }
+
+  document.querySelectorAll('.cs-card[data-clickable="true"]').forEach((c) => {
+    c.addEventListener('click', () => openCaseStudy(c));
+    c.tabIndex = 0;
+    c.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openCaseStudy(c); }
+    });
+  });
+
+  document.querySelectorAll('.filters button').forEach((b) => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('.filters button').forEach(x => x.setAttribute('aria-pressed', 'false'));
+      b.setAttribute('aria-pressed', 'true');
+    });
+  });
+</script>
+
+</body>
+</html>

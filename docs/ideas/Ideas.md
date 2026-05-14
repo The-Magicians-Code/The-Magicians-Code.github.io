@@ -28,6 +28,8 @@
 - https://danielamuntyan.com/
 - https://www.northgarden.com/
 - https://lottiefiles.com/
+- https://yanhladchenko.com/
+- https://appstacks.club/mobile-apps
 
 
 ### Glass
