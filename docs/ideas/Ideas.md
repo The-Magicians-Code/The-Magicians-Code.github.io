@@ -23,6 +23,12 @@
 - https://pixelwrld.co
 - https://godly.website/website/roman-tesliuk-947
 - https://mchiu.co.uk
+- https://ehabhussein.com/
+- https://juanmora.co/
+- https://danielamuntyan.com/
+- https://www.northgarden.com/
+- https://lottiefiles.com/
+
 
 ### Glass
 - https://themagicianscode.dev/prototypes/liquid-glass-pill/
