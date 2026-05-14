@@ -375,6 +375,12 @@
     letter-spacing: -0.01em; line-height: 1.1;
     margin: 4px 0 8px;
   }
+  @media (max-width: 540px) {
+    .cs-content { padding: 48px 22px 32px; }
+    .cs-content h2 { font-size: 26px; line-height: 1.15; }
+    .cs-content .lede { font-size: 14px; margin-bottom: 18px; }
+    .cs-content p { font-size: 14px; margin: 12px 0; }
+  }
   .cs-content .lede { margin-bottom: 24px; max-width: 60ch; }
   .cs-content p { margin: 14px 0; line-height: 1.55; color: var(--ink-dim); max-width: 64ch; }
   .cs-clone.dark, .cs-clone.dark .cs-content { color: #f5f1e7; }
@@ -587,10 +593,12 @@
 
   /* Click-to-expand case study */
   function getViewportRect() {
-    const pad = Math.max(24, Math.min(48, window.innerWidth * 0.05));
+    const isMobile = window.innerWidth < 540;
+    const pad = isMobile ? 16 : Math.max(24, Math.min(48, window.innerWidth * 0.05));
     const maxW = 920;
+    const maxH = isMobile ? window.innerHeight - pad * 2 : 720;
     const w = Math.min(window.innerWidth - pad * 2, maxW);
-    const h = Math.min(window.innerHeight - pad * 2, 720);
+    const h = Math.min(window.innerHeight - pad * 2, maxH);
     return {
       left: (window.innerWidth - w) / 2,
       top:  (window.innerHeight - h) / 2,
