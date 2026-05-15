@@ -13,8 +13,7 @@
 - https://lucide.dev
 - https://animations.dev
 - https://simpleicons.org
-- https://github.com/chenglou/pretext
-- http://chenglou.me/pretext/
+- [Pretext.js](https://pretextjs.dev) for CV — DOM-free text measurement engine; candidate uses: smooth text reflow on Formal↔Interactive mode toggle, jank-free streamed/animated text reveals. [repo](https://github.com/chenglou/pretext) · [demo](http://chenglou.me/pretext/)
 - [CV](https://www.overleaf.com)
 - https://www.agentation.com
 
