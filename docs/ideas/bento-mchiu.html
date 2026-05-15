@@ -190,22 +190,6 @@
   }
   .card-title em { font-style: italic; color: var(--accent); }
   .card-text { font-size: 14px; line-height: 1.5; color: var(--ink-dim); }
-  .card-spacer { flex: 1; }
-  .card-meta {
-    display: flex; align-items: center; gap: 8px;
-    font-family: var(--font-mono); font-size: 11px; color: var(--ink-3);
-  }
-  .card-arrow {
-    width: 28px; height: 28px; border-radius: 999px;
-    border: 1px solid var(--rule);
-    display: grid; place-items: center;
-    transition: transform 200ms var(--ease), background 200ms var(--ease);
-  }
-  .bento-card[data-clickable="true"]:hover .card-arrow {
-    transform: translate(2px, -2px);
-    background: var(--ink); color: var(--bg); border-color: var(--ink);
-  }
-  .card-arrow svg { width: 14px; height: 14px; }
 
   /* ===== Variants ===== */
   .bento-card.dark {
@@ -292,13 +276,6 @@
   .project-card .card-eyebrow { color: rgba(245,241,231,0.7); }
   .project-card .card-title { color: #f5f1e7; }
   .project-card .card-text { color: rgba(245,241,231,0.7); }
-  .project-card .card-arrow {
-    border-color: rgba(245,241,231,0.3); color: #f5f1e7;
-    background: rgba(0,0,0,0.25); backdrop-filter: blur(8px);
-  }
-  .project-card[data-clickable="true"]:hover .card-arrow {
-    background: #f5f1e7; color: #16140f; border-color: #f5f1e7;
-  }
   .project-card.alt .cover {
     background:
       radial-gradient(120% 120% at 0% 0%, oklch(72% 0.14 140 / 0.35), transparent 60%),
@@ -387,6 +364,56 @@
   .cs-clone.dark .cs-content p { color: rgba(245,241,231,0.75); }
   .cs-clone.dark h2 { color: #f5f1e7; }
 
+  /* Hover-revealed expand affordance on case-study cards. Same geometry
+     and styling as .cs-close so the pair reads as a single button that
+     swaps its glyph when the case study opens. */
+  .cs-expand {
+    position: absolute; top: 16px; right: 16px;
+    width: 40px; height: 40px;
+    border-radius: 999px;
+    background: var(--paper);
+    display: grid; place-items: center;
+    z-index: 2;
+    /* Soft outer halo — gives the icon "air" so the scale-up reads as
+       settling-in rather than popping-in. No border: a 1px border would
+       scale alongside the transform (0.8px → 1px) and read as a
+       shimmering rim during the reveal. Mirrors mchiu's .action-icon. */
+    box-shadow: 0 2px 40px rgba(0, 0, 0, 0.10);
+    color: var(--ink);
+    opacity: 0;
+    transform: scale(0.8);
+    pointer-events: none;
+    /* Plain `ease` on the reveal (opacity + transform) — over a 0.2-unit
+       scale travel the soft default curve feels more graceful than the
+       front-loaded easeOutQuint. Keep --ease on the button's own hover
+       background, where the change is small and snappy is right. */
+    transition:
+      opacity 200ms ease,
+      transform 200ms ease,
+      background 200ms var(--ease);
+  }
+  .cs-expand svg { width: 16px; height: 16px; }
+  .project-card .cs-expand {
+    background: rgba(245, 241, 231, 0.10);
+    color: #f5f1e7;
+    box-shadow: 0 2px 40px rgba(0, 0, 0, 0.40);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .bento-card[data-clickable="true"]:hover .cs-expand {
+      opacity: 1; transform: scale(1); pointer-events: auto;
+    }
+  }
+  .bento-card[data-clickable="true"]:focus-visible .cs-expand {
+    opacity: 1; transform: scale(1); pointer-events: auto;
+  }
+  .cs-expand:hover { background: var(--paper-2); }
+  .project-card .cs-expand:hover {
+    background: rgba(245, 241, 231, 0.18);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cs-expand { transform: none; transition: opacity 200ms ease; }
+  }
+
   .cs-close {
     position: absolute; top: 16px; right: 16px;
     width: 40px; height: 40px;
@@ -396,14 +423,18 @@
     display: grid; place-items: center;
     cursor: pointer; z-index: 2;
     box-shadow: var(--card-shadow);
-    transition: transform 200ms var(--ease), background 200ms var(--ease);
+    transition: background 200ms var(--ease), border-color 200ms var(--ease);
   }
   .cs-clone.dark .cs-close {
     background: rgba(245, 241, 231, 0.10);
     border-color: rgba(245, 241, 231, 0.18);
     color: #f5f1e7;
   }
-  .cs-close:hover { transform: rotate(90deg); }
+  .cs-close:hover { background: var(--paper-2); }
+  .cs-clone.dark .cs-close:hover {
+    background: rgba(245, 241, 231, 0.18);
+    border-color: rgba(245, 241, 231, 0.28);
+  }
   .cs-close svg { width: 16px; height: 16px; }
 
   body.cs-open { overflow: hidden; }
@@ -468,15 +499,18 @@
            data-cs-dark="true"
            data-cs-body="A real-time CV pipeline running on Jetson AGX, processing 4 camera streams at 30fps with sub-100ms end-to-end latency. Reduced GPU utilization 38% by rewriting the post-processing kernel and switching to ONNX-Runtime with TensorRT EP.|We replaced a stack of OpenCV passes with a single fused CUDA kernel, moved color conversion to the camera ISP, and cached intermediate tensors across frames where motion was below threshold.|The deployment runs on a fleet of 200+ devices and has been in production since Q3 2024.">
     <div class="cover"></div>
+    <span class="cs-expand" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 3 21 3 21 9"/>
+        <polyline points="9 21 3 21 3 15"/>
+        <line x1="21" y1="3" x2="14" y2="10"/>
+        <line x1="3" y1="21" x2="10" y2="14"/>
+      </svg>
+    </span>
     <div class="card-body">
       <div class="card-eyebrow">Case study · 2024</div>
       <div class="card-title">Vision pipeline for <em>edge inference</em></div>
       <p class="card-text">Real-time CV on Jetson — 4 streams, 30 fps, &lt;100ms latency.</p>
-      <div class="card-spacer"></div>
-      <div class="card-meta">
-        <span>Open case study</span>
-        <span class="card-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></span>
-      </div>
     </div>
   </article>
 
@@ -503,15 +537,18 @@
            data-cs-dark="true"
            data-cs-body="A custom backdrop-filter pipeline that simulates Snell's-law refraction on a navigation pill, with a graceful Safari/Firefox fallback to a mobile-icon-style frosted glass.|Three layers: a pre-paint UA sniff sets a class on html before styled HTML paints, a runtime discovers .liquid-glass elements and rasterizes displacement and specular PNGs via Canvas, and a stylesheet provides the default tokens and Safari fallback.|Read the spec at docs/superpowers/specs/2026-05-08-liquid-glass-module-design.md.">
     <div class="cover"></div>
+    <span class="cs-expand" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 3 21 3 21 9"/>
+        <polyline points="9 21 3 21 3 15"/>
+        <line x1="21" y1="3" x2="14" y2="10"/>
+        <line x1="3" y1="21" x2="10" y2="14"/>
+      </svg>
+    </span>
     <div class="card-body">
       <div class="card-eyebrow">Case study · 2026</div>
       <div class="card-title">Liquid-glass <em>nav module</em></div>
       <p class="card-text">CSS + SVG + Canvas refraction with a Safari fallback.</p>
-      <div class="card-spacer"></div>
-      <div class="card-meta">
-        <span>Open case study</span>
-        <span class="card-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></span>
-      </div>
     </div>
   </article>
 
@@ -541,10 +578,15 @@
     return el;
   }
   function makeCloseIcon() {
+    // "Shrink" glyph — two diagonal arrows pointing inward, mirroring the
+    // panel's morph-back-to-tile animation. (Lucide minimize-2 layout.)
     const svg = svgEl('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '1.8', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' });
-    const a = svgEl('line', { x1: '6', y1: '6', x2: '18', y2: '18' });
-    const b = svgEl('line', { x1: '18', y1: '6', x2: '6', y2: '18' });
-    svg.appendChild(a); svg.appendChild(b);
+    const p1 = svgEl('polyline', { points: '4 14 10 14 10 20' });
+    const p2 = svgEl('polyline', { points: '20 10 14 10 14 4' });
+    const l1 = svgEl('line', { x1: '14', y1: '10', x2: '21', y2: '3' });
+    const l2 = svgEl('line', { x1: '3', y1: '21', x2: '10', y2: '14' });
+    svg.appendChild(p1); svg.appendChild(p2);
+    svg.appendChild(l1); svg.appendChild(l2);
     return svg;
   }
 
