@@ -553,6 +553,58 @@
     transition: opacity 180ms ease;
   }
 
+  /* === Minimal mode: source tile shows only the title ===
+     Eyebrow and summary are hidden at rest (opacity 0 — they still
+     reserve flex space so the title doesn't jump position when they
+     become visible). On expand, they fade in late in the morph, then
+     the body paragraphs cascade. Modal content is horizontally
+     centered; body paragraphs use justified alignment. */
+  .demo-card.minimal-mode .eyebrow,
+  .demo-card.minimal-mode .summary {
+    opacity: 0;
+    transition: opacity 320ms ease;
+  }
+  .demo-card.minimal-mode.is-expanded .eyebrow {
+    opacity: 1;
+    transition-delay: calc(var(--morph-dur) * 0.65);
+  }
+  .demo-card.minimal-mode.is-expanded .summary {
+    opacity: 1;
+    transition-delay: calc(var(--morph-dur) * 0.82);
+  }
+
+  /* Center horizontally + give body paragraphs justified alignment.
+     `text-align-last: center` makes the final line of each paragraph
+     centered (since justify only adjusts non-final lines). */
+  .demo-card.minimal-mode .demo-card-body {
+    text-align: center;
+  }
+  .demo-card.minimal-mode .title {
+    text-align: center;
+    /* Vertically center in the source card. With the eyebrow reserving
+       ~21px above and a 56px title block, the natural layout position is
+       ~24px from body content top; +39px translateY centers the title in
+       the 176px-tall body content area. Transitions to 0 on expand so
+       the title sits at its modal-layout top-of-body position. */
+    transform: translateY(39px);
+    transition: transform var(--morph-dur) cubic-bezier(0.77, 0, 0.175, 1);
+  }
+  .demo-card.minimal-mode.is-expanded .title {
+    transform: translateY(0);
+  }
+  .demo-card.minimal-mode .body-para.appended {
+    text-align: left;
+    max-width: 60ch;
+    margin: 14px auto;
+  }
+  .demo-card.minimal-mode .body-para.appended.in {
+    transition-delay: calc(var(--stagger-idx, 0) * 90ms);
+  }
+
+  /* Note: minimal-mode + pretext-title combined produces a left-aligned
+     title within the centered column (word spans anchor at the title's
+     top-left). A future refinement could compute centered word positions. */
+
   /* === Pretext-style title rendering (no reflow during morph) ===
      The title text is replaced with absolutely-positioned word spans.
      Source and modal layouts are pre-measured via Canvas. Words animate
@@ -682,6 +734,13 @@
         <small>Render the title as absolutely-positioned word spans. Canvas-measured layouts at source and modal widths. Words animate position via transform — browser never reflows text. Requires no-clone mode. Font stays at 24px throughout (no scale-blur).</small>
       </span>
     </label>
+    <label class="toggle-row" style="margin-top: 6px;">
+      <input type="checkbox" id="minimal-toggle">
+      <span class="toggle-label">
+        Minimal tile + centered modal
+        <small>Source card shows only the title; eyebrow + summary are hidden at rest. On expand, eyebrow + summary fade in late in the morph, then body paragraphs cascade. Modal content is horizontally centered; body paragraphs are justified.</small>
+      </span>
+    </label>
 
     <h2>Morph duration</h2>
     <div class="slider-row">
@@ -737,6 +796,7 @@
     staged: false,
     noClone: false,
     pretext: false,
+    minimal: false,
     duration: 520,
   };
 
@@ -749,6 +809,7 @@
   const stagedToggle = document.getElementById('staged-toggle');
   const noCloneToggle = document.getElementById('noclone-toggle');
   const pretextToggle = document.getElementById('pretext-toggle');
+  const minimalToggle = document.getElementById('minimal-toggle');
   const promptEl = document.getElementById('prompt');
   const copyBtn = document.getElementById('copy');
   const modeNote = document.getElementById('modeNote');
@@ -809,6 +870,16 @@
     updatePrompt();
   });
 
+  function rerenderPretextIfActive() {
+    if (!state.pretext || openState) return;
+    const titleEl = card.querySelector('.title');
+    const rect = card.getBoundingClientRect();
+    const vr = getViewportRect();
+    const sourceContentWidth = rect.width - 22 * 2;
+    const modalContentWidth = vr.width - 44 * 2;
+    pretextRenderTitle(titleEl, sourceContentWidth, modalContentWidth, state.minimal);
+  }
+
   pretextToggle.addEventListener('change', e => {
     state.pretext = e.target.checked;
     const titleEl = card.querySelector('.title');
@@ -819,12 +890,25 @@
       const vr = getViewportRect();
       const sourceContentWidth = rect.width - 22 * 2;
       const modalContentWidth = vr.width - 44 * 2;
-      pretextRenderTitle(titleEl, sourceContentWidth, modalContentWidth);
+      pretextRenderTitle(titleEl, sourceContentWidth, modalContentWidth, state.minimal);
       card.classList.add('pretext-title');
     } else {
       pretextRestoreOriginal(titleEl);
       card.classList.remove('pretext-title');
     }
+    refreshNote();
+    updatePrompt();
+  });
+
+  minimalToggle.addEventListener('change', e => {
+    state.minimal = e.target.checked;
+    if (state.minimal) {
+      card.classList.add('minimal-mode');
+    } else {
+      card.classList.remove('minimal-mode');
+    }
+    // Re-render Pretext positions so centering matches the new mode.
+    rerenderPretextIfActive();
     refreshNote();
     updatePrompt();
   });
@@ -1017,23 +1101,47 @@
 
   function pretextLayout(metrics, maxWidth, lineHeight) {
     const positions = [];
+    const lineWidths = []; // width of rendered text on each line (no trailing space)
     let x = 0, line = 0;
-    for (const m of metrics) {
-      if (x > 0 && x + m.width > maxWidth) { line++; x = 0; }
-      positions.push({ word: m.word, x, y: line * lineHeight });
+    for (let i = 0; i < metrics.length; i++) {
+      const m = metrics[i];
+      if (x > 0 && x + m.width > maxWidth) {
+        // Just-finished line — last position was the final word on the prior line
+        lineWidths[line] = positions[positions.length - 1].x + metrics[i - 1].width;
+        line++; x = 0;
+      }
+      positions.push({ word: m.word, x, y: line * lineHeight, line });
       x += m.width + m.spaceW;
     }
-    return positions;
+    // Width of the last line
+    lineWidths[line] = positions[positions.length - 1].x + metrics[metrics.length - 1].width;
+    return { positions, lineWidths };
   }
 
-  function pretextRenderTitle(titleEl, sourceWidth, modalWidth) {
+  // Shift each word's x so its line is horizontally centered in the container.
+  function pretextCenterPositions(positions, lineWidths, containerWidth) {
+    return positions.map(p => {
+      const lineWidth = lineWidths[p.line];
+      const offset = (containerWidth - lineWidth) / 2;
+      return { ...p, x: p.x + offset };
+    });
+  }
+
+  function pretextRenderTitle(titleEl, sourceWidth, modalWidth, centered) {
     const fontSize = 24;
     const fontPlain = `400 ${fontSize}px 'Iowan Old Style', 'Palatino Linotype', Georgia, serif`;
     const fontItalic = `italic 400 ${fontSize}px 'Iowan Old Style', 'Palatino Linotype', Georgia, serif`;
     const lineHeight = fontSize * 1.15;
     const metrics = pretextMeasureWords(TITLE_TEXT, fontPlain, fontItalic);
-    const sourcePositions = pretextLayout(metrics, sourceWidth, lineHeight);
-    const modalPositions = pretextLayout(metrics, modalWidth, lineHeight);
+    const sourceLayout = pretextLayout(metrics, sourceWidth, lineHeight);
+    const modalLayout = pretextLayout(metrics, modalWidth, lineHeight);
+
+    const sourcePositions = centered
+      ? pretextCenterPositions(sourceLayout.positions, sourceLayout.lineWidths, sourceWidth)
+      : sourceLayout.positions;
+    const modalPositions = centered
+      ? pretextCenterPositions(modalLayout.positions, modalLayout.lineWidths, modalWidth)
+      : modalLayout.positions;
 
     titleEl.replaceChildren();
     sourcePositions.forEach((sp, i) => {
@@ -1119,7 +1227,10 @@
         const fontItalic = `italic 400 ${fontSize}px 'Iowan Old Style', 'Palatino Linotype', Georgia, serif`;
         const lineHeight = fontSize * 1.15;
         const metrics = pretextMeasureWords(TITLE_TEXT, fontPlain, fontItalic);
-        const modalPositions = pretextLayout(metrics, modalContentWidth, lineHeight);
+        const modalLayout = pretextLayout(metrics, modalContentWidth, lineHeight);
+        const modalPositions = state.minimal
+          ? pretextCenterPositions(modalLayout.positions, modalLayout.lineWidths, modalContentWidth)
+          : modalLayout.positions;
         [...titleEl.querySelectorAll('.word')].forEach((span, i) => {
           span.dataset.mx = modalPositions[i].x.toFixed(2);
           span.dataset.my = modalPositions[i].y;
