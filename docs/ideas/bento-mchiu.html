@@ -315,62 +315,219 @@
   @keyframes cs-backdrop-in  { from { opacity: 0; } to { opacity: 1; } }
   @keyframes cs-backdrop-out { from { opacity: 1; } to { opacity: 0; } }
 
-  /* Ghost holds the source tile's grid slot while the clone is open.
-     We hide via visibility (not opacity/animation), so the source card's
-     settled post-entry state is preserved — removing the class restores it
-     instantly with no re-trigger of card-enter and no flicker on close. */
-  .cs-card-ghost { visibility: hidden; pointer-events: none; }
+  /* ===== No-clone lifecycle =====
+     The source .cs-card itself FLIPs from grid slot to centered modal coords
+     via position:fixed. No clone is created — the same DOM elements animate.
+     Body paragraphs are literally appended on expand and removed on close.
+     See docs/ideas/close-modes.html for the playground that this is ported
+     from. Key bento-specific concerns:
+     - Backdrop sits at z-index:200, lifted card at 201 (matches existing).
+     - Grid placeholder preserves the bento layout while the card is lifted.
+     - card-enter animation must be finished before lift (otherwise its
+       active transform fights our position:fixed values). Handled in JS
+       via Element.getAnimations().finish().
+     - Initial Pretext render is gated on document.fonts.ready since
+       Fraunces loads asynchronously from Google Fonts. */
 
-  .cs-clone {
-    position: fixed; z-index: 201;
-    border-radius: 32px;
-    /* Override .bento-card's entry-stagger hidden state — the clone is
-       always meant to be visible the moment it's mounted. */
-    opacity: 1;
-    transform: none;
-    animation: none !important;
+  /* Placeholder kept invisible — only holds the grid slot. */
+  .cs-card-placeholder { visibility: hidden; pointer-events: none; }
+
+  /* Lifted state: rect-morph transitions. z-index sits above .cs-backdrop (200).
+     Note: we deliberately do NOT override `animation` here. The card-enter
+     animation has already finished (JS calls .finish() on lift), and its
+     `forwards` fill-mode holds opacity:1 + transform:none. Overriding the
+     animation property would force the browser to re-trigger card-enter
+     when .is-expanding is later removed (animation-name diff), causing
+     the card to "pop out and pop in" after the collapse. Just lay the
+     rect-morph transitions on top of the held animation state. */
+  .bento-card.is-expanding {
+    z-index: 201;
     transition:
-      top    520ms var(--ease-snappy),
-      left   520ms var(--ease-snappy),
-      width  520ms var(--ease-snappy),
-      height 520ms var(--ease-snappy);
+      top          var(--morph-dur, 520ms) var(--ease-snappy),
+      left         var(--morph-dur, 520ms) var(--ease-snappy),
+      width        var(--morph-dur, 520ms) var(--ease-snappy),
+      height       var(--morph-dur, 520ms) var(--ease-snappy),
+      box-shadow   var(--morph-dur, 520ms) var(--ease-snappy),
+      border-color var(--morph-dur, 520ms) var(--ease-snappy);
     will-change: top, left, width, height;
-    overflow: hidden;
+  }
+  /* Expanded state: replace the resting tile shadow (which has an inset
+     top white highlight) AND null out the 1px tile border. Both read as
+     a silver hairline along the edges at modal scale. */
+  .bento-card.is-expanded {
     box-shadow:
       0 30px 60px -20px rgba(0, 0, 0, 0.25),
       0 12px 24px -8px rgba(0, 0, 0, 0.12);
+    border-color: transparent;
   }
-  .cs-content {
-    position: absolute; inset: 0;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+  /* Project cards have a .cover (absolute, inset:0) that sits inside the 1px
+     border, exposing the resting cream --paper background as a 1px ring around
+     the cover at modal scale. Override the card's background to match the
+     cover's base color so the ring disappears throughout the open/morph/close
+     lifecycle. Two variants: base + .alt. */
+  .bento-card.project-card.is-expanding,
+  .bento-card.project-card.is-expanded,
+  .bento-card.project-card.is-collapsing {
+    background-color: #16140f;
+  }
+  .bento-card.project-card.alt.is-expanding,
+  .bento-card.project-card.alt.is-expanded,
+  .bento-card.project-card.alt.is-collapsing {
+    background-color: #1f1c16;
+  }
+
+  /* Expanded body layout — generous padding so the appended paragraphs read
+     as an editorial column. Transitions sync with the rect morph. */
+  .bento-card.is-expanding .card-body {
+    transition: padding var(--morph-dur, 520ms) var(--ease-snappy);
+  }
+  .bento-card.is-expanded .card-body {
     padding: 56px 48px 48px;
-    opacity: 0;
-    transform: translateY(12px);
-    /* Subtle back-out on the transform — content pulls slightly past its
-       final position then settles, giving the type a "spring-loaded"
-       landing. Mirrors mchiu's post-morph settle behavior. Opacity stays
-       on --ease since easing curves are invisible on a fade. */
-    transition: opacity 300ms 200ms var(--ease), transform 300ms 200ms cubic-bezier(0.34, 1.1, 0.64, 1);
   }
-  .cs-clone.open .cs-content { opacity: 1; transform: none; }
-  .cs-content h2 {
-    font-family: var(--font-serif);
-    font-weight: 400; font-size: 36px;
-    letter-spacing: -0.01em; line-height: 1.1;
-    margin: 4px 0 8px;
+  /* Project cards rest with content at the bottom (.project-card .card-body
+     has justify-content: flex-end). At modal we want content flowing from
+     the top so appended paragraphs read naturally below the lede. */
+  .bento-card.project-card.is-expanded .card-body {
+    justify-content: flex-start;
   }
   @media (max-width: 540px) {
-    .cs-content { padding: 48px 22px 32px; }
-    .cs-content h2 { font-size: 26px; line-height: 1.15; }
-    .cs-content .lede { font-size: 14px; margin-bottom: 18px; }
-    .cs-content p { font-size: 14px; margin: 12px 0; }
+    .bento-card.is-expanded .card-body { padding: 48px 22px 32px; }
   }
-  .cs-content .lede { margin-bottom: 24px; max-width: 60ch; }
-  .cs-content p { margin: 14px 0; line-height: 1.55; color: var(--ink-dim); max-width: 64ch; }
-  .cs-clone.dark, .cs-clone.dark .cs-content { color: #f5f1e7; }
-  .cs-clone.dark .cs-content p { color: rgba(245,241,231,0.75); }
-  .cs-clone.dark h2 { color: #f5f1e7; }
+
+  /* Body paragraphs appended via JS at modal-open time.
+     Simple opacity fade-in with a per-paragraph stagger. */
+  .bento-card .body-para.appended {
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--ink-dim);
+    margin: 14px 0;
+    max-width: 64ch;
+    opacity: 0;
+    transition: opacity 280ms ease;
+  }
+  .bento-card.project-card .body-para.appended {
+    color: rgba(245, 241, 231, 0.75);
+  }
+  .bento-card .body-para.appended.in {
+    opacity: 1;
+    transition-delay: calc(var(--stagger-idx, 0) * 80ms);
+  }
+  /* Collapse: paragraphs fade out fast, no stagger. */
+  .bento-card.is-collapsing .body-para.appended,
+  .bento-card.is-collapsing .body-para.appended.in {
+    opacity: 0;
+    transition: opacity 180ms ease;
+    transition-delay: 0ms;
+  }
+  @media (max-width: 540px) {
+    .bento-card .body-para.appended { font-size: 14px; margin: 12px 0; }
+  }
+
+  /* === Minimal mode for case-study cards (always-on in the bento) ===
+     Matches the playground's no-clone + pretext + minimal combo: source
+     tile shows only the title (eyebrow + card-text hidden at rest, fade
+     in late in the morph), title is centered horizontally and vertically,
+     body paragraphs cascade in a centered column. */
+
+  /* Hide eyebrow + card-text at rest. They still reserve flex space so
+     the title's natural-flow position doesn't shift when they fade. */
+  .cs-card .card-eyebrow,
+  .cs-card .card-text {
+    opacity: 0;
+    transition: opacity 320ms ease;
+  }
+  .cs-card.is-expanded .card-eyebrow {
+    opacity: 1;
+    transition-delay: calc(var(--morph-dur, 520ms) * 0.65);
+  }
+  .cs-card.is-expanded .card-text {
+    opacity: 1;
+    transition-delay: calc(var(--morph-dur, 520ms) * 0.82);
+  }
+
+  /* Override .project-card's flex-end so content flows from top, then
+     translateY the title to vertical center. Per-card translateY is
+     computed in JS (--cs-title-rest-y) since the cs-cards have different
+     heights (square-2 vs span-2). */
+  .cs-card .card-body {
+    justify-content: flex-start;
+    text-align: center;
+  }
+  .cs-card .card-title {
+    text-align: center;
+    transform: translateY(var(--cs-title-rest-y, 0));
+    /* No transition by default — resize updates --cs-title-rest-y and we
+       want the title to snap to the new centering position, not animate
+       there over 520ms (which would make it visibly bounce on every
+       viewport change). Transition is scoped to the lifecycle below. */
+  }
+  /* Only animate the title's vertical-centering transform during the
+     expand/collapse lifecycle. .is-expanding stays on the card from
+     lift through close-cleanup, so this covers both directions. */
+  .cs-card.is-expanding .card-title {
+    transition: transform var(--morph-dur, 520ms) var(--ease-snappy);
+  }
+  .cs-card.is-expanded .card-title {
+    transform: translateY(0);
+  }
+
+  /* Body paragraphs: left-aligned text in a centered max-60ch column,
+     with a stagger cascade. */
+  .cs-card .body-para.appended {
+    max-width: 60ch;
+    margin: 14px auto;
+    text-align: left;
+  }
+  .cs-card .body-para.appended.in {
+    transition-delay: calc(var(--stagger-idx, 0) * 90ms);
+  }
+
+  /* Pretext word spans for the title (no reflow during morph).
+     Word spans are absolutely positioned within .card-title at canvas-measured
+     coordinates. The whole word-rendering replaces .card-title's natural text. */
+  .bento-card.pretext-title .card-title {
+    position: relative;
+    width: 100%;
+    min-height: 56px; /* accommodates 2-line layout at 24px */
+    font-size: 0;     /* hide stray non-span text nodes */
+    line-height: 1;
+  }
+  .bento-card.pretext-title .card-title .word {
+    position: absolute;
+    top: 0; left: 0;
+    display: inline-block;
+    white-space: nowrap;
+    font-family: var(--font-serif);
+    font-size: 24px;
+    font-weight: 400;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    color: inherit;
+    /* No transition by default — resize re-renders word spans at new
+       positions and we want them to land instantly (no bounce). */
+    transform-origin: top left;
+    will-change: transform;
+  }
+  /* Only animate word positions during the expand/collapse lifecycle. */
+  .bento-card.is-expanding .card-title .word {
+    transition: transform var(--morph-dur, 520ms) var(--ease-snappy);
+  }
+  /* Suppress all transitions during a resize snap so words/title land
+     instantly at their new positions without bouncing. */
+  .bento-card.is-resizing .card-title .word,
+  .bento-card.is-resizing .card-title {
+    transition: none !important;
+  }
+  .bento-card.pretext-title .card-title .word.accent {
+    font-style: italic;
+    color: var(--accent);
+  }
+  .bento-card.project-card.pretext-title .card-title .word {
+    color: #f5f1e7;
+  }
+  .bento-card.project-card.pretext-title .card-title .word.accent {
+    color: var(--accent);
+  }
 
   /* Hover-revealed expand affordance on case-study cards. Same geometry
      and styling as .cs-close so the pair reads as a single button that
@@ -421,6 +578,17 @@
   @media (prefers-reduced-motion: reduce) {
     .cs-expand { transform: none; transition: opacity 200ms ease; }
   }
+  /* Suppress the hover-revealed expand button during all lifecycle states.
+     Without this, the cursor over the open modal keeps :hover active on
+     the card and the expand glyph would render on top of the close
+     button. */
+  .bento-card.is-expanding .cs-expand,
+  .bento-card.is-expanded .cs-expand,
+  .bento-card.is-collapsing .cs-expand {
+    opacity: 0 !important;
+    transform: scale(0.8) !important;
+    pointer-events: none !important;
+  }
 
   .cs-close {
     position: absolute; top: 16px; right: 16px;
@@ -431,25 +599,35 @@
     display: grid; place-items: center;
     cursor: pointer; z-index: 2;
     box-shadow: var(--card-shadow);
-    /* Opacity fades out during the latter half of the collapse (delay
-       320ms + 200ms fade = ends at 520ms, exactly when the rect-morph
-       lands). Triggered by .cs-clone.closing below. */
+    /* Default: hidden at rest. Becomes visible only when the card is
+       in .is-expanded state (modal open). Fades out at start of close. */
+    opacity: 0;
+    pointer-events: none;
     transition:
       background 200ms var(--ease),
       border-color 200ms var(--ease),
-      opacity 200ms 320ms ease;
+      opacity 240ms ease;
   }
-  .cs-clone.closing .cs-close {
+  .bento-card.is-expanded .cs-close {
+    opacity: 1;
+    pointer-events: auto;
+    /* Appear after the rect morph mostly completes — feels like the
+       button "lands" with the panel rather than racing it. */
+    transition-delay: 280ms;
+  }
+  .bento-card.is-collapsing .cs-close {
     opacity: 0;
     pointer-events: none;
+    transition: opacity 180ms ease, background 200ms ease;
+    transition-delay: 0ms;
   }
-  .cs-clone.dark .cs-close {
+  .bento-card.project-card .cs-close {
     background: rgba(245, 241, 231, 0.10);
     border-color: rgba(245, 241, 231, 0.18);
     color: #f5f1e7;
   }
   .cs-close:hover { background: var(--paper-2); }
-  .cs-clone.dark .cs-close:hover {
+  .bento-card.project-card .cs-close:hover {
     background: rgba(245, 241, 231, 0.18);
     border-color: rgba(245, 241, 231, 0.28);
   }
@@ -691,75 +869,308 @@
     }
   }
 
+  // ===================================================================
+  // Pretext-style title rendering — Canvas-measured word layout, no reflow.
+  // Same technique as docs/ideas/close-modes.html. Each .cs-card gets its
+  // title pre-rendered as absolutely-positioned word spans at toggle/init
+  // time; during open/close only the spans' transforms animate.
+  // ===================================================================
+  const _measureCanvas = document.createElement('canvas');
+  const _measureCtx = _measureCanvas.getContext('2d');
+
+  function pretextMeasureWords(text, fontPlain, fontItalic, accentSet) {
+    // Each word is measured with the font it actually renders in — italic
+    // glyphs are typically narrower, so measuring accent words with the
+    // plain font over-allocates space and leaves visible gaps.
+    const words = text.split(' ').filter(Boolean);
+    _measureCtx.font = fontPlain;
+    const spaceW = _measureCtx.measureText(' ').width;
+    return words.map(w => {
+      _measureCtx.font = accentSet.has(w) ? fontItalic : fontPlain;
+      return { word: w, width: _measureCtx.measureText(w).width, spaceW };
+    });
+  }
+
+  function pretextLayout(metrics, maxWidth, lineHeight) {
+    const positions = [];
+    const lineWidths = [];
+    let x = 0, line = 0;
+    for (let i = 0; i < metrics.length; i++) {
+      const m = metrics[i];
+      if (x > 0 && x + m.width > maxWidth) {
+        lineWidths[line] = positions[positions.length - 1].x + metrics[i - 1].width;
+        line++; x = 0;
+      }
+      positions.push({ word: m.word, x, y: line * lineHeight, line });
+      x += m.width + m.spaceW;
+    }
+    lineWidths[line] = positions[positions.length - 1].x + metrics[metrics.length - 1].width;
+    return { positions, lineWidths };
+  }
+
+  /** Read the accent words for a card. On first render we capture from the
+   *  natural `<em>` markup and cache to dataset (because we then *replace*
+   *  the natural markup with word spans, so the `<em>` is gone for any
+   *  subsequent re-render). */
+  function pretextAccentSetFor(card) {
+    if (card.dataset.csAccentWords != null) {
+      return new Set(card.dataset.csAccentWords.split('|').filter(Boolean));
+    }
+    const em = card.querySelector('.card-title em');
+    const words = em ? em.textContent.split(/\s+/).filter(Boolean) : [];
+    card.dataset.csAccentWords = words.join('|');
+    return new Set(words);
+  }
+
+  /** Shift each word's x so its line is horizontally centered in the
+   *  container — used when minimal-mode is on. */
+  function pretextCenterPositions(positions, lineWidths, containerWidth) {
+    return positions.map(p => {
+      const lineWidth = lineWidths[p.line];
+      const offset = (containerWidth - lineWidth) / 2;
+      return { ...p, x: p.x + offset };
+    });
+  }
+
+  /** Render the card's title as absolutely-positioned word spans. Stores
+   *  source + modal positions on each span's dataset so animation just
+   *  flips the transform between the two. Called once at init per card. */
+  function pretextRenderCardTitle(card, sourceWidth, modalWidth, centered) {
+    const titleEl = card.querySelector('.card-title');
+    if (!titleEl) return;
+    // Use data-cs-title (always on .cs-cards) for the title — textContent
+    // after first render concatenates word spans without spaces, so we
+    // can't reuse it. Fall back to textContent for the first-render case
+    // where there's no cached data attribute (shouldn't happen on .cs-cards).
+    const titleText = (card.dataset.csTitle || titleEl.textContent || '').trim();
+    const accentSet = pretextAccentSetFor(card);
+    const fontSize = 24;
+    // Match the actual rendered font (Fraunces, loaded via Google Fonts).
+    const fontPlain  = `400 ${fontSize}px 'Fraunces', Georgia, serif`;
+    const fontItalic = `italic 400 ${fontSize}px 'Fraunces', Georgia, serif`;
+    const lineHeight = fontSize * 1.15;
+    const metrics = pretextMeasureWords(titleText, fontPlain, fontItalic, accentSet);
+    const sourceLayout = pretextLayout(metrics, sourceWidth, lineHeight);
+    const modalLayout  = pretextLayout(metrics, modalWidth, lineHeight);
+    const sourcePositions = centered
+      ? pretextCenterPositions(sourceLayout.positions, sourceLayout.lineWidths, sourceWidth)
+      : sourceLayout.positions;
+    const modalPositions = centered
+      ? pretextCenterPositions(modalLayout.positions, modalLayout.lineWidths, modalWidth)
+      : modalLayout.positions;
+
+    titleEl.replaceChildren();
+    sourcePositions.forEach((sp, i) => {
+      const mp = modalPositions[i];
+      const span = document.createElement('span');
+      span.className = 'word' + (accentSet.has(sp.word) ? ' accent' : '');
+      span.textContent = sp.word;
+      span.style.transform = `translate(${sp.x.toFixed(2)}px, ${sp.y}px)`;
+      span.dataset.sx = sp.x.toFixed(2);
+      span.dataset.sy = sp.y;
+      span.dataset.mx = mp.x.toFixed(2);
+      span.dataset.my = mp.y;
+      titleEl.appendChild(span);
+    });
+    card.classList.add('pretext-title');
+  }
+
+  function pretextAnimateCard(card, toModal) {
+    const spans = card.querySelectorAll('.card-title .word');
+    spans.forEach(span => {
+      const x = toModal ? span.dataset.mx : span.dataset.sx;
+      const y = toModal ? span.dataset.my : span.dataset.sy;
+      span.style.transform = `translate(${x}px, ${y}px)`;
+    });
+  }
+
+  /** Horizontal padding used inside .card-body in the expanded (modal) state.
+   *  Must stay in sync with the CSS:
+   *    .bento-card.is-expanded .card-body { padding: 56px 48px 48px; }
+   *    @media (max-width: 540px) { .bento-card.is-expanded .card-body { padding: 48px 22px 32px; } }
+   */
+  function getModalHPad() {
+    return window.innerWidth <= 540 ? 22 : 48;
+  }
+
+  /** Run Pretext init on all .cs-card titles. Gated on document.fonts.ready
+   *  so Canvas measures with the actual Fraunces font (not a fallback).
+   *  Also computes per-card translateY for vertical title centering — the
+   *  cs-cards vary in height (square-2 vs span-2), so the offset needed
+   *  to put the title's vertical center at the card's center differs.
+   *
+   *  @param {Element|null} [skipCard] — if provided, this card is skipped
+   *    entirely. Used during resize-while-open so the lifted card (which is
+   *    position:fixed and returns a modal rect from getBoundingClientRect)
+   *    doesn't corrupt its own --cs-title-rest-y or pretext layout. */
+  async function pretextInitAllCards(skipCard) {
+    if (document.fonts && document.fonts.ready) {
+      try { await document.fonts.ready; } catch { /* ignore */ }
+    }
+    const vr = getViewportRect();
+    const hPad = getModalHPad();
+    const modalWidth = vr.width - hPad * 2; // matches expanded .card-body padding
+    document.querySelectorAll('.cs-card').forEach(card => {
+      if (card === skipCard) return; // skip the currently-expanded card
+      const cardRect = card.getBoundingClientRect();
+      const sourceWidth = cardRect.width - 28 * 2; // matches resting .card-body padding
+      pretextRenderCardTitle(card, sourceWidth, modalWidth, true /* centered */);
+
+      // Compute the translateY that puts the title's vertical center at the
+      // card's vertical center, accounting for body padding + eyebrow reserve
+      // + card-body gap (the title's natural-flow position above center).
+      const titleEl = card.querySelector('.card-title');
+      // Zero the var before measuring — otherwise the title's existing transform
+      // is already baked into getBoundingClientRect(), making the delta wrong on
+      // re-runs (resize/orientationchange). Safe on first load (var is already 0).
+      card.style.setProperty('--cs-title-rest-y', '0px');
+      const titleRect = titleEl.getBoundingClientRect();
+      const titleCenterY = titleRect.top + titleRect.height / 2;
+      const cardCenterY = cardRect.top + cardRect.height / 2;
+      const translateY = cardCenterY - titleCenterY;
+      card.style.setProperty('--cs-title-rest-y', translateY.toFixed(1) + 'px');
+    });
+  }
+
+  // ===================================================================
+  // No-clone open/close. The source .cs-card itself FLIPs to modal coords.
+  // Body paragraphs from data-cs-body are appended to .card-body after the
+  // rect morph lands; removed on close cleanup. Differs from the playground
+  // (which leaves inline position styles persisting on close) because the
+  // bento needs the card to genuinely return to its grid slot.
+  // ===================================================================
   function openCaseStudy(card) {
     if (openState) return;
-    const rect = card.getBoundingClientRect();
-    const isDark = card.dataset.csDark === 'true';
 
+    // Finish any in-flight card-enter animation so its transform doesn't
+    // fight our position:fixed lift (and so the rect we capture reflects
+    // the card's *settled* visual position, not a mid-animation frame).
+    if (card.getAnimations) {
+      card.getAnimations()
+        .filter(a => a.animationName === 'card-enter')
+        .forEach(a => { try { a.finish(); } catch {} });
+    }
+
+    const rect = card.getBoundingClientRect();
+    const vr = getViewportRect();
+    const originalInline = card.getAttribute('style') || '';
+
+    // --- Grid placeholder (preserve the bento layout while the card lifts).
+    // Copy grid-position longhands explicitly (shorthand can re-serialize
+    // unpredictably across browsers). Stays in place via DOM order — the
+    // card with position:fixed is out of flow, the placeholder takes its
+    // grid cell.
+    const cs = getComputedStyle(card);
+    const placeholder = document.createElement('div');
+    placeholder.className = 'cs-card-placeholder';
+    // Explicit grid-placement longhands keep the placeholder in the card's
+    // cell(s). The grid track sizes are governed by the grid template (not
+    // by the placeholder's content), so no sizing classes are needed and no
+    // fixed pixel width/height is set — the placeholder adapts freely with
+    // the grid on viewport resize.
+    placeholder.style.gridColumnStart = cs.gridColumnStart;
+    placeholder.style.gridColumnEnd   = cs.gridColumnEnd;
+    placeholder.style.gridRowStart    = cs.gridRowStart;
+    placeholder.style.gridRowEnd      = cs.gridRowEnd;
+    card.parentNode.insertBefore(placeholder, card);
+
+    // --- Backdrop appended to body so it covers the whole viewport.
     const backdrop = document.createElement('div');
     backdrop.className = 'cs-backdrop';
     document.body.appendChild(backdrop);
 
-    const clone = document.createElement('div');
-    clone.className = 'cs-clone bento-card' + (isDark ? ' dark' : '');
-    clone.style.top = rect.top + 'px';
-    clone.style.left = rect.left + 'px';
-    clone.style.width = rect.width + 'px';
-    clone.style.height = rect.height + 'px';
-    clone.style.background = isDark ? '#16140f' : 'var(--paper)';
+    // --- Lift the card. Disable transitions for the position swap so the
+    // change is instant (only the subsequent rAF target change animates).
+    card.style.transition = 'none';
+    card.style.position = 'fixed';
+    card.style.top    = rect.top    + 'px';
+    card.style.left   = rect.left   + 'px';
+    card.style.width  = rect.width  + 'px';
+    card.style.height = rect.height + 'px';
+    card.style.margin = '0';
+    card.style.transform = 'none'; // override card-enter's residual matrix(1,0,0,1,0,0)
 
-    if (card.classList.contains('project-card')) {
-      const srcCover = card.querySelector('.cover');
-      if (srcCover) {
-        const cover = document.createElement('div');
-        cover.className = 'cover';
-        cover.style.cssText = getComputedStyle(srcCover).cssText;
-        clone.appendChild(cover);
-      }
-    }
+    // --- Close button appended as a child of the card.
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'cs-close';
+    closeBtn.setAttribute('aria-label', 'Close case study');
+    closeBtn.appendChild(makeCloseIcon());
+    card.appendChild(closeBtn);
 
-    const content = document.createElement('div');
-    content.className = 'cs-content';
-    const eyebrow = document.createElement('div');
-    eyebrow.className = 'card-eyebrow';
-    eyebrow.textContent = card.dataset.csEyebrow || '';
-    const h2 = document.createElement('h2');
-    h2.textContent = card.dataset.csTitle || '';
-    content.appendChild(eyebrow);
-    content.appendChild(h2);
-    const paras = (card.dataset.csBody || '').split('|').filter(Boolean);
-    paras.forEach((p, i) => {
-      const el = document.createElement('p');
-      if (i === 0) el.className = 'lede';
-      el.textContent = p;
-      content.appendChild(el);
-    });
-    clone.appendChild(content);
-
-    const close = document.createElement('button');
-    close.className = 'cs-close';
-    close.setAttribute('aria-label', 'Close case study');
-    close.appendChild(makeCloseIcon());
-    clone.appendChild(close);
-
-    document.body.appendChild(clone);
-    card.classList.add('cs-card-ghost');
+    card.classList.add('is-expanding');
     lockBodyScroll();
+    void card.offsetHeight; // commit lift before re-enabling transitions
 
-    void clone.offsetHeight;
     requestAnimationFrame(() => {
-      const vr = getViewportRect();
-      clone.style.top = vr.top + 'px';
-      clone.style.left = vr.left + 'px';
-      clone.style.width = vr.width + 'px';
-      clone.style.height = vr.height + 'px';
-      clone.classList.add('open');
+      card.style.transition = ''; // CSS-defined transitions apply now
+      card.classList.add('is-expanded');
+      card.style.top    = vr.top    + 'px';
+      card.style.left   = vr.left   + 'px';
+      card.style.width  = vr.width  + 'px';
+      card.style.height = vr.height + 'px';
+      // Pretext: update modal-target positions in case viewport changed
+      // since init, then animate words to those targets.
+      if (card.classList.contains('pretext-title')) {
+        pretextUpdateModalAndAnimate(card, vr, true);
+      }
     });
 
-    openState = { card, clone, backdrop };
+    openState = {
+      card, placeholder, backdrop, closeBtn, originalInline,
+      originalRect: rect,
+      appendedParas: [],
+    };
+
+    // --- Append body paragraphs after morph lands.
+    const paraTexts = (card.dataset.csBody || '').split('|').filter(Boolean);
+    setTimeout(() => {
+      if (!openState || openState.closing) return;
+      const body = card.querySelector('.card-body');
+      if (!body) return;
+      paraTexts.forEach((p, i) => {
+        const el = document.createElement('p');
+        el.className = 'body-para appended';
+        el.style.setProperty('--stagger-idx', i);
+        el.textContent = p;
+        body.appendChild(el);
+        openState.appendedParas.push(el);
+      });
+      void body.offsetHeight;
+      requestAnimationFrame(() => {
+        openState.appendedParas.forEach(p => p.classList.add('in'));
+      });
+    }, 520);
+
     backdrop.addEventListener('click', closeCaseStudy);
-    close.addEventListener('click', (e) => { e.stopPropagation(); closeCaseStudy(); });
+    closeBtn.addEventListener('click', e => { e.stopPropagation(); closeCaseStudy(); });
     document.addEventListener('keydown', escClose);
+  }
+
+  /** Recompute modal-target word positions in case the viewport changed
+   *  since pretextInitAllCards() ran (e.g., user resized window). Also
+   *  triggers the open-direction animation when `toModal` is true. */
+  function pretextUpdateModalAndAnimate(card, vr, toModal) {
+    const titleEl = card.querySelector('.card-title');
+    if (!titleEl) return;
+    const titleText = [...titleEl.querySelectorAll('.word')]
+      .map(w => w.textContent).join(' ');
+    if (!titleText) return;
+    const accentSet = pretextAccentSetFor(card);
+    const fontSize = 24;
+    const fontPlain  = `400 ${fontSize}px 'Fraunces', Georgia, serif`;
+    const fontItalic = `italic 400 ${fontSize}px 'Fraunces', Georgia, serif`;
+    const lineHeight = fontSize * 1.15;
+    const hPad = getModalHPad();
+    const modalWidth = vr.width - hPad * 2;
+    const metrics = pretextMeasureWords(titleText, fontPlain, fontItalic, accentSet);
+    const modalLayout = pretextLayout(metrics, modalWidth, lineHeight);
+    // Always-on centering for cs-cards in the bento (matches minimal mode).
+    const modalPositions = pretextCenterPositions(modalLayout.positions, modalLayout.lineWidths, modalWidth);
+    [...titleEl.querySelectorAll('.word')].forEach((span, i) => {
+      span.dataset.mx = modalPositions[i].x.toFixed(2);
+      span.dataset.my = modalPositions[i].y;
+    });
+    pretextAnimateCard(card, toModal);
   }
 
   function escClose(e) { if (e.key === 'Escape') closeCaseStudy(); }
@@ -767,32 +1178,93 @@
   function closeCaseStudy() {
     if (!openState || openState.closing) return;
     openState.closing = true;
-    const { card, clone, backdrop } = openState;
-    // Read the source rect BEFORE doing anything else — and read it from the
-    // ghosted source card, which still occupies its grid slot.
-    const rect = card.getBoundingClientRect();
-    clone.classList.remove('open');
-    // Triggers the close-button opacity fade (CSS-side: delay 320ms +
-    // 200ms transition = ends at 520ms, in sync with the rect morph).
-    clone.classList.add('closing');
-    clone.style.top = rect.top + 'px';
-    clone.style.left = rect.left + 'px';
-    clone.style.width = rect.width + 'px';
-    clone.style.height = rect.height + 'px';
+    const { card, placeholder, backdrop, closeBtn, originalInline, originalRect, appendedParas } = openState;
+
+    // Body paragraphs fade out immediately (.in removed → CSS fade).
+    appendedParas.forEach(p => p.classList.remove('in'));
+
+    // Reverse pretext word transforms back to source positions.
+    if (card.classList.contains('pretext-title')) {
+      pretextAnimateCard(card, false);
+    }
+
+    // Remove is-resizing immediately (in case a resize snap was in-flight)
+    // so the close transition runs unimpeded.
+    card.classList.remove('is-expanded', 'is-resizing');
+    card.classList.add('is-collapsing');
+    card.style.top    = originalRect.top    + 'px';
+    card.style.left   = originalRect.left   + 'px';
+    card.style.width  = originalRect.width  + 'px';
+    card.style.height = originalRect.height + 'px';
     backdrop.classList.add('closing');
     document.removeEventListener('keydown', escClose);
-    setTimeout(() => {
-      // Restore the source card first, force a paint, then remove the clone —
-      // otherwise both happen on the same frame and there's a 1-frame gap
-      // where neither the clone nor the source card is visible.
-      card.classList.remove('cs-card-ghost');
+
+    // Wait for the width transition to truly end before cleanup. Using
+    // transitionend rather than setTimeout(state.duration) avoids the
+    // sub-pixel snap where the browser hasn't fully settled the rect yet.
+    // Fallback timeout in case transitionend doesn't fire (reduced motion).
+    let cleanedUp = false;
+    let fallbackTimer;
+    const doCleanup = () => {
+      if (cleanedUp) return;
+      cleanedUp = true;
+      clearTimeout(fallbackTimer);
+      card.removeEventListener('transitionend', onTransitionEnd);
+
+      // Remove appended children
+      appendedParas.forEach(p => p.remove());
+      closeBtn.remove();
+      backdrop.remove();
+
+      // Remove lifecycle classes from card. KEEP inline position styles
+      // for one more frame — see comment below.
+      card.classList.remove('is-expanding', 'is-collapsing', 'is-resizing');
+
+      // CRITICAL ordering for the bento (differs from close-modes.html):
+      // 1. Set inline `transition: none` to prevent the inline→CSS
+      //    position swap from animating.
+      // 2. Remove placeholder so the grid slot is empty when we restore.
+      // 3. Restore the card's original inline style (clears all overrides).
+      // 4. Force layout commit while transition is still none.
+      // 5. rAF — re-enable CSS-defined transitions.
+      const styleToApply = (originalInline || '').trim();
+      const guarded = styleToApply
+        ? `${styleToApply}${styleToApply.endsWith(';') ? '' : ';'} transition: none;`
+        : 'transition: none;';
+      card.setAttribute('style', guarded);
+
+      placeholder.remove();
+
+      void card.offsetHeight;
       requestAnimationFrame(() => {
-        clone.remove();
-        backdrop.remove();
-        unlockBodyScroll();
-        openState = null;
+        if (originalInline) {
+          card.setAttribute('style', originalInline);
+        } else {
+          card.removeAttribute('style');
+        }
+        // Always re-init all cards AFTER the style restoration above.
+        // This covers two cases:
+        // 1. A resize fired while close was in-flight (_resizePendingAfterClose).
+        // 2. A resize fired *while the modal was open* — the resize handler sets
+        //    --cs-title-rest-y to 0px on the open card (can't measure in-grid)
+        //    and skips it in pretextInitAllCards. After close the card is back in
+        //    its grid slot, so we recompute the correct value now.
+        //    MUST run in this rAF (not before it) so originalInline isn't
+        //    re-applied after pretextInitAllCards writes the refreshed restY.
+        _resizePendingAfterClose = false;
+        pretextInitAllCards();
       });
-    }, 520);
+
+      unlockBodyScroll();
+      openState = null;
+    };
+    const onTransitionEnd = (e) => {
+      if (e.target !== card) return;
+      if (e.propertyName !== 'width') return;
+      doCleanup();
+    };
+    card.addEventListener('transitionend', onTransitionEnd);
+    fallbackTimer = setTimeout(doCleanup, 800); // 520ms morph + buffer
   }
 
   document.querySelectorAll('.cs-card[data-clickable="true"]').forEach((c) => {
@@ -809,6 +1281,138 @@
       b.setAttribute('aria-pressed', 'true');
     });
   });
+
+  // Kick off Pretext word-span rendering on each case-study card.
+  // Awaits document.fonts.ready so Canvas measures with Fraunces (not a
+  // fallback). Runs once at page load.
+  pretextInitAllCards();
+
+  // Re-run Pretext on viewport changes so word layouts match the current
+  // card sizes (e.g., desktop → mobile resize, or orientation change).
+  // When a modal is open the handler also snaps the modal to the new
+  // viewport size without a transition, refreshes word positions, and
+  // updates openState.originalRect so close() returns to the right slot.
+  let _resizeRaf = null;
+  let _resizeToken = 0;
+  let _resizePendingAfterClose = false;
+
+  async function onViewportResize() {
+    if (_resizeRaf) cancelAnimationFrame(_resizeRaf);
+    _resizeRaf = requestAnimationFrame(async () => {
+      _resizeRaf = null;
+
+      if (!openState) {
+        await pretextInitAllCards();
+        return;
+      }
+
+      // If close is in-flight, queue a re-init for after cleanup.
+      if (openState.closing) {
+        _resizePendingAfterClose = true;
+        return;
+      }
+
+      const state = openState;
+      const token = ++_resizeToken;
+      const { card, placeholder } = state;
+
+      // --- Suppress transitions on the open card so everything snaps
+      //     instantly (no bounce on resize). is-resizing overrides the
+      //     .is-expanding .card-title .word transition via !important.
+      card.classList.add('is-resizing');
+
+      // --- Snap the card rect to the new viewport size without animation.
+      const newVr = getViewportRect();
+      card.style.transition = 'none';
+      card.style.top    = newVr.top    + 'px';
+      card.style.left   = newVr.left   + 'px';
+      card.style.width  = newVr.width  + 'px';
+      card.style.height = newVr.height + 'px';
+      void card.offsetHeight; // flush layout
+      // Clear the inline transition override so CSS-defined transitions work
+      // again (e.g., the close animation's .is-expanding transition).
+      card.style.transition = '';
+
+      // --- Refresh the open card's Pretext spans at the new viewport.
+      //     Re-render both source (sx/sy) and modal (mx/my) positions so
+      //     the close animation later uses the new resting layout, then
+      //     immediately show the modal positions (toModal = true).
+      const hPad = getModalHPad();
+      const newModalWidth = newVr.width - hPad * 2;
+      const placeholderRect = placeholder.getBoundingClientRect();
+      const newSourceWidth = placeholderRect.width - 28 * 2;
+      if (card.classList.contains('pretext-title')) {
+        pretextRenderCardTitle(card, newSourceWidth, newModalWidth, true);
+        pretextAnimateCard(card, true /* toModal — show modal positions */);
+      }
+
+      // --- Refresh --cs-title-rest-y for the open card.
+      //     The actual card is position:fixed at modal coords, so its
+      //     getBoundingClientRect() is useless for the resting measurement.
+      //     Use the placeholder rect as a stand-in for the grid slot.
+      //     The title is absolutely positioned inside .card-body with
+      //     translateY(--cs-title-rest-y). In expanded state the CSS overrides
+      //     it to translateY(0), so the stale var is harmless while expanded —
+      //     but close() removes .is-expanded and the title snaps to the var
+      //     momentarily before cleanup, so we update it to be reasonable.
+      //     Derive from placeholder geometry (same approach pretextInitAllCards
+      //     uses for in-grid cards, adapted for the lifted case):
+      //     cardCenterY relative to viewport = placeholder.top + placeholder.height/2.
+      //     titleCenterY: the word spans now placed at source positions by
+      //     pretextRenderCardTitle are absolutely inside .card-title within
+      //     the modal card. We can't measure the title's in-grid position
+      //     reliably, so instead we set --cs-title-rest-y to 0px. The close
+      //     animation fades out .card-title words via pretextAnimateCard and
+      //     the title container transitions to translateY(var(--cs-title-rest-y))
+      //     — 0px means it stays visually centred (which is fine; the card is
+      //     morphing back to the slot so any small misalignment is hidden).
+      //     After cleanup, _flushPendingResize re-runs pretextInitAllCards
+      //     which restores the correct value for the next open.
+      card.style.setProperty('--cs-title-rest-y', '0px');
+
+      // --- Update originalRect so closeCaseStudy() morphs back to the
+      //     current grid slot, not the stale pre-resize slot.
+      state.originalRect = placeholderRect;
+
+      // --- Re-init closed cards (skip the open one, which is handled above).
+      await pretextInitAllCards(card);
+
+      // Bail if the resize state changed while awaiting (newer resize pass
+      // or modal was closed during the async fonts.ready await).
+      if (token !== _resizeToken || openState !== state || state.closing) return;
+
+      // Re-snap position after closed-card init (layout may have shifted
+      // if other cards' heights changed due to new word-wrapping).
+      const finalVr = getViewportRect();
+      card.style.transition = 'none';
+      card.style.top    = finalVr.top    + 'px';
+      card.style.left   = finalVr.left   + 'px';
+      card.style.width  = finalVr.width  + 'px';
+      card.style.height = finalVr.height + 'px';
+      void card.offsetHeight;
+      card.style.transition = '';
+      // Also update originalRect to the placeholder's settled position after
+      // the other cards have been re-laid-out.
+      state.originalRect = placeholder.getBoundingClientRect();
+
+      // Re-enable transitions on next frame after all snaps are committed.
+      requestAnimationFrame(() => {
+        if (openState === state) card.classList.remove('is-resizing');
+      });
+    });
+  }
+
+  // Called from closeCaseStudy cleanup to flush any resize that was deferred
+  // because close was in-flight when the resize event fired.
+  function _flushPendingResize() {
+    if (_resizePendingAfterClose) {
+      _resizePendingAfterClose = false;
+      pretextInitAllCards();
+    }
+  }
+
+  window.addEventListener('resize', onViewportResize);
+  window.addEventListener('orientationchange', onViewportResize);
 </script>
 
 </body>
