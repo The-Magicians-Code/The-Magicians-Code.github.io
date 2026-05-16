@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bento expand/collapse — playground</title>
+<style>
+  :root {
+    --pg-bg: #0e0e10;
+    --pg-panel: #16161a;
+    --pg-text: #f5f1e7;
+    --pg-text-dim: #a8a59b;
+    --pg-rule: rgba(245, 241, 231, 0.10);
+    --pg-rule-strong: rgba(245, 241, 231, 0.22);
+    --pg-accent: oklch(64% 0.18 28);
+    --pg-mono: 'SF Mono', Menlo, Consolas, monospace;
+
+    --tile-gap: 14px;
+    --tile-radius: 18px;
+    --anim-dur: 520ms;
+    --anim-ease: cubic-bezier(0.32, 0.72, 0, 1);
+    --backdrop-blur: 14px;
+    --backdrop-dim: 0.42;
+    --expand-size: 0.84;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--pg-bg);
+    color: var(--pg-text);
+    font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    height: 100vh;
+  }
+  .controls {
+    padding: 28px 24px;
+    border-right: 1px solid var(--pg-rule);
+    overflow-y: auto;
+  }
+  .preview {
+    padding: 32px;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    position: relative;
+  }
+
+  h1 { font-size: 16px; font-weight: 600; margin-bottom: 4px; letter-spacing: -0.01em; }
+  .desc {
+    font-size: 12.5px;
+    color: var(--pg-text-dim);
+    margin-bottom: 22px;
+  }
+  h2 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--pg-text-dim);
+    margin: 22px 0 10px;
+    font-weight: 500;
+  }
+
+  .row { margin-bottom: 14px; }
+  .row label {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 12px;
+    color: var(--pg-text-dim);
+    margin-bottom: 6px;
+  }
+  .row label span.val {
+    font-family: var(--pg-mono);
+    color: var(--pg-text);
+    font-size: 11.5px;
+  }
+  input[type="range"] { width: 100%; accent-color: var(--pg-accent); }
+
+  .seg {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    border: 1px solid var(--pg-rule);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .seg button {
+    appearance: none;
+    background: transparent;
+    color: var(--pg-text-dim);
+    border: 0;
+    border-right: 1px solid var(--pg-rule);
+    padding: 8px 6px;
+    font-family: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  .seg button:last-child { border-right: 0; }
+  .seg button:hover { color: var(--pg-text); }
+  .seg button.active { background: var(--pg-text); color: var(--pg-bg); }
+
+  .hint {
+    font-size: 11.5px;
+    color: var(--pg-text-dim);
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid var(--pg-rule);
+    line-height: 1.55;
+  }
+  .hint code {
+    font-family: var(--pg-mono);
+    background: var(--pg-panel);
+    padding: 1px 5px;
+    border-radius: 4px;
+    color: var(--pg-text);
+  }
+
+  /* ── Bento grid ─────────────────────────────────────────── */
+  .bento {
+    width: min(720px, 100%);
+    aspect-ratio: 4 / 3;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: var(--tile-gap);
+  }
+  /* The slot stays in the grid even when its tile floats out. */
+  .slot { position: relative; }
+  .slot:nth-child(1) { grid-column: span 2; grid-row: span 2; --bg: linear-gradient(135deg, oklch(28% 0.06 28),  oklch(20% 0.04 28)); }
+  .slot:nth-child(2) { grid-column: span 2;                  --bg: linear-gradient(135deg, oklch(26% 0.05 240), oklch(18% 0.03 240)); }
+  .slot:nth-child(3) {                                       --bg: linear-gradient(135deg, oklch(28% 0.06 140), oklch(20% 0.04 140)); }
+  .slot:nth-child(4) {                                       --bg: linear-gradient(135deg, oklch(26% 0.05 60),  oklch(18% 0.03 60)); }
+  .slot:nth-child(5) { grid-column: span 2;                  --bg: linear-gradient(135deg, oklch(26% 0.05 300), oklch(18% 0.03 300)); }
+  .slot:nth-child(6) { grid-column: span 2;                  --bg: linear-gradient(135deg, oklch(28% 0.06 180), oklch(20% 0.04 180)); }
+
+  .tile {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: var(--tile-radius);
+    border: 1px solid var(--pg-rule);
+    background: var(--bg, var(--pg-panel));
+    padding: 18px;
+    cursor: pointer;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: box-shadow var(--anim-dur) var(--anim-ease);
+  }
+  .tile::after {
+    content: "";
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--pg-text);
+    opacity: 0;
+    transform: scale(0.6);
+    transition: opacity 0.18s ease, transform 0.18s ease;
+    pointer-events: none;
+  }
+  .tile:hover::after { opacity: 1; transform: scale(1); }
+  .tile.is-expanded::after { opacity: 0; }
+
+  .tile .tag {
+    font-family: var(--pg-mono);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--pg-text-dim);
+  }
+  .tile .content { display: flex; flex-direction: column; }
+  .tile .title {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    transition: font-size var(--anim-dur) var(--anim-ease);
+  }
+  .tile .body {
+    font-size: 13px;
+    color: var(--pg-text-dim);
+    max-width: 52ch;
+    margin-top: 0;
+    max-height: 0;
+    opacity: 0;
+    transform: translateY(6px);
+    overflow: hidden;
+    transition: opacity 0.18s ease, transform 0.18s ease, max-height 0.18s ease, margin-top 0.18s ease;
+  }
+
+  /* ── Expanded state (tile becomes a floating panel) ─────── */
+  .tile.is-expanded {
+    position: fixed;
+    z-index: 60;
+    cursor: default;
+    box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.6),
+                0 8px 24px -8px rgba(0, 0, 0, 0.4);
+    /* top/left/width/height come from inline styles set by JS */
+  }
+  .tile.is-expanded .title { font-size: 34px; }
+  .tile.is-expanded .body {
+    opacity: 1;
+    max-height: 400px;
+    margin-top: 10px;
+    transform: none;
+    transition: opacity calc(var(--anim-dur) * 0.7) var(--anim-ease) calc(var(--anim-dur) * 0.4),
+                transform calc(var(--anim-dur) * 0.7) var(--anim-ease) calc(var(--anim-dur) * 0.4),
+                max-height calc(var(--anim-dur) * 0.7) var(--anim-ease) calc(var(--anim-dur) * 0.4),
+                margin-top calc(var(--anim-dur) * 0.7) var(--anim-ease) calc(var(--anim-dur) * 0.4);
+  }
+
+  /* ── Backdrop ───────────────────────────────────────────── */
+  .backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background: rgba(8, 8, 10, var(--backdrop-dim));
+    backdrop-filter: blur(var(--backdrop-blur));
+    -webkit-backdrop-filter: blur(var(--backdrop-blur));
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--anim-dur) var(--anim-ease);
+  }
+  .backdrop.is-open { opacity: 1; pointer-events: auto; }
+
+  /* ── Hint ───────────────────────────────────────────────── */
+  .esc-hint {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--pg-mono);
+    font-size: 11px;
+    color: var(--pg-text-dim);
+    padding: 6px 10px;
+    border-radius: 6px;
+    background: rgba(14, 14, 16, 0.6);
+    border: 1px solid var(--pg-rule);
+    backdrop-filter: blur(8px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    z-index: 70;
+  }
+  .esc-hint.show { opacity: 1; }
+  .esc-hint kbd {
+    font-family: inherit;
+    background: var(--pg-panel);
+    padding: 1px 5px;
+    border-radius: 3px;
+    border: 1px solid var(--pg-rule);
+    color: var(--pg-text);
+    font-size: 10px;
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="controls">
+    <h1>Bento expand/collapse</h1>
+    <p class="desc">Click a tile and it morphs forward over a blurred backdrop. The tile element itself is what animates — no clone, no separate panel. Click the backdrop or press <kbd>esc</kbd> to collapse.</p>
+
+    <h2>Timing</h2>
+    <div class="row">
+      <label>Duration <span class="val" id="dur-val">520ms</span></label>
+      <input type="range" id="dur" min="160" max="1400" step="20" value="520">
+    </div>
+    <div class="row">
+      <label>Easing</label>
+      <div class="seg" id="ease-seg">
+        <button data-val="cubic-bezier(0.32, 0.72, 0, 1)" class="active">smooth</button>
+        <button data-val="cubic-bezier(0.34, 1.56, 0.64, 1)">spring</button>
+        <button data-val="cubic-bezier(0.4, 0, 0.2, 1)">standard</button>
+        <button data-val="linear">linear</button>
+      </div>
+    </div>
+
+    <h2>Grid</h2>
+    <div class="row">
+      <label>Gap <span class="val" id="gap-val">14px</span></label>
+      <input type="range" id="gap" min="0" max="40" step="1" value="14">
+    </div>
+    <div class="row">
+      <label>Radius <span class="val" id="rad-val">18px</span></label>
+      <input type="range" id="rad" min="0" max="48" step="1" value="18">
+    </div>
+
+    <h2>Expanded panel</h2>
+    <div class="row">
+      <label>Size <span class="val" id="size-val">84%</span></label>
+      <input type="range" id="size" min="50" max="98" step="1" value="84">
+    </div>
+
+    <h2>Backdrop</h2>
+    <div class="row">
+      <label>Blur <span class="val" id="blur-val">14px</span></label>
+      <input type="range" id="blur" min="0" max="40" step="1" value="14">
+    </div>
+    <div class="row">
+      <label>Dim <span class="val" id="dim-val">0.42</span></label>
+      <input type="range" id="dim" min="0" max="0.85" step="0.02" value="0.42">
+    </div>
+
+    <p class="hint">
+      The bento grid wraps each tile in a <code>.slot</code> that holds its grid cell. When the tile flips to <code>position: fixed</code> it leaves the grid flow, but the slot keeps the layout intact behind it.
+    </p>
+  </aside>
+
+  <section class="preview" id="preview">
+    <div class="bento" id="bento">
+      <div class="slot">
+        <article class="tile">
+          <span class="tag">01 / hero</span>
+          <div class="content">
+            <div class="title">Aurora field</div>
+            <div class="body">A long-form view of the hero tile content. When expanded the body fades in and the title scales up — same element, just morphed in place.</div>
+          </div>
+        </article>
+      </div>
+      <div class="slot">
+        <article class="tile">
+          <span class="tag">02 / wide</span>
+          <div class="content">
+            <div class="title">Side panel</div>
+            <div class="body">No clone. The tile element itself flips to position: fixed and animates its top/left/width/height to a centered target.</div>
+          </div>
+        </article>
+      </div>
+      <div class="slot">
+        <article class="tile">
+          <span class="tag">03</span>
+          <div class="content">
+            <div class="title">Square</div>
+            <div class="body">Smallest tile. Expands to the same centered target as any other.</div>
+          </div>
+        </article>
+      </div>
+      <div class="slot">
+        <article class="tile">
+          <span class="tag">04</span>
+          <div class="content">
+            <div class="title">Tile</div>
+            <div class="body">Try the Size, Blur, and Dim sliders while this one is open to dial in the lightbox feel.</div>
+          </div>
+        </article>
+      </div>
+      <div class="slot">
+        <article class="tile">
+          <span class="tag">05 / wide</span>
+          <div class="content">
+            <div class="title">Footer wide</div>
+            <div class="body">The bento behind stays exactly where it was — you should see it blurred through the backdrop.</div>
+          </div>
+        </article>
+      </div>
+      <div class="slot">
+        <article class="tile">
+          <span class="tag">06 / wide</span>
+          <div class="content">
+            <div class="title">Footer companion</div>
+            <div class="body">The slot's grid placement (<code>span 2</code>) is what holds the layout while the tile floats forward.</div>
+          </div>
+        </article>
+      </div>
+    </div>
+
+    <div class="backdrop" id="backdrop"></div>
+    <div class="esc-hint" id="esc-hint"><kbd>esc</kbd> to collapse</div>
+  </section>
+</div>
+
+<script>
+  const root = document.documentElement;
+  const preview = document.getElementById('preview');
+  const bento = document.getElementById('bento');
+  const backdrop = document.getElementById('backdrop');
+  const escHint = document.getElementById('esc-hint');
+
+  let openTile = null;
+  let animating = false;
+
+  function targetRect() {
+    const pr = preview.getBoundingClientRect();
+    const frac = parseFloat(getComputedStyle(root).getPropertyValue('--expand-size')) || 0.84;
+    const maxW = Math.min(720, pr.width * frac);
+    const maxH = Math.min(540, pr.height * frac);
+    return {
+      left: pr.left + (pr.width - maxW) / 2,
+      top: pr.top + (pr.height - maxH) / 2,
+      width: maxW,
+      height: maxH,
+    };
+  }
+
+  function applyRect(el, r) {
+    el.style.left = r.left + 'px';
+    el.style.top = r.top + 'px';
+    el.style.width = r.width + 'px';
+    el.style.height = r.height + 'px';
+  }
+
+  function transitionRect() {
+    const dur = getComputedStyle(root).getPropertyValue('--anim-dur').trim();
+    const ease = getComputedStyle(root).getPropertyValue('--anim-ease').trim();
+    return `top ${dur} ${ease}, left ${dur} ${ease}, width ${dur} ${ease}, height ${dur} ${ease}`;
+  }
+
+  function expand(tile) {
+    if (animating || openTile) return;
+    animating = true;
+    openTile = tile;
+
+    // Snapshot current viewport rect (still in grid flow at this point).
+    const src = tile.getBoundingClientRect();
+
+    // Flip to fixed + write the exact same rect inline — no visual jump.
+    tile.style.transition = 'none';
+    applyRect(tile, src);
+    tile.classList.add('is-expanded');
+
+    // Reflow so the starting state commits.
+    tile.getBoundingClientRect();
+
+    // Now animate to the centered target.
+    tile.style.transition = transitionRect();
+    applyRect(tile, targetRect());
+
+    backdrop.classList.add('is-open');
+    escHint.classList.add('show');
+
+    tile.addEventListener('transitionend', function onEnd(e) {
+      if (e.propertyName !== 'width' || e.target !== tile) return;
+      tile.removeEventListener('transitionend', onEnd);
+      animating = false;
+    });
+  }
+
+  function collapse() {
+    if (animating || !openTile) return;
+    animating = true;
+
+    // Slot's current rect is where the tile belongs.
+    const slotRect = openTile.parentElement.getBoundingClientRect();
+
+    tile_animateBack(openTile, slotRect);
+    backdrop.classList.remove('is-open');
+    escHint.classList.remove('show');
+  }
+
+  function tile_animateBack(tile, slotRect) {
+    tile.style.transition = transitionRect();
+    applyRect(tile, slotRect);
+
+    tile.addEventListener('transitionend', function onEnd(e) {
+      if (e.propertyName !== 'width' || e.target !== tile) return;
+      tile.removeEventListener('transitionend', onEnd);
+      // Restore: drop fixed positioning and inline rect, back to slot-filling absolute.
+      tile.classList.remove('is-expanded');
+      tile.style.cssText = '';
+      openTile = null;
+      animating = false;
+    });
+  }
+
+  bento.addEventListener('click', (e) => {
+    const tile = e.target.closest('.tile');
+    if (!tile || tile.classList.contains('is-expanded')) return;
+    expand(tile);
+  });
+  backdrop.addEventListener('click', collapse);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') collapse(); });
+
+  // If the user resizes while a tile is open, snap it to the new target.
+  window.addEventListener('resize', () => {
+    if (!openTile || animating) return;
+    openTile.style.transition = 'none';
+    applyRect(openTile, targetRect());
+  });
+
+  // ── Controls ──────────────────────────────────────────────────────
+  const setVar = (name, val) => root.style.setProperty(name, val);
+
+  const dur = document.getElementById('dur');
+  const durVal = document.getElementById('dur-val');
+  dur.addEventListener('input', () => {
+    durVal.textContent = `${dur.value}ms`;
+    setVar('--anim-dur', `${dur.value}ms`);
+  });
+
+  const gap = document.getElementById('gap');
+  const gapVal = document.getElementById('gap-val');
+  gap.addEventListener('input', () => {
+    gapVal.textContent = `${gap.value}px`;
+    setVar('--tile-gap', `${gap.value}px`);
+  });
+
+  const rad = document.getElementById('rad');
+  const radVal = document.getElementById('rad-val');
+  rad.addEventListener('input', () => {
+    radVal.textContent = `${rad.value}px`;
+    setVar('--tile-radius', `${rad.value}px`);
+  });
+
+  const size = document.getElementById('size');
+  const sizeVal = document.getElementById('size-val');
+  size.addEventListener('input', () => {
+    sizeVal.textContent = `${size.value}%`;
+    setVar('--expand-size', (size.value / 100).toString());
+    if (openTile && !animating) applyRect(openTile, targetRect());
+  });
+
+  const blur = document.getElementById('blur');
+  const blurVal = document.getElementById('blur-val');
+  blur.addEventListener('input', () => {
+    blurVal.textContent = `${blur.value}px`;
+    setVar('--backdrop-blur', `${blur.value}px`);
+  });
+
+  const dim = document.getElementById('dim');
+  const dimVal = document.getElementById('dim-val');
+  dim.addEventListener('input', () => {
+    dimVal.textContent = parseFloat(dim.value).toFixed(2);
+    setVar('--backdrop-dim', dim.value);
+  });
+
+  function wireSeg(id, apply) {
+    const seg = document.getElementById(id);
+    seg.addEventListener('click', (e) => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      seg.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      apply(btn.dataset.val);
+    });
+  }
+  wireSeg('ease-seg', (val) => setVar('--anim-ease', val));
+</script>
+</body>
+</html>
