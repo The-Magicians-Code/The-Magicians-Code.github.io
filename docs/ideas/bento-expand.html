@@ -530,7 +530,14 @@
 
     intent = 'expanded';
     applyState();
-    startMorph(tile, targetRect(), () => {});
+    startMorph(tile, targetRect(), () => {
+      // If the viewport changed mid-morph, the resize handler was gated out.
+      // Re-sync to the current target so the panel ends up centered.
+      if (intent === 'expanded') {
+        tile.style.transition = 'none';
+        applyRect(tile, targetRect());
+      }
+    });
   }
 
   function collapse() {
