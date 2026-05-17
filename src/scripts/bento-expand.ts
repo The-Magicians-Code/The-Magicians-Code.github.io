@@ -13,7 +13,6 @@ interface OpenState {
   closeBtn: HTMLButtonElement;
   backdrop: HTMLElement;
   originalInline: string;
-  originalRect: DOMRect;
   appendedBodyWrap: HTMLElement | null;
   closing: boolean;
   triggeredByKeyboard: boolean;
@@ -151,7 +150,6 @@ function openCaseStudy(card: HTMLElement, triggeredByKeyboard: boolean): void {
     closeBtn,
     backdrop,
     originalInline,
-    originalRect: rect,
     appendedBodyWrap: null,
     closing: false,
     triggeredByKeyboard,
@@ -208,7 +206,7 @@ function closeCaseStudy(): void {
   if (!openState || openState.closing) return;
   openState.closing = true;
   const state = openState;
-  const { card, placeholder, closeBtn, backdrop, originalInline, originalRect, appendedBodyWrap } = state;
+  const { card, placeholder, closeBtn, backdrop, originalInline, appendedBodyWrap } = state;
 
   // Blur BEFORE the morph so the UA focus outline doesn't trace the shrink.
   card.blur();
@@ -233,6 +231,7 @@ function closeCaseStudy(): void {
   card.style.height = `${slotRect.height}px`;
 
   backdrop.classList.remove('is-open');
+  backdrop.removeEventListener('click', closeCaseStudy);
   document.removeEventListener('keydown', escClose);
 
   let cleanedUp = false;
@@ -297,7 +296,7 @@ function onResize(): void {
   resizeRaf = requestAnimationFrame(() => {
     resizeRaf = null;
     if (!openState || openState.closing) return;
-    const { card, placeholder } = openState;
+    const { card } = openState;
 
     card.classList.add('is-resizing');
     const vr = getViewportRect();
@@ -308,9 +307,6 @@ function onResize(): void {
     card.style.height = `${vr.height}px`;
     void card.offsetHeight;
     card.style.transition = '';
-
-    // Update originalRect so close returns to the (possibly moved) slot.
-    openState.originalRect = placeholder.getBoundingClientRect();
 
     requestAnimationFrame(() => {
       if (openState && !openState.closing) openState.card.classList.remove('is-resizing');
