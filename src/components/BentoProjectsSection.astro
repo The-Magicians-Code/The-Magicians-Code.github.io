@@ -1,0 +1,87 @@
+---
+import { Icon } from 'astro-icon/components';
+import { getCollection, render } from 'astro:content';
+import BentoGrid from './BentoGrid.astro';
+import BentoCard from './BentoCard.astro';
+
+const projects = (await getCollection('projects'))
+  .filter((p) => !p.data.draft)
+  .sort((a, b) => a.data.order - b.data.order);
+
+// Pre-resolve <Content /> per project. render() is a top-level function in
+// Astro 5 (from astro:content); it can't be called inside JSX .map(), so we
+// resolve up-front via Promise.all. Matches the pattern at
+// src/pages/projects/[slug].astro.
+const projectsWithContent = await Promise.all(
+  projects.map(async (project) => {
+    const { Content } = await render(project);
+    return { project, Content };
+  }),
+);
+---
+
+<section id="projects" class="section-fade-in" style="--delay: 0.2s">
+  <div class="section-eyebrow">03 · Selected work</div>
+  <h2 class="section-title">Projects <em>worth</em> showing.</h2>
+  <BentoGrid>
+    {projectsWithContent.map(({ project, Content }) => (
+      <BentoCard
+        title={project.data.title}
+        eyebrow="Case study"
+        slug={project.id}
+        bentoSpan={project.data.bentoSpan}
+        coverVariant={project.data.coverVariant}
+      >
+        <Content />
+      </BentoCard>
+    ))}
+    <a
+      href="https://github.com/The-Magicians-Code/"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="bento-card all-projects span-wide"
+      aria-label="View all projects on GitHub"
+    >
+      <Icon name="lucide:github" class="w-5 h-5" aria-hidden="true" />
+      <span>See all projects on GitHub</span>
+      <Icon name="lucide:arrow-up-right" class="w-4 h-4 trail" aria-hidden="true" />
+    </a>
+  </BentoGrid>
+</section>
+
+<style>
+  .section-title {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: clamp(1.75rem, 1.5vw + 1.25rem, 2.5rem);
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    margin-bottom: 24px;
+  }
+  .all-projects {
+    /* The "See all on GitHub" card reuses .bento-card geometry but renders
+       as a static CTA — not data-bento-card, so the runtime ignores it. */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: var(--ink-dim);
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    letter-spacing: 0.04em;
+    text-decoration: none;
+    background: var(--paper) !important;
+    color: var(--ink-dim) !important;
+    cursor: pointer;
+    padding: 0 28px;
+  }
+  .all-projects:hover {
+    color: var(--ink) !important;
+  }
+  .all-projects .trail {
+    transition: transform 0.2s ease;
+  }
+  .all-projects:hover .trail {
+    transform: translate(2px, -2px);
+  }
+</style>
