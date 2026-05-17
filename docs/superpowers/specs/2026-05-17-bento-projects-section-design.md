@@ -129,35 +129,44 @@ At the responsive breakpoints (920px / 540px) all spans collapse to 1×1 the sam
 ---
 import BentoGrid from './BentoGrid.astro';
 import BentoCard from './BentoCard.astro';
-import { getCollection } from 'astro:content';
+import { getCollection, render } from 'astro:content';
 
 const projects = (await getCollection('projects'))
   .filter((p) => !p.data.draft)
   .sort((a, b) => a.data.order - b.data.order);
+
+// Astro 5: render() is a top-level function from astro:content, not a method
+// on the entry. Pre-resolve <Content /> components for each project up-front
+// since render() can't be called inside the JSX map.
+const projectsWithContent = await Promise.all(
+  projects.map(async (project) => {
+    const { Content } = await render(project);
+    return { project, Content };
+  })
+);
 ---
 
 <section id="projects" class="section-fade-in" style="--delay: 0.2s">
   <div class="section-eyebrow">03 · Selected work</div>
   <h2 class="section-title">Projects <em>worth</em> showing.</h2>
   <BentoGrid>
-    {projects.map((project) => {
-      const { Content } = project.render();
-      return (
-        <BentoCard
-          title={project.data.title}
-          eyebrow="Case study"
-          slug={project.id}
-          bentoSpan={project.data.bentoSpan}
-          coverVariant={project.data.coverVariant}
-        >
-          <Content />
-        </BentoCard>
-      );
-    })}
+    {projectsWithContent.map(({ project, Content }) => (
+      <BentoCard
+        title={project.data.title}
+        eyebrow="Case study"
+        slug={project.id}
+        bentoSpan={project.data.bentoSpan}
+        coverVariant={project.data.coverVariant}
+      >
+        <Content />
+      </BentoCard>
+    ))}
     <!-- "See all on GitHub" CTA card preserved from current ProjectsSection -->
   </BentoGrid>
 </section>
 ```
+
+The site's existing [src/pages/projects/[slug].astro](../../../src/pages/projects/%5Bslug%5D.astro) uses the same `await render(entry)` pattern — reference for verification.
 
 ## Layout — breaking out of the 880px column
 
@@ -208,20 +217,32 @@ document.addEventListener('DOMContentLoaded', init);
 6. Append a close button (`.cs-close` with shrink-arrows SVG) as a child of the card.
 7. Add `.is-expanding` class, lock body scroll (with scrollbar-width padding compensation).
 8. `requestAnimationFrame` → re-enable transitions, add `.is-expanded`, set rect to the centered modal target via the prototype's `getViewportRect()` calc.
-9. After `--morph-dur` (520ms) settle, clone `.bento-card-body` children into the `.card-body` of the card and fade them in with a per-paragraph stagger.
+9. After `--morph-dur` (520ms) settle, clone `.bento-card-body` children into the `.card-body` of the card and fade them in with a per-paragraph stagger. **Guard the appended body insertion** (`if (!openState || openState.closing) return`) so a fast esc-during-open doesn't leak appended content into a card that's already closing — prototype `bento-mchiu.html:1169-1173`.
 
 ### Close lifecycle
 
-1. `card.blur()` immediately (kill UA focus outline before morph begins — the lesson from the prototype).
-2. Fade out appended body content (`opacity: 0`, 180ms).
-3. Remove `.is-expanded`, add `.is-collapsing`, set rect back to the placeholder's current `getBoundingClientRect()` (re-measure in case of resize).
-4. `transitionend` on `width` (with 800ms `setTimeout` fallback) → cleanup:
-   - Remove appended body content + close button.
-   - Set inline `transition: none` + restore original inline style.
-   - Force layout commit, then `requestAnimationFrame` → clear inline, remove `.is-expanding`, `.is-collapsing`, `.is-resizing` classes, `card.blur()` again.
-   - Remove placeholder.
-   - Unlock body scroll.
-5. `openState = null`.
+1. Guard against double-close (`if (!openState || openState.closing) return; openState.closing = true`).
+2. `card.blur()` immediately (kill UA focus outline before morph begins — the lesson from the prototype).
+3. Fade out appended body content (`opacity: 0`, 180ms).
+4. Remove `.is-expanded` AND `.is-resizing` (a resize snap may have been in flight; clearing it lets the close transition run unimpeded — prototype `bento-mchiu.html:1232`). Add `.is-collapsing`. Set rect back to the placeholder's current `getBoundingClientRect()` (re-measure in case of resize).
+5. Detach `escClose` keydown listener.
+6. `transitionend` on `width` (with 800ms `setTimeout` fallback) → cleanup.
+
+### Cleanup ordering (CRITICAL — must match prototype to avoid the one-frame silver snap)
+
+The order below is non-obvious; the prototype's comment at `bento-mchiu.html:1258-1267` explains why. The implementation must preserve it:
+
+1. Remove appended body content + close button.
+2. Remove the backdrop's `.is-open` class (start its fade-out — backdrop stays in DOM for re-use, no `.remove()` needed since it's a sibling, not body-appended).
+3. Build a `guarded` inline style = `originalInline + '; transition: none;'` and apply via `card.setAttribute('style', guarded)`. This freezes any transition while the inline-position styles are dropped.
+4. Remove the placeholder so the grid slot is empty when the card returns to flow.
+5. Force layout commit via `void card.offsetHeight`.
+6. `requestAnimationFrame` →
+   - Restore `originalInline` exactly (drops the `transition: none` inline override).
+   - Remove `.is-expanding`, `.is-collapsing`, `.is-resizing` classes **after** the style restoration. Doing this in the opposite order causes a one-frame silver border snap because the resting border CSS rule applies before the inline `transition: none` lifts.
+   - `card.blur()` again as belt-and-suspenders.
+7. Unlock body scroll.
+8. `openState = null`.
 
 ### Resize while open
 
@@ -242,6 +263,60 @@ Carried over from the prototype as-is:
 - `prefers-reduced-motion: reduce` cancels the animation.
 
 The IntersectionObserver wiring lives in `bento-expand.ts` alongside the modal logic; both run at `DOMContentLoaded` and target elements within the same `BentoGrid`.
+
+### Pointer-event gating (prototype details to preserve)
+
+- **`.cs-close`** is `opacity: 0; pointer-events: none;` at rest; only `.is-expanded .cs-close` flips it to `opacity: 1; pointer-events: auto;`. Close is gated to the expanded state only — prototype `bento-mchiu.html:647-668`.
+- **`.cs-expand`** (the hover-revealed expand affordance) is `pointer-events: none;` everywhere except `:hover` at rest. During `.is-expanding`, `.is-expanded`, `.is-collapsing` it's force-suppressed to prevent hover from re-revealing it over the modal — prototype `bento-mchiu.html:626-636`.
+- **Close button click handler** uses `stopPropagation` so the click doesn't bubble up to the card (which would re-fire its own click handler) — prototype `bento-mchiu.html:1189-1191`.
+
+### Accessibility
+
+The card markup must include explicit a11y attributes (the prototype set `tabIndex` and key handlers in JS at `bento-mchiu.html:1328-1333`; the port declares them statically in the component):
+
+```astro
+<article
+  class={`bento-card project-card cs-card span-${bentoSpan} cover-${coverVariant}`}
+  data-bento-card
+  data-slug={slug}
+  role="button"
+  tabindex="0"
+  aria-haspopup="dialog"
+  aria-expanded="false"
+>
+  ...
+</article>
+```
+
+The runtime toggles `aria-expanded` between `"false"` and `"true"` synchronously with `.is-expanded`. The close button gets `aria-label="Close case study"`. The backdrop is `aria-hidden="true"`. Focus management: on close, focus returns to the card via `card.focus({ preventScroll: true })` only if the close was triggered by keyboard (`escClose`); if triggered by mouse (backdrop click), focus stays detached.
+
+### Modal body content styling
+
+The prototype only renders prose paragraphs (`<p class="body-para appended">`) and styles that one selector. The port clones the rendered markdown body, which may contain `<h2>`, `<h3>`, `<ul>`, `<ol>`, `<code>`, `<pre>`, `<a>`. The `BentoGrid`-scoped CSS adds:
+
+```css
+.bento-card.is-expanded .bento-card-body-rendered :is(h2, h3) {
+  font-family: var(--font-serif);
+  margin-top: 1.4em;
+}
+.bento-card.is-expanded .bento-card-body-rendered :is(ul, ol) {
+  margin: 0.8em 0 0.8em 1.2em;
+}
+.bento-card.is-expanded .bento-card-body-rendered code {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  background: rgba(245, 241, 231, 0.10);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+.bento-card.is-expanded .bento-card-body-rendered a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+```
+
+These rules scope to a `.bento-card-body-rendered` wrapper that the runtime creates when it clones the hidden body into the visible card-body. The existing per-paragraph fade-in stagger applies to direct children regardless of tag.
 
 ### Carried-over fixes from the prototype
 
@@ -295,17 +370,18 @@ Both existing project markdown files get the new optional fields. Suggested init
 - No console errors in browser at rest, on open, on close, or on resize.
 - `/projects/[slug]/` routes still resolve and render markdown bodies.
 
-## Open questions / things to verify during implementation
+## Pre-implementation review — codex findings folded in
 
-- **`<Content />` in the slot** — Astro renders project markdown bodies via `const { Content } = project.render()` and `<Content />`. Verify that putting `<Content />` inside a `display: none` / `hidden` wrapper still produces hydrated HTML in the DOM that the runtime can clone/reveal. (If not, fall back to rendering body HTML to a string via `project.render()` then `set:html` into the wrapper.)
-- **Astro hydration of the script** — `<script>import '../scripts/bento-expand.ts'</script>` in `BentoGrid.astro` should be bundled and processed by Astro's default behavior. Verify it runs on the homepage and not on `/projects/[slug]/` (where it shouldn't be loaded).
-- **Animation interaction** — the prototype's `card-enter` IntersectionObserver fires on scroll. Verify it doesn't conflict with Astro view transitions if they get enabled later. (Not enabled today; flag for future.)
+Codex reviewed this spec against the prototype and current codebase. Resolutions:
 
-## Pre-implementation review checkpoint
+- **`<Content />` rendering** — confirmed working in Astro 5 with `await render(entry)` from `astro:content` (the existing `src/pages/projects/[slug].astro` uses this pattern). Spec example updated to pre-resolve `Content` components in frontmatter via `Promise.all` since `render()` cannot be called inside JSX `.map()`. No HTML-string fallback needed.
+- **Width breakout math** — confirmed centre-anchors correctly at 375px / 880px / 1280px viewports because the parent `.page` padding is symmetric (`0 24px` mobile, `0 40px` desktop). Spec keeps the proposed `margin-inline: calc(...)` formula.
+- **Cleanup ordering** — was underspecified; spec now has an explicit ordered list under "Cleanup ordering (CRITICAL)" with the why.
+- **Missing prototype details** — added: `is-resizing` removed at close start, body-append guard against close-during-open, close-button `stopPropagation`, expand/close pointer-event gating.
+- **Accessibility** — added explicit `role`, `tabindex`, `aria-haspopup`, `aria-expanded` on the card; close button gets `aria-label`; focus returns to card only on keyboard-triggered close.
+- **Modal body markdown styling** — added CSS rules for `<h2>`/`<h3>`/`<ul>`/`<ol>`/`<code>`/`<a>` (the prototype only styled `<p>`).
 
-Per the user's global CLAUDE.md convention, hand this spec to `codex-rescue` before drafting the implementation plan. Focus codex's review on:
+## Things to verify during implementation
 
-- The `<Content />` inside `hidden` wrapper assumption — does Astro actually hydrate this?
-- Width breakout math — does `margin-inline: calc((100% - X) / 2)` actually centre-anchor when the parent has padding rather than just max-width?
-- Whether the `body-scroll-lock` padding-right compensation needs to know about Astro's view-transition layer.
-- Anything in the prototype's `closeCaseStudy()` cleanup ordering (the long comment block at the cleanup site) that doesn't survive the port unchanged.
+- **Script bundling** — `<script>import '../scripts/bento-expand.ts'</script>` in `BentoGrid.astro` should be bundled by Astro's default behavior. Verify it runs on `/` and is NOT included on `/projects/[slug]/` (where the bento isn't mounted).
+- **View transitions** — the prototype's `card-enter` IntersectionObserver fires on scroll. Verify it doesn't conflict with Astro view transitions if they get enabled later. Not enabled today; flag for future.
