@@ -82,15 +82,11 @@ body {
 
 ::selection { background: var(--ink); color: var(--bg); }
 
-/* Quiet linear gradient wash, base → faint accent at the bottom-right corner. */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background: linear-gradient(160deg, transparent 30%, var(--accent-soft) 100%);
-}
+/* (Removed: body::before linear-gradient wash. Body bg is opaque + body has
+   isolation:isolate, so the fixed-position gradient was hidden inside body's
+   box — it only became visible in the scrollbar-gutter:stable strip on the
+   right, where it read as a faint orange tint. Removing it makes the gutter
+   blend cleanly with var(--bg) and changes nothing in the body area.) */
 
 /* ===== Typography ===== */
 h1, h2, h3, h4, h5, h6 {
