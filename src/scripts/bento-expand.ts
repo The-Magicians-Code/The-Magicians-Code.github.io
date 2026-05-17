@@ -124,8 +124,11 @@ function makeCloseIcon(): SVGSVGElement {
 // "fast start, smooth decelerating tail" — the physics of a critically-
 // damped spring approaching equilibrium. No fixed duration; ends when
 // the gap is sub-pixel.
-const SCROLL_LERP = 0.12;   // higher = snappier; 0.08-0.18 is the useful band
-const SCROLL_EPSILON = 0.5; // px gap at which we snap to target and finish
+const SCROLL_LERP = 0.12;          // higher = snappier; 0.08-0.18 is the useful band
+const SCROLL_EPSILON = 0.5;        // px gap at which we snap to target and finish
+const SCROLL_SETTLE_PAUSE = 180;   // ms to wait after scroll lands before the morph
+                                   // begins, so the user's eye registers the scroll
+                                   // completion before the next motion starts.
 
 function smoothScrollTo(targetY: number): Promise<void> {
   return new Promise((resolve) => {
@@ -154,15 +157,16 @@ function smoothScrollTo(targetY: number): Promise<void> {
   });
 }
 
-function ensureCardClearOfNav(card: HTMLElement): Promise<void> {
+async function ensureCardClearOfNav(card: HTMLElement): Promise<void> {
   const nav = document.getElementById('site-nav');
-  if (!nav) return Promise.resolve();
+  if (!nav) return;
   const navBottom = nav.getBoundingClientRect().bottom;
   const cardTop = card.getBoundingClientRect().top;
   const margin = 16;
   const safeTop = navBottom + margin;
-  if (cardTop >= safeTop) return Promise.resolve();
-  return smoothScrollTo(window.scrollY + (cardTop - safeTop));
+  if (cardTop >= safeTop) return;
+  await smoothScrollTo(window.scrollY + (cardTop - safeTop));
+  await new Promise<void>((r) => window.setTimeout(r, SCROLL_SETTLE_PAUSE));
 }
 
 // ── Open ─────────────────────────────────────────────────────────────────
