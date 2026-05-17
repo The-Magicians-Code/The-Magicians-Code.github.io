@@ -1,0 +1,368 @@
+---
+// BentoGrid — layout shell for BentoCards. Owns the asymmetric grid CSS,
+// the single shared backdrop, the lifecycle visual rules, and the script
+// import. See docs/superpowers/specs/2026-05-17-bento-projects-section-design.md.
+---
+
+<section class="bento-section">
+  <div class="bento-grid" data-bento-grid>
+    <slot />
+  </div>
+  <div class="bento-backdrop" data-bento-backdrop aria-hidden="true"></div>
+</section>
+
+<script>
+  import '../scripts/bento-expand.ts';
+</script>
+
+<style>
+  /* ── Bento-scoped tokens ──────────────────────────────────────── */
+  .bento-section {
+    --cell: 252px;
+    --gap: 18px;
+    --morph-dur: 520ms;
+    --ease-snappy: cubic-bezier(0.77, 0, 0.175, 1);
+
+    /* Break out of the parent .page column (max-width: 880px) up to ~1200px,
+       centre-anchored. Works because .page padding is symmetric (24px / 40px). */
+    width: min(100vw - 32px, 1200px);
+    margin-inline: calc((100% - min(100vw - 32px, 1200px)) / 2);
+  }
+
+  @media (max-width: 1140px) { .bento-section { --cell: 220px; } }
+  @media (max-width: 540px)  { .bento-section { --cell: 88vw; } }
+
+  /* ── Grid ─────────────────────────────────────────────────────── */
+  .bento-grid {
+    display: grid;
+    grid-template-columns: repeat(4, var(--cell));
+    grid-auto-rows: var(--cell);
+    gap: var(--gap);
+    justify-content: center;
+    align-content: start;
+  }
+  @media (max-width: 920px) {
+    .bento-grid { grid-template-columns: repeat(2, var(--cell)); }
+  }
+  @media (max-width: 540px) {
+    .bento-grid { grid-template-columns: var(--cell); }
+  }
+
+  /* ── Span classes ─────────────────────────────────────────────── */
+  :global(.bento-card.span-hero)   { grid-column: span 2; grid-row: span 2; }
+  :global(.bento-card.span-wide)   { grid-column: span 2; }
+  :global(.bento-card.span-tall)   { grid-row: span 2; }
+  :global(.bento-card.span-normal) { /* 1×1, default */ }
+
+  @media (max-width: 920px) {
+    :global(.bento-card.span-hero) { grid-column: span 2; grid-row: span 2; }
+    :global(.bento-card.span-wide) { grid-column: span 2; }
+    :global(.bento-card.span-tall) { grid-column: span 1; grid-row: span 1; }
+  }
+  @media (max-width: 540px) {
+    :global(.bento-card.span-hero),
+    :global(.bento-card.span-wide),
+    :global(.bento-card.span-tall),
+    :global(.bento-card.span-normal) { grid-column: span 1; grid-row: span 1; }
+  }
+
+  /* ── Card base (port of .bento-card from bento-mchiu) ─────────── */
+  :global(.bento-card) {
+    position: relative;
+    background: var(--paper);
+    border: 0;
+    border-radius: 32px;
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.04),
+      0 1px 2px rgba(0, 0, 0, 0.04),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.02);
+    overflow: hidden;
+    transition: box-shadow 240ms var(--ease, cubic-bezier(0.22, 1, 0.36, 1));
+    cursor: pointer;
+  }
+  /* Card-enter starting state scoped to interactive bento cards only.
+     The .all-projects CTA shares .bento-card but isn't [data-bento-card] —
+     scoping here keeps it visible at rest instead of stuck at opacity:0. */
+  :global([data-bento-card]) {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  :global([data-bento-card].in) {
+    animation: bento-card-enter 720ms var(--ease, cubic-bezier(0.22, 1, 0.36, 1)) forwards;
+    animation-delay: var(--card-enter-delay, 0s);
+  }
+  @keyframes bento-card-enter {
+    0%   { opacity: 0; transform: translateY(24px); }
+    100% { opacity: 1; transform: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :global([data-bento-card])    { opacity: 1; transform: none; }
+    :global([data-bento-card].in) { animation: none; }
+  }
+
+  :global(.bento-card:hover) {
+    transform: translateY(-2px);
+    box-shadow:
+      0 6px 24px rgba(0, 0, 0, 0.06),
+      0 2px 6px rgba(0, 0, 0, 0.04);
+  }
+
+  /* Project cards: no border, no shadow, bg matches cover (the prototype's
+     hard-won fix to avoid cream/white leak at sub-pixel rounded corners). */
+  :global(.bento-card.project-card),
+  :global(.bento-card.project-card:hover) {
+    border: 0;
+    box-shadow: none;
+    background-color: #16140f;
+  }
+  :global(.bento-card.project-card.cover-alt),
+  :global(.bento-card.project-card.cover-alt:hover) {
+    background-color: #1f1c16;
+  }
+
+  /* ── Cover layer ──────────────────────────────────────────────── */
+  :global(.project-card .cover) {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background:
+      radial-gradient(120% 120% at 0% 0%,   oklch(72% 0.16 28 / 0.35), transparent 60%),
+      radial-gradient(120% 120% at 100% 100%, oklch(60% 0.14 250 / 0.35), transparent 60%),
+      #16140f;
+  }
+  :global(.project-card .cover::after) {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 30%, rgba(0,0,0,0.55) 100%);
+  }
+  :global(.project-card.cover-alt .cover) {
+    background:
+      radial-gradient(120% 120% at 0% 0%,   oklch(72% 0.14 140 / 0.35), transparent 60%),
+      radial-gradient(120% 120% at 100% 100%, oklch(64% 0.18 28 / 0.40), transparent 60%),
+      #1f1c16;
+  }
+
+  /* ── Card body (rest) ─────────────────────────────────────────── */
+  :global(.bento-card .card-body) {
+    position: relative;
+    z-index: 1;
+    padding: 28px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 12px;
+  }
+  :global(.bento-card .card-eyebrow) {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.10em;
+    color: rgba(245, 241, 231, 0.7);
+  }
+  :global(.bento-card .card-title) {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: 24px;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    color: #f5f1e7;
+  }
+  :global(.bento-card .card-title em) {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  /* Hidden body source for the modal (cloned on open) */
+  :global(.bento-card .bento-card-body) {
+    display: none;
+  }
+
+  /* ── Hover-revealed expand affordance ─────────────────────────── */
+  :global(.cs-expand) {
+    position: absolute;
+    top: 16px; right: 16px;
+    width: 40px; height: 40px;
+    border-radius: 999px;
+    background: rgba(245, 241, 231, 0.10);
+    color: #f5f1e7;
+    display: grid;
+    place-items: center;
+    z-index: 2;
+    box-shadow: 0 2px 40px rgba(0, 0, 0, 0.40);
+    opacity: 0;
+    transform: scale(0.8);
+    pointer-events: none;
+    transition: opacity 200ms ease, transform 200ms ease, background 200ms var(--ease);
+  }
+  :global(.cs-expand svg) { width: 16px; height: 16px; }
+  @media (hover: hover) and (pointer: fine) {
+    :global(.bento-card:hover .cs-expand) {
+      opacity: 1; transform: scale(1); pointer-events: auto;
+    }
+  }
+  :global(.bento-card:focus-visible .cs-expand) {
+    opacity: 1; transform: scale(1); pointer-events: auto;
+  }
+  :global(.cs-expand:hover) { background: rgba(245, 241, 231, 0.18); }
+  @media (prefers-reduced-motion: reduce) {
+    :global(.cs-expand) { transform: none; transition: opacity 200ms ease; }
+  }
+  /* Suppress entirely during lifecycle so it can't peek over the modal. */
+  :global(.bento-card.is-expanding .cs-expand),
+  :global(.bento-card.is-expanded .cs-expand),
+  :global(.bento-card.is-collapsing .cs-expand) {
+    opacity: 0 !important;
+    transform: scale(0.8) !important;
+    pointer-events: none !important;
+  }
+
+  /* ── Lifecycle states ─────────────────────────────────────────── */
+  :global(.bento-card.is-expanding) {
+    z-index: 201;
+    /* border-color deliberately omitted — snap in lockstep with bg.
+       See spec "Carried-over fixes from the prototype". */
+    transition:
+      top        var(--morph-dur) var(--ease-snappy),
+      left       var(--morph-dur) var(--ease-snappy),
+      width      var(--morph-dur) var(--ease-snappy),
+      height     var(--morph-dur) var(--ease-snappy),
+      box-shadow var(--morph-dur) var(--ease-snappy);
+    will-change: top, left, width, height;
+  }
+  :global(.bento-card.is-expanding),
+  :global(.bento-card.is-expanded),
+  :global(.bento-card.is-collapsing) {
+    cursor: default;
+    box-shadow: none;
+    border-color: transparent;
+  }
+  :global(.bento-card.is-expanding .card-body) {
+    transition: padding var(--morph-dur) var(--ease-snappy);
+  }
+  :global(.bento-card.is-expanded .card-body) {
+    padding: 56px 48px 48px;
+    justify-content: flex-start;
+  }
+  :global(.bento-card.is-expanded .card-title) {
+    font-size: 34px;
+  }
+  @media (max-width: 540px) {
+    :global(.bento-card.is-expanded .card-body) { padding: 48px 22px 32px; }
+  }
+
+  /* Resizing suppresses transitions for instant snap. */
+  :global(.bento-card.is-resizing) {
+    transition: none !important;
+  }
+
+  /* Grid placeholder — invisible, holds the grid slot. */
+  :global(.bento-card-placeholder) {
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  /* ── Appended modal body content (cloned at open) ─────────────── */
+  :global(.bento-card .bento-card-body-rendered) {
+    font-size: 15px;
+    line-height: 1.55;
+    color: rgba(245, 241, 231, 0.75);
+    max-width: 64ch;
+  }
+  :global(.bento-card .body-para.appended) {
+    margin: 14px 0;
+    opacity: 0;
+    transition: opacity 280ms ease;
+  }
+  :global(.bento-card .body-para.appended.in) {
+    opacity: 1;
+    transition-delay: calc(var(--stagger-idx, 0) * 80ms);
+  }
+  :global(.bento-card.is-collapsing .body-para.appended),
+  :global(.bento-card.is-collapsing .body-para.appended.in) {
+    opacity: 0;
+    transition: opacity 180ms ease;
+    transition-delay: 0ms;
+  }
+  /* Markdown body styling — rendered content may carry headings, lists, code, links. */
+  :global(.bento-card .bento-card-body-rendered :is(h2, h3)) {
+    font-family: var(--font-serif);
+    color: #f5f1e7;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    margin: 1.4em 0 0.5em;
+  }
+  :global(.bento-card .bento-card-body-rendered :is(ul, ol)) {
+    margin: 0.8em 0 0.8em 1.2em;
+  }
+  :global(.bento-card .bento-card-body-rendered li) {
+    margin-bottom: 0.4em;
+  }
+  :global(.bento-card .bento-card-body-rendered code) {
+    font-family: var(--font-mono);
+    font-size: 0.92em;
+    background: rgba(245, 241, 231, 0.10);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+  :global(.bento-card .bento-card-body-rendered a) {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  /* ── Close button ─────────────────────────────────────────────── */
+  :global(.cs-close) {
+    position: absolute;
+    top: 16px; right: 16px;
+    width: 40px; height: 40px;
+    border-radius: 999px;
+    background: rgba(245, 241, 231, 0.10);
+    color: #f5f1e7;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    z-index: 2;
+    border: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: background 200ms var(--ease), opacity 240ms ease;
+  }
+  :global(.bento-card.is-expanded .cs-close) {
+    opacity: 1;
+    pointer-events: auto;
+    transition-delay: 0ms, 280ms;
+  }
+  :global(.bento-card.is-collapsing .cs-close) {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 180ms ease, background 200ms ease;
+    transition-delay: 0ms;
+  }
+  :global(.cs-close:hover) { background: rgba(245, 241, 231, 0.18); }
+  :global(.cs-close svg) { width: 16px; height: 16px; }
+
+  /* ── Backdrop ─────────────────────────────────────────────────── */
+  .bento-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background: rgba(26, 26, 28, 0.4);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 320ms ease;
+    cursor: pointer;
+  }
+  .bento-backdrop.is-open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* ── Body scroll lock ─────────────────────────────────────────── */
+  :global(body.bento-open) {
+    overflow: hidden;
+  }
+</style>
