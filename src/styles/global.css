@@ -61,6 +61,11 @@ html.dark {
 html {
   background: var(--bg);
   color: var(--ink);
+  /* Reserve scrollbar space always, so that locking body scroll (e.g. when
+     a bento case-study modal opens) doesn't widen the viewport and shift
+     position:fixed elements like the nav-pill and liquid-glass tuner. The
+     ~15px gutter is always reserved on the right; visually unobtrusive. */
+  scrollbar-gutter: stable;
 }
 
 body {

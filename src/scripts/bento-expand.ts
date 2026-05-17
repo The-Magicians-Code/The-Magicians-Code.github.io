@@ -38,23 +38,17 @@ function getViewportRect(): DOMRect {
   );
 }
 
-// ── Body scroll lock with scrollbar-width compensation ───────────────────
+// ── Body scroll lock ─────────────────────────────────────────────────────
+// No padding-right compensation needed: html has `scrollbar-gutter: stable`
+// in global.css, so the viewport width doesn't change when the body's
+// scrollbar disappears. position:fixed elements (nav-pill, glass tuner)
+// stay put without any per-element adjustment.
 function lockBodyScroll(): void {
-  const sbw = window.innerWidth - document.documentElement.clientWidth;
-  if (sbw > 0) {
-    const current = parseFloat(getComputedStyle(document.body).paddingRight) || 0;
-    document.body.dataset.bentoPrevPaddingRight = document.body.style.paddingRight || '';
-    document.body.style.paddingRight = `${current + sbw}px`;
-  }
   document.body.classList.add('bento-open');
 }
 
 function unlockBodyScroll(): void {
   document.body.classList.remove('bento-open');
-  if ('bentoPrevPaddingRight' in document.body.dataset) {
-    document.body.style.paddingRight = document.body.dataset.bentoPrevPaddingRight ?? '';
-    delete document.body.dataset.bentoPrevPaddingRight;
-  }
 }
 
 // ── Close-button SVG (Lucide "minimize-2" / "shrink" glyph) ──────────────
