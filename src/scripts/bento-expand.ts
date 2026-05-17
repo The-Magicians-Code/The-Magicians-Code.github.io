@@ -107,9 +107,56 @@ function makeCloseIcon(): SVGSVGElement {
   return svg;
 }
 
+// ── Pre-open scroll: clear the card out from under the nav ──────────────
+// The fixed nav (z:40) overlaps any card the user clicks on while scrolled
+// near the top of the section. Lifting the card to z:201 instantly would
+// produce a visible layer-pop (card escapes from behind the nav-pill blur).
+// Instead, smoothly scroll so the card sits below the nav band before the
+// open animation starts. Honors prefers-reduced-motion (browser scrollBy
+// behavior:'smooth' auto-falls back to instant in that mode).
+function ensureCardClearOfNav(card: HTMLElement): Promise<void> {
+  const nav = document.getElementById('site-nav');
+  if (!nav) return Promise.resolve();
+  const navBottom = nav.getBoundingClientRect().bottom;
+  const cardTop = card.getBoundingClientRect().top;
+  const margin = 16;
+  const safeTop = navBottom + margin;
+  if (cardTop >= safeTop) return Promise.resolve();
+  window.scrollBy({ top: cardTop - safeTop, behavior: 'smooth' });
+  return waitForScrollEnd();
+}
+
+function waitForScrollEnd(timeoutMs = 600): Promise<void> {
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = (): void => {
+      if (done) return;
+      done = true;
+      window.removeEventListener('scrollend', finish);
+      window.clearTimeout(fallback);
+      resolve();
+    };
+    window.addEventListener('scrollend', finish);
+    const fallback = window.setTimeout(finish, timeoutMs);
+  });
+}
+
 // ── Open ─────────────────────────────────────────────────────────────────
+let openInProgress = false;
+
 function openCaseStudy(card: HTMLElement): void {
-  if (openState) return;
+  if (openState || openInProgress) return;
+  openInProgress = true;
+  ensureCardClearOfNav(card)
+    .then(() => {
+      if (!openState) doOpen(card);
+    })
+    .finally(() => {
+      openInProgress = false;
+    });
+}
+
+function doOpen(card: HTMLElement): void {
 
   const backdrop = document.querySelector<HTMLElement>('[data-bento-backdrop]');
   if (!backdrop) return;
