@@ -196,6 +196,23 @@ html.dark .bento:hover {
   position: fixed;
   inset: 0 0 auto 0;
   z-index: 40;
+  /* Fade timing matches the bento backdrop's opacity transition (320ms) so
+     the nav disappears in sync with the modal taking over. */
+  transition: opacity 320ms ease;
+}
+
+/* Hide + disable the nav when a bento case-study modal is open. The
+   backdrop already visually occludes the nav (z:200 > z:40); fading it
+   out kills the "card escapes from under the nav" snap when the card
+   lifts to z:201, and pointer-events:none is a belt-and-braces guard
+   against z-index regressions exposing the nav to clicks again. */
+body.bento-open #site-nav,
+body.bento-open .nav-progressive-blur {
+  opacity: 0;
+  pointer-events: none;
+}
+.nav-progressive-blur {
+  transition: opacity 320ms ease;
 }
 
 #nav-pill {
