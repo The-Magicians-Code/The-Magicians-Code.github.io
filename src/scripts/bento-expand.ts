@@ -37,14 +37,16 @@ function getViewportRect(): DOMRect {
   );
 }
 
-// ── Body scroll lock + per-element shift compensation ───────────────────
+// ── Body scroll lock + shift compensation (body + fixed elements) ───────
 // Locking body scroll hides the html scrollbar, which widens the viewport
-// by the scrollbar width (~15px) and shifts position:fixed elements anchored
-// via `right: ...`. To compensate without permanently reserving a scrollbar
-// gutter, query all `[data-scroll-lock-compensate]` elements at lock time
-// and bump their inline `right` by the scrollbar width; restore on unlock.
-// Opt-in is explicit — tag elements (nav-pill container, glass tuner, etc.)
-// that need to stay put.
+// by the scrollbar width (~15px). Two visual side-effects:
+//   1. Body's flow content (e.g. centered .page wrapper) re-centers within
+//      the wider body and shifts right by sbw/2.
+//   2. position:fixed elements anchored via `right: …` shift right by sbw.
+// Both need compensation to avoid visible motion at lock/unlock.
+//   - Body fix: add padding-right: sbw to body so its content stays put.
+//   - Fixed-element fix: query [data-scroll-lock-compensate] elements and
+//     bump their inline `right` by sbw. Opt-in via the attribute.
 function getScrollLockEls(): NodeListOf<HTMLElement> {
   return document.querySelectorAll<HTMLElement>('[data-scroll-lock-compensate]');
 }
@@ -52,6 +54,13 @@ function getScrollLockEls(): NodeListOf<HTMLElement> {
 function lockBodyScroll(): void {
   const sbw = window.innerWidth - document.documentElement.clientWidth;
   if (sbw > 0) {
+    // Body padding compensation for flow / centered content.
+    const currentBodyPad = parseFloat(getComputedStyle(document.body).paddingRight) || 0;
+    document.body.dataset.bentoPrevPaddingRight = document.body.style.paddingRight || '';
+    document.body.style.paddingRight = `${currentBodyPad + sbw}px`;
+
+    // Per-element `right` compensation for fixed-positioned ancestors of
+    // the viewport (nav, blur layer, tuners).
     getScrollLockEls().forEach((el) => {
       const currentRight = parseFloat(getComputedStyle(el).right) || 0;
       el.dataset.bentoPrevRight = el.style.right;
@@ -63,6 +72,10 @@ function lockBodyScroll(): void {
 
 function unlockBodyScroll(): void {
   document.body.classList.remove('bento-open');
+  if ('bentoPrevPaddingRight' in document.body.dataset) {
+    document.body.style.paddingRight = document.body.dataset.bentoPrevPaddingRight ?? '';
+    delete document.body.dataset.bentoPrevPaddingRight;
+  }
   getScrollLockEls().forEach((el) => {
     if ('bentoPrevRight' in el.dataset) {
       el.style.right = el.dataset.bentoPrevRight ?? '';
