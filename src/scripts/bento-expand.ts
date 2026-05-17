@@ -112,8 +112,48 @@ function makeCloseIcon(): SVGSVGElement {
 // near the top of the section. Lifting the card to z:201 instantly would
 // produce a visible layer-pop (card escapes from behind the nav-pill blur).
 // Instead, smoothly scroll so the card sits below the nav band before the
-// open animation starts. Honors prefers-reduced-motion (browser scrollBy
-// behavior:'smooth' auto-falls back to instant in that mode).
+// open animation starts.
+//
+// Native window.scrollBy({behavior:'smooth'}) is too fast and uses a fixed
+// browser easing curve (~300ms, ease) that doesn't read as physics-based.
+// We drive a rAF loop with easeInOutQuint (matching the bento morph's
+// --ease-snappy: cubic-bezier(0.77, 0, 0.175, 1)) over ~700ms so the
+// scroll feels like one continuous motion with the open animation.
+const SCROLL_DUR = 700;
+
+function easeInOutQuint(t: number): number {
+  return t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2;
+}
+
+function smoothScrollTo(targetY: number): Promise<void> {
+  return new Promise((resolve) => {
+    const startY = window.scrollY;
+    const distance = targetY - startY;
+    if (Math.abs(distance) < 1) {
+      resolve();
+      return;
+    }
+    // Honor reduced-motion: jump instantly.
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      window.scrollTo(0, targetY);
+      resolve();
+      return;
+    }
+    const startTime = performance.now();
+    const step = (now: number): void => {
+      const elapsed = now - startTime;
+      const t = Math.min(elapsed / SCROLL_DUR, 1);
+      window.scrollTo(0, startY + distance * easeInOutQuint(t));
+      if (t < 1) {
+        requestAnimationFrame(step);
+      } else {
+        resolve();
+      }
+    };
+    requestAnimationFrame(step);
+  });
+}
+
 function ensureCardClearOfNav(card: HTMLElement): Promise<void> {
   const nav = document.getElementById('site-nav');
   if (!nav) return Promise.resolve();
@@ -122,23 +162,7 @@ function ensureCardClearOfNav(card: HTMLElement): Promise<void> {
   const margin = 16;
   const safeTop = navBottom + margin;
   if (cardTop >= safeTop) return Promise.resolve();
-  window.scrollBy({ top: cardTop - safeTop, behavior: 'smooth' });
-  return waitForScrollEnd();
-}
-
-function waitForScrollEnd(timeoutMs = 600): Promise<void> {
-  return new Promise((resolve) => {
-    let done = false;
-    const finish = (): void => {
-      if (done) return;
-      done = true;
-      window.removeEventListener('scrollend', finish);
-      window.clearTimeout(fallback);
-      resolve();
-    };
-    window.addEventListener('scrollend', finish);
-    const fallback = window.setTimeout(finish, timeoutMs);
-  });
+  return smoothScrollTo(window.scrollY + (cardTop - safeTop));
 }
 
 // ── Open ─────────────────────────────────────────────────────────────────
