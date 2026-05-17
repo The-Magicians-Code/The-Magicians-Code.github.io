@@ -115,40 +115,40 @@ function makeCloseIcon(): SVGSVGElement {
 // open animation starts.
 //
 // Native window.scrollBy({behavior:'smooth'}) is too fast and uses a fixed
-// browser easing curve (~300ms, ease) that doesn't read as physics-based.
-// We drive a rAF loop with easeInOutQuint (matching the bento morph's
-// --ease-snappy: cubic-bezier(0.77, 0, 0.175, 1)) over ~700ms so the
-// scroll feels like one continuous motion with the open animation.
-const SCROLL_DUR = 700;
-
-function easeInOutQuint(t: number): number {
-  return t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2;
-}
+// browser easing curve. Polynomial easings (easeInOutQuint etc.) stutter
+// at the start because their first ~30% of duration covers <1% of distance.
+//
+// Lerp-based smooth scroll — same pattern as Lenis and mchiu.co.uk's
+// custom scroll. Each frame: current += (target - current) * factor.
+// Distance remaining shrinks exponentially, which naturally produces
+// "fast start, smooth decelerating tail" — the physics of a critically-
+// damped spring approaching equilibrium. No fixed duration; ends when
+// the gap is sub-pixel.
+const SCROLL_LERP = 0.12;   // higher = snappier; 0.08-0.18 is the useful band
+const SCROLL_EPSILON = 0.5; // px gap at which we snap to target and finish
 
 function smoothScrollTo(targetY: number): Promise<void> {
   return new Promise((resolve) => {
-    const startY = window.scrollY;
-    const distance = targetY - startY;
-    if (Math.abs(distance) < 1) {
+    const startGap = targetY - window.scrollY;
+    if (Math.abs(startGap) < 1) {
       resolve();
       return;
     }
-    // Honor reduced-motion: jump instantly.
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       window.scrollTo(0, targetY);
       resolve();
       return;
     }
-    const startTime = performance.now();
-    const step = (now: number): void => {
-      const elapsed = now - startTime;
-      const t = Math.min(elapsed / SCROLL_DUR, 1);
-      window.scrollTo(0, startY + distance * easeInOutQuint(t));
-      if (t < 1) {
-        requestAnimationFrame(step);
-      } else {
+    let current = window.scrollY;
+    const step = (): void => {
+      current += (targetY - current) * SCROLL_LERP;
+      if (Math.abs(targetY - current) < SCROLL_EPSILON) {
+        window.scrollTo(0, targetY);
         resolve();
+        return;
       }
+      window.scrollTo(0, current);
+      requestAnimationFrame(step);
     };
     requestAnimationFrame(step);
   });
