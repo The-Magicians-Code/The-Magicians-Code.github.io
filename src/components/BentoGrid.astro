@@ -230,6 +230,10 @@
   :global(.bento-card.is-expanded .card-body) {
     padding: 56px 48px 48px;
     justify-content: flex-start;
+    /* Real project markdown bodies can exceed the modal height. The card
+       has overflow: hidden for the morph; expanded state needs its body
+       to scroll internally so content isn't silently clipped. */
+    overflow-y: auto;
   }
   :global(.bento-card.is-expanded .card-title) {
     font-size: 34px;

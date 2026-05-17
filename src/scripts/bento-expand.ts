@@ -83,7 +83,7 @@ function openCaseStudy(card: HTMLElement): void {
   // Finish any in-flight card-enter animation so its transform doesn't fight
   // our position:fixed lift and the captured rect reflects the settled pose.
   card.getAnimations().forEach((a) => {
-    if ((a as CSSAnimation).animationName === 'card-enter') {
+    if ((a as CSSAnimation).animationName === 'bento-card-enter') {
       try { a.finish(); } catch { /* ignore */ }
     }
   });
