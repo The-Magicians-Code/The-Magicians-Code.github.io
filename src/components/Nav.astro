@@ -5,7 +5,7 @@ import ThemeToggle from './ThemeToggle.astro';
 const isDev = import.meta.env.DEV;
 ---
 
-<nav id="site-nav">
+<nav id="site-nav" data-scroll-lock-compensate>
   <div class="nav-shell max-w-4xl mx-auto px-6 md:px-10">
     <div id="nav-pill" class="liquid-glass">
       <div class="side-wrap brand-wrap">
@@ -66,9 +66,9 @@ const isDev = import.meta.env.DEV;
 
 {isDev && (
   <Fragment>
-    <div class="nav-progressive-blur" aria-hidden="true"></div>
+    <div class="nav-progressive-blur" aria-hidden="true" data-scroll-lock-compensate></div>
 
-    <aside id="nav-tuner-panel" class="nav-tuner mode-simple collapsed" aria-label="Liquid glass tuner">
+    <aside id="nav-tuner-panel" class="nav-tuner mode-simple collapsed" aria-label="Liquid glass tuner" data-scroll-lock-compensate>
       <header class="nav-tuner__head">
         <span>Nav glass tuner</span>
         <button type="button" id="nav-tuner-toggle" aria-label="Expand tuner">+</button>

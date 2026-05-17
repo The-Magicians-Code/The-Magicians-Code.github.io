@@ -37,17 +37,38 @@ function getViewportRect(): DOMRect {
   );
 }
 
-// ── Body scroll lock ─────────────────────────────────────────────────────
-// No padding-right compensation needed: html has `scrollbar-gutter: stable`
-// in global.css, so the viewport width doesn't change when the body's
-// scrollbar disappears. position:fixed elements (nav-pill, glass tuner)
-// stay put without any per-element adjustment.
+// ── Body scroll lock + per-element shift compensation ───────────────────
+// Locking body scroll hides the html scrollbar, which widens the viewport
+// by the scrollbar width (~15px) and shifts position:fixed elements anchored
+// via `right: ...`. To compensate without permanently reserving a scrollbar
+// gutter, query all `[data-scroll-lock-compensate]` elements at lock time
+// and bump their inline `right` by the scrollbar width; restore on unlock.
+// Opt-in is explicit — tag elements (nav-pill container, glass tuner, etc.)
+// that need to stay put.
+function getScrollLockEls(): NodeListOf<HTMLElement> {
+  return document.querySelectorAll<HTMLElement>('[data-scroll-lock-compensate]');
+}
+
 function lockBodyScroll(): void {
+  const sbw = window.innerWidth - document.documentElement.clientWidth;
+  if (sbw > 0) {
+    getScrollLockEls().forEach((el) => {
+      const currentRight = parseFloat(getComputedStyle(el).right) || 0;
+      el.dataset.bentoPrevRight = el.style.right;
+      el.style.right = `${currentRight + sbw}px`;
+    });
+  }
   document.body.classList.add('bento-open');
 }
 
 function unlockBodyScroll(): void {
   document.body.classList.remove('bento-open');
+  getScrollLockEls().forEach((el) => {
+    if ('bentoPrevRight' in el.dataset) {
+      el.style.right = el.dataset.bentoPrevRight ?? '';
+      delete el.dataset.bentoPrevRight;
+    }
+  });
 }
 
 // ── Close-button SVG (Lucide "minimize-2" / "shrink" glyph) ──────────────
