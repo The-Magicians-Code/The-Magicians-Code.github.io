@@ -18,53 +18,30 @@
 <style>
   /* ── Bento-scoped tokens ──────────────────────────────────────── */
   .bento-section {
-    --cell: 252px;
     --gap: 18px;
     --morph-dur: 520ms;
     --ease-snappy: cubic-bezier(0.77, 0, 0.175, 1);
-
-    /* Break out of the parent .page column (max-width: 880px) up to ~1200px,
-       centre-anchored. Works because .page padding is symmetric (24px / 40px). */
-    width: min(100vw - 32px, 1200px);
-    margin-inline: calc((100% - min(100vw - 32px, 1200px)) / 2);
+    /* Inherits column width from parent .page (max-width: 880px). No breakout. */
+    width: 100%;
   }
 
-  @media (max-width: 1140px) { .bento-section { --cell: 220px; } }
-  @media (max-width: 540px)  { .bento-section { --cell: 88vw; } }
-
-  /* ── Grid ─────────────────────────────────────────────────────── */
+  /* ── Vertical stack ───────────────────────────────────────────── */
   .bento-grid {
-    display: grid;
-    grid-template-columns: repeat(4, var(--cell));
-    grid-auto-rows: var(--cell);
+    display: flex;
+    flex-direction: column;
     gap: var(--gap);
-    justify-content: center;
-    align-content: start;
-  }
-  @media (max-width: 920px) {
-    .bento-grid { grid-template-columns: repeat(2, var(--cell)); }
-  }
-  @media (max-width: 540px) {
-    .bento-grid { grid-template-columns: var(--cell); }
   }
 
-  /* ── Span classes ─────────────────────────────────────────────── */
-  :global(.bento-card.span-hero)   { grid-column: span 2; grid-row: span 2; }
-  :global(.bento-card.span-wide)   { grid-column: span 2; }
-  :global(.bento-card.span-tall)   { grid-row: span 2; }
-  :global(.bento-card.span-normal) { /* 1×1, default */ }
-
-  @media (max-width: 920px) {
-    :global(.bento-card.span-hero) { grid-column: span 2; grid-row: span 2; }
-    :global(.bento-card.span-wide) { grid-column: span 2; }
-    :global(.bento-card.span-tall) { grid-column: span 1; grid-row: span 1; }
+  /* All cards full-width with a fixed aspect. bentoSpan stays in the
+     schema for future use but doesn't affect layout in v1's vertical stack. */
+  :global(.bento-card) {
+    width: 100%;
+    aspect-ratio: 2 / 1;
   }
   @media (max-width: 540px) {
-    :global(.bento-card.span-hero),
-    :global(.bento-card.span-wide),
-    :global(.bento-card.span-tall),
-    :global(.bento-card.span-normal) { grid-column: span 1; grid-row: span 1; }
+    :global(.bento-card) { aspect-ratio: 3 / 2; }
   }
+
 
   /* ── Card base (port of .bento-card from bento-mchiu) ─────────── */
   :global(.bento-card) {
@@ -257,10 +234,16 @@
     transition: none !important;
   }
 
-  /* Grid placeholder — invisible, holds the grid slot. */
+  /* Placeholder holds the stack slot while the card lifts to position:fixed.
+     Must match the card's width + aspect so the column doesn't collapse. */
   :global(.bento-card-placeholder) {
     visibility: hidden;
     pointer-events: none;
+    width: 100%;
+    aspect-ratio: 2 / 1;
+  }
+  @media (max-width: 540px) {
+    :global(.bento-card-placeholder) { aspect-ratio: 3 / 2; }
   }
 
   /* ── Appended modal body content (cloned at open) ─────────────── */
