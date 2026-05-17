@@ -15,7 +15,6 @@ interface OpenState {
   originalInline: string;
   appendedBodyWrap: HTMLElement | null;
   closing: boolean;
-  triggeredByKeyboard: boolean;
 }
 
 const MORPH_DUR = 520; // must match --morph-dur in CSS
@@ -75,7 +74,7 @@ function makeCloseIcon(): SVGSVGElement {
 }
 
 // ── Open ─────────────────────────────────────────────────────────────────
-function openCaseStudy(card: HTMLElement, triggeredByKeyboard: boolean): void {
+function openCaseStudy(card: HTMLElement): void {
   if (openState) return;
 
   const backdrop = document.querySelector<HTMLElement>('[data-bento-backdrop]');
@@ -146,7 +145,6 @@ function openCaseStudy(card: HTMLElement, triggeredByKeyboard: boolean): void {
     originalInline,
     appendedBodyWrap: null,
     closing: false,
-    triggeredByKeyboard,
   };
 
   // After the morph lands, clone the hidden body content into the visible
@@ -189,10 +187,7 @@ function openCaseStudy(card: HTMLElement, triggeredByKeyboard: boolean): void {
 }
 
 function escClose(e: KeyboardEvent): void {
-  if (e.key === 'Escape') {
-    if (openState) openState.triggeredByKeyboard = true;
-    closeCaseStudy();
-  }
+  if (e.key === 'Escape') closeCaseStudy();
 }
 
 // ── Close ────────────────────────────────────────────────────────────────
@@ -260,13 +255,12 @@ function closeCaseStudy(): void {
         card.removeAttribute('style');
       }
       card.classList.remove('is-expanding', 'is-collapsing', 'is-resizing');
-      // Belt-and-suspenders re-blur.
+      // Belt-and-suspenders re-blur. Focus is intentionally NOT restored to
+      // the card on keyboard close — restoring focus triggers :focus-visible
+      // and the browser draws a default focus outline that reads as a white
+      // boundary line around the card. Permanent visual cleanliness wins
+      // over keyboard place-keeping for v1.
       card.blur();
-      // Restore focus to the card only if close was triggered by keyboard
-      // (esc); mouse-driven close keeps focus detached.
-      if (state.triggeredByKeyboard) {
-        card.focus({ preventScroll: true });
-      }
     });
 
     unlockBodyScroll();
@@ -334,11 +328,11 @@ function init(): void {
   if (cards.length === 0) return;
 
   cards.forEach((card) => {
-    card.addEventListener('click', () => openCaseStudy(card, false));
+    card.addEventListener('click', () => openCaseStudy(card));
     card.addEventListener('keydown', (e: KeyboardEvent) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
-        openCaseStudy(card, true);
+        openCaseStudy(card);
       }
     });
   });

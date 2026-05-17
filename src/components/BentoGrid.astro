@@ -56,6 +56,15 @@
     overflow: hidden;
     transition: box-shadow 240ms var(--ease, cubic-bezier(0.22, 1, 0.36, 1));
     cursor: pointer;
+    /* Suppress the UA focus ring permanently. The card uses .cs-expand
+       (hover/focus-visible reveal) as its visible affordance; the default
+       outline reads as a white boundary line on the dark cover and
+       reappears whenever focus lands here. */
+    outline: none;
+  }
+  :global(.bento-card:focus),
+  :global(.bento-card:focus-visible) {
+    outline: none;
   }
   /* Card-enter starting state scoped to interactive bento cards only.
      The .all-projects CTA shares .bento-card but isn't [data-bento-card] —
