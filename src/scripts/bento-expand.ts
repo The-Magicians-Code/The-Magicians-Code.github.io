@@ -370,6 +370,8 @@ function closeCaseStudy(): void {
       // boundary line around the card. Permanent visual cleanliness wins
       // over keyboard place-keeping for v1.
       card.blur();
+      // Re-measure title rest-y in case viewport changed during the open.
+      syncTitleRestY(card);
     });
 
     unlockBodyScroll();
@@ -385,13 +387,49 @@ function closeCaseStudy(): void {
   const fallbackTimer = window.setTimeout(doCleanup, MORPH_DUR + 280);
 }
 
-// ── Resize while open ────────────────────────────────────────────────────
+// ── Title rest-y measurement ─────────────────────────────────────────────
+// The card-title CSS uses translateY(var(--title-rest-y, 0)) to sit at the
+// bottom of the body at rest, and translateY(0) when expanded. The rest-y
+// value depends on the card's height (which depends on viewport width via
+// the 4:1 aspect ratio), so it has to be measured per card at init and
+// re-measured on resize / after each close.
+function syncTitleRestY(card: HTMLElement): void {
+  // Skip cards mid-lifecycle — their geometry isn't the resting geometry.
+  if (
+    card.classList.contains('is-expanding') ||
+    card.classList.contains('is-expanded') ||
+    card.classList.contains('is-collapsing')
+  ) {
+    return;
+  }
+  const body = card.querySelector<HTMLElement>('.card-body');
+  const title = card.querySelector<HTMLElement>('.card-title');
+  if (!body || !title) return;
+  // Reset to 0 so getBoundingClientRect reflects the natural-flow position.
+  card.style.setProperty('--title-rest-y', '0px');
+  void body.offsetHeight;
+  const padBottom = parseFloat(getComputedStyle(body).paddingBottom) || 0;
+  const yOffset = body.getBoundingClientRect().bottom - padBottom - title.getBoundingClientRect().bottom;
+  card.style.setProperty('--title-rest-y', `${yOffset}px`);
+}
+
+function syncAllTitleRestY(): void {
+  document.querySelectorAll<HTMLElement>('[data-bento-card]').forEach(syncTitleRestY);
+}
+
+// ── Resize handler ───────────────────────────────────────────────────────
+// Handles two things:
+//   1. If a modal is open: snap it to the new viewport-centered target.
+//   2. Re-measure title rest-y for all resting cards (their height changed
+//      with the viewport).
 let resizeRaf: number | null = null;
 function onResize(): void {
-  if (!openState || openState.closing) return;
   if (resizeRaf !== null) cancelAnimationFrame(resizeRaf);
   resizeRaf = requestAnimationFrame(() => {
     resizeRaf = null;
+
+    syncAllTitleRestY();
+
     if (!openState || openState.closing) return;
     const { card } = openState;
 
@@ -447,6 +485,20 @@ function init(): void {
   });
 
   initCardEnter();
+
+  // Title rest-y depends on measured title height, which depends on the
+  // rendered font (Fraunces, loaded from Google Fonts). Gate on
+  // document.fonts.ready so the measurement uses the actual serif metrics
+  // rather than the system-fallback font.
+  const measureWhenFontsReady = (): void => {
+    if (document.fonts?.ready) {
+      document.fonts.ready.then(syncAllTitleRestY).catch(syncAllTitleRestY);
+    } else {
+      syncAllTitleRestY();
+    }
+  };
+  measureWhenFontsReady();
+
   window.addEventListener('resize', onResize);
   window.addEventListener('orientationchange', onResize);
 }
