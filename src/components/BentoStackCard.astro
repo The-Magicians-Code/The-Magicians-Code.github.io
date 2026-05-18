@@ -182,16 +182,23 @@
   }
 
   /* ── Expand-on-click lifecycle overrides ────────────────────── */
-  /* Marquee fades out as the card morphs to modal — the cloned body
-     content takes over the visual real estate. Reappears on close as
-     cleanup strips the lifecycle classes. */
+  /* Marquee opacity through the lifecycle:
+     - is-expanding / is-expanded: hidden (cloned body content takes over).
+     - is-collapsing: 1 (fades back in immediately on close start so it's
+       at full opacity ~300ms before the 520ms morph back completes —
+       reappears as part of the closing motion rather than snapping in
+       after cleanup).
+     During close the card has BOTH .is-expanding and .is-collapsing;
+     same-specificity rules → source order wins → opacity:1 takes effect. */
   :global(.bento-card.stack-card .marquee) {
     transition: opacity 220ms ease;
   }
   :global(.bento-card.stack-card.is-expanding .marquee),
-  :global(.bento-card.stack-card.is-expanded .marquee),
-  :global(.bento-card.stack-card.is-collapsing .marquee) {
+  :global(.bento-card.stack-card.is-expanded .marquee) {
     opacity: 0;
+  }
+  :global(.bento-card.stack-card.is-collapsing .marquee) {
+    opacity: 1;
   }
 
   /* Paper-bg overrides for the cloned modal body (default rules in
