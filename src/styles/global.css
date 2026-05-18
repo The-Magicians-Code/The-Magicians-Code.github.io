@@ -39,6 +39,11 @@
   --pad-card: 28px;
 
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Scrollbar thumb tint — low-alpha ink so it reads as a soft tint over
+     the page bg rather than a hard bar. Dark-mode override below. */
+  --scroll-thumb: rgba(26, 26, 28, 0.22);
+  --scroll-thumb-hover: rgba(26, 26, 28, 0.35);
 }
 
 html.dark {
@@ -55,12 +60,35 @@ html.dark {
   --glass-brd: rgba(255, 255, 255, 0.10);
   --glass-inner: inset 0 1px 0 rgba(255, 255, 255, 0.10);
   --glass-shadow: 0 20px 60px -20px rgba(0, 0, 0, 0.6);
+
+  --scroll-thumb: rgba(240, 240, 245, 0.22);
+  --scroll-thumb-hover: rgba(240, 240, 245, 0.35);
 }
 
 /* ===== Base ===== */
 html {
   background: var(--bg);
   color: var(--ink);
+  /* Standardized scrollbar styling (Firefox + recent Chromium): transparent
+     track lets the page bg show, soft ink thumb. The WebKit pseudos below
+     mirror this for Safari/older Chrome. No scrollbar-gutter — bento-expand
+     compensates with body padding-right at scroll-lock time so the page
+     doesn't reserve a permanent gutter strip. */
+  scrollbar-color: var(--scroll-thumb) transparent;
+}
+::-webkit-scrollbar { width: 12px; height: 12px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background-color: var(--scroll-thumb);
+  border-radius: 999px;
+  /* 3px transparent border + padding-box clip creates 3px breathing room
+     around the colored pill within the 12px gutter, so the thumb floats
+     rather than filling edge-to-edge. */
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scroll-thumb-hover);
 }
 
 body {
