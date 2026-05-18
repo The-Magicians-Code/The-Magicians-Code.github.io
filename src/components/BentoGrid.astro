@@ -19,10 +19,17 @@
   /* ── Bento-scoped tokens ──────────────────────────────────────── */
   .bento-section {
     --gap: 18px;
-    --morph-dur: 520ms;
-    --ease-snappy: cubic-bezier(0.77, 0, 0.175, 1);
     /* Inherits column width from parent .page (max-width: 880px). No breakout. */
     width: 100%;
+  }
+  /* Morph timing tokens are declared on .bento-card so any card has them
+     regardless of whether it sits inside a .bento-section. The stack card
+     mounts directly in .page (outside any .bento-section); without these
+     here, its .is-expanding transition rule resolves var() to invalid
+     and the morph degrades to an instant snap. */
+  :global(.bento-card) {
+    --morph-dur: 520ms;
+    --ease-snappy: cubic-bezier(0.77, 0, 0.175, 1);
   }
 
   /* ── Vertical stack ───────────────────────────────────────────── */
