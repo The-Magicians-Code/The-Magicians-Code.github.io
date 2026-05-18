@@ -55,10 +55,20 @@ function buildTrack(): HTMLElement {
 }
 
 function buildRows(marquee: HTMLElement): void {
-  marquee.replaceChildren();
   const card = marquee.closest<HTMLElement>('.bento-card');
   const text = card?.querySelector<HTMLElement>('.card-text');
   if (!card || !text) return;
+  // Skip while the host card is mid-expand/collapse — its rect reflects the
+  // modal (or a transitioning size), not the resting geometry. Resize events
+  // fire on this path when lockBodyScroll/unlockBodyScroll toggles the page
+  // scrollbar and the viewport width shifts.
+  if (
+    card.classList.contains('is-expanding') ||
+    card.classList.contains('is-expanded') ||
+    card.classList.contains('is-collapsing')
+  ) {
+    return;
+  }
   const cardRect = card.getBoundingClientRect();
   const textRect = text.getBoundingClientRect();
   const marqueeTop = textRect.bottom - cardRect.top + TOP_GAP;
@@ -68,6 +78,13 @@ function buildRows(marquee: HTMLElement): void {
     1,
     Math.min(MAX_ROWS, Math.floor((available + GAP) / ROW_HEIGHT)),
   );
+  // Only rebuild if the row count actually changed. Rebuilding clones the
+  // tracks, which restarts the CSS marquee animation at translateX(0) — a
+  // visible snap to start position. Idempotent resize was the close-time
+  // "tiles relocate" bug: unlockBodyScroll restores the scrollbar, fires
+  // window resize, this path rebuilt tracks, animations snapped.
+  if (marquee.children.length === rowCount) return;
+  marquee.replaceChildren();
   for (let i = 0; i < rowCount; i++) {
     const row = document.createElement('div');
     row.className = 'marquee-row' + (i % 2 === 1 ? ' reverse' : '');
