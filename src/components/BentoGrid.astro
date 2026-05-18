@@ -145,6 +145,11 @@
     flex-direction: column;
     justify-content: flex-start;
     gap: 12px;
+    /* Minimal-mode editorial pattern: body text centered horizontally
+       (eyebrow + fallback title text), body markdown column overrides
+       to left-align below. Pretext word-span title is centered via JS-
+       computed positions, so text-align doesn't affect it either way. */
+    text-align: center;
   }
   /* Eyebrow is hidden at rest — resting card reads as just the title.
      Fades in late in the morph (65% through) so it appears as context
@@ -329,6 +334,9 @@
     color: rgba(245, 241, 231, 0.75);
     max-width: 60ch;
     margin: 0 auto;
+    /* Override card-body's text-align: center so the prose column reads
+       left-aligned within the centered column. */
+    text-align: left;
   }
   :global(.bento-card .body-para.appended) {
     margin: 14px 0;
