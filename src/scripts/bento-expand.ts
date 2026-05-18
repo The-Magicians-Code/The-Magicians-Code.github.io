@@ -264,6 +264,10 @@ function pretextOriginalTitle(titleEl: HTMLElement): string {
 
 function pretextRenderCard(card: HTMLElement): void {
   if (!_measureCtx) return;
+  // Pretext is scoped to project case-study cards (`.cs-card`). Other
+  // bento cards (e.g. the stack card) keep their natural-flow title so
+  // <em> accent words and other inline markup render normally.
+  if (!card.classList.contains('cs-card')) return;
   const titleEl = card.querySelector<HTMLElement>('.card-title');
   if (!titleEl) return;
   const titleText = pretextOriginalTitle(titleEl);
@@ -593,6 +597,10 @@ function closeCaseStudy(): void {
 // the 4:1 aspect ratio), so it has to be measured per card at init and
 // re-measured on resize / after each close.
 function syncTitleRestY(card: HTMLElement): void {
+  // Scoped to project case-study cards. Other bento cards (e.g. the
+  // stack card) keep their natural-flow title position via a CSS
+  // `transform: none` override.
+  if (!card.classList.contains('cs-card')) return;
   // Skip cards mid-lifecycle — their geometry isn't the resting geometry.
   if (
     card.classList.contains('is-expanding') ||

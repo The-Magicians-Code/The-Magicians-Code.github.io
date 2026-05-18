@@ -9,13 +9,66 @@
 // in-page links still resolve after replacing SkillsTools.astro.
 ---
 
-<article id="skills-tools" class="bento-card stack-card">
+<article
+  id="skills-tools"
+  class="bento-card stack-card"
+  data-bento-card
+  data-slug="stack"
+  role="button"
+  tabindex="0"
+  aria-haspopup="dialog"
+  aria-expanded="false"
+>
   <div class="card-body">
     <div class="card-eyebrow">04 · Stack</div>
     <div class="card-title">Tools I <em>actually</em> reach for</div>
     <p class="card-text">Languages, ML frameworks, infra.</p>
   </div>
   <div class="marquee" aria-hidden="true" data-bento-stack></div>
+  <!-- Cloned into a visible .bento-card-body-rendered on expand. The four
+       categorized lists port the content from the removed SkillsTools
+       component; first item in each list is emphasized via <em>. -->
+  <div class="bento-card-body" hidden>
+    <h3>Languages</h3>
+    <ul>
+      <li><em>Python</em></li>
+      <li>C++</li>
+      <li>JavaScript</li>
+      <li>SQL</li>
+      <li>Bash</li>
+      <li>Swift</li>
+    </ul>
+    <h3>ML / AI</h3>
+    <ul>
+      <li><em>PyTorch</em></li>
+      <li>TensorFlow</li>
+      <li>TensorRT</li>
+      <li>ONNX</li>
+      <li>OpenCV</li>
+      <li>GStreamer</li>
+      <li>Nvidia Jetson</li>
+    </ul>
+    <h3>Infra &amp; DevOps</h3>
+    <ul>
+      <li><em>Docker</em></li>
+      <li>Jenkins</li>
+      <li>GitLab CI/CD</li>
+      <li>AWS S3</li>
+      <li>Grafana</li>
+      <li>ELK</li>
+      <li>Kubernetes</li>
+    </ul>
+    <h3>Frameworks &amp; Tools</h3>
+    <ul>
+      <li><em>Flask</em></li>
+      <li>REST APIs</li>
+      <li>PostgreSQL</li>
+      <li>Selenium</li>
+      <li>Scrapy</li>
+      <li>Postman</li>
+      <li>Git</li>
+    </ul>
+  </div>
 </article>
 
 <script>
@@ -29,7 +82,7 @@
   :global(.bento-card.stack-card),
   :global(.bento-card.stack-card:hover) {
     background-color: var(--paper);
-    cursor: default;
+    cursor: pointer;
     aspect-ratio: 3 / 1;
   }
   @media (max-width: 540px) {
@@ -126,5 +179,51 @@
     :global(.bento-card.stack-card .marquee-track) {
       animation: none;
     }
+  }
+
+  /* ── Expand-on-click lifecycle overrides ────────────────────── */
+  /* Marquee fades out as the card morphs to modal — the cloned body
+     content takes over the visual real estate. Reappears on close as
+     cleanup strips the lifecycle classes. */
+  :global(.bento-card.stack-card .marquee) {
+    transition: opacity 220ms ease;
+  }
+  :global(.bento-card.stack-card.is-expanding .marquee),
+  :global(.bento-card.stack-card.is-expanded .marquee),
+  :global(.bento-card.stack-card.is-collapsing .marquee) {
+    opacity: 0;
+  }
+
+  /* Paper-bg overrides for the cloned modal body (default rules in
+     BentoGrid.astro assume the dark project-card cover, with cream text). */
+  :global(.bento-card.stack-card .bento-card-body-rendered) {
+    color: var(--ink-dim);
+  }
+  :global(.bento-card.stack-card .bento-card-body-rendered :is(h2, h3)) {
+    color: var(--ink);
+  }
+  :global(.bento-card.stack-card .bento-card-body-rendered code) {
+    background: rgba(26, 26, 28, 0.06);
+  }
+  :global(.bento-card.stack-card .bento-card-body-rendered em) {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  /* Hover-revealed expand affordance + close button repainted for paper. */
+  :global(.bento-card.stack-card .cs-expand) {
+    background: rgba(26, 26, 28, 0.06);
+    color: var(--ink);
+    box-shadow: 0 2px 40px rgba(0, 0, 0, 0.10);
+  }
+  :global(.bento-card.stack-card .cs-expand:hover) {
+    background: rgba(26, 26, 28, 0.12);
+  }
+  :global(.bento-card.stack-card .cs-close) {
+    background: rgba(26, 26, 28, 0.06);
+    color: var(--ink);
+  }
+  :global(.bento-card.stack-card .cs-close:hover) {
+    background: rgba(26, 26, 28, 0.12);
   }
 </style>
