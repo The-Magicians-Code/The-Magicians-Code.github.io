@@ -607,8 +607,12 @@ function syncTitleRestY(card: HTMLElement): void {
   // Reset to 0 so getBoundingClientRect reflects the natural-flow position.
   card.style.setProperty('--title-rest-y', '0px');
   void body.offsetHeight;
-  const padBottom = parseFloat(getComputedStyle(body).paddingBottom) || 0;
-  const yOffset = body.getBoundingClientRect().bottom - padBottom - title.getBoundingClientRect().bottom;
+  // Vertically center the title within the body: translate by the delta
+  // between body's vertical center and title's natural-flow vertical center.
+  const bodyRect = body.getBoundingClientRect();
+  const titleRect = title.getBoundingClientRect();
+  const yOffset =
+    bodyRect.top + bodyRect.height / 2 - (titleRect.top + titleRect.height / 2);
   card.style.setProperty('--title-rest-y', `${yOffset}px`);
 }
 
