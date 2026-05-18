@@ -88,6 +88,10 @@
   :global(.bento-card.stack-card .marquee-track) {
     display: flex;
     gap: 10px;
+    /* flex gap only applies between items, not after the last one. Without
+       a trailing gap, translateX(-50%) lands 1 gap short of the seamless
+       loop point — visible as a brief blank when the animation cycles. */
+    padding-right: 10px;
     width: max-content;
     animation: bento-stack-marquee 38s linear infinite;
   }

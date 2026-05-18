@@ -275,6 +275,11 @@
   .marquee-row { overflow: hidden; }
   .marquee-track {
     display: flex; gap: 10px; width: max-content;
+    /* flex gap only applies BETWEEN items, not after the last one. Without
+       a trailing gap the track is 1 gap shorter than (one copy + one gap)
+       × 2, so translateX(-50%) lands short of the seamless loop point and
+       a visible blank appears every cycle. padding-right === gap fixes it. */
+    padding-right: 10px;
     animation: marquee 38s linear infinite;
   }
   /* Alternate-direction rows: every other row scrolls the opposite way. */
