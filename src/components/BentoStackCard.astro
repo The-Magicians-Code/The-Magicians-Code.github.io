@@ -20,7 +20,6 @@
   aria-expanded="false"
 >
   <div class="card-body">
-    <div class="card-eyebrow">04 · Stack</div>
     <div class="card-title">Tools I <em>actually</em> reach for</div>
     <p class="card-text">Languages, ML frameworks, infra.</p>
   </div>
@@ -88,7 +87,7 @@
   @media (max-width: 540px) {
     :global(.bento-card.stack-card),
     :global(.bento-card.stack-card:hover) {
-      aspect-ratio: 5 / 3;
+      aspect-ratio: 1 / 1;
     }
   }
 
@@ -96,13 +95,6 @@
   :global(.bento-card.stack-card .card-body) {
     text-align: left;
     padding-bottom: 0;
-  }
-  /* Eyebrow visible at rest (project cards hide it for the minimal-mode
-     effect; the stack card isn't a case study, eyebrow is part of the
-     section header). */
-  :global(.bento-card.stack-card .card-eyebrow) {
-    opacity: 1;
-    color: var(--ink-3);
   }
   /* Title sits at its natural position — no rest-y translate (the stack
      card doesn't expand, so the translate machinery doesn't apply). */
@@ -124,32 +116,43 @@
 
   /* Marquee container — anchored to card bottom; horizontal edge fade
      via mask so tiles slide in/out gracefully. */
-  :global(.bento-card.stack-card .marquee) {
+  :global([data-bento-stack]) {
+    /* Tile size as a CSS var so the JS row-count calc and the per-tile
+       width/height stay in sync via a single source of truth. Bumped on
+       mobile (≤540px) where the card aspect goes to 1:1 — three rows of
+       larger tiles read better than three rows of small ones. */
+    --tile-size: 44px;
+    --tile-gap: 10px;
     position: absolute;
     left: 0;
     right: 0;
     bottom: 24px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: var(--tile-gap);
     -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
             mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
   }
-  :global(.bento-card.stack-card .marquee-row) {
+  @media (max-width: 540px) {
+    :global([data-bento-stack]) {
+      --tile-size: 64px;
+    }
+  }
+  :global([data-bento-stack] .marquee-row) {
     overflow: hidden;
   }
-  :global(.bento-card.stack-card .marquee-track) {
+  :global([data-bento-stack] .marquee-track) {
     display: flex;
-    gap: 10px;
+    gap: var(--tile-gap);
     /* flex gap only applies between items, not after the last one. Without
        a trailing gap, translateX(-50%) lands 1 gap short of the seamless
        loop point — visible as a brief blank when the animation cycles. */
-    padding-right: 10px;
+    padding-right: var(--tile-gap);
     width: max-content;
     animation: bento-stack-marquee 38s linear infinite;
   }
   /* Alternate-direction rows: every other row scrolls the opposite way. */
-  :global(.bento-card.stack-card .marquee-row.reverse .marquee-track) {
+  :global([data-bento-stack] .marquee-row.reverse .marquee-track) {
     animation-direction: reverse;
   }
   @keyframes bento-stack-marquee {
@@ -157,11 +160,11 @@
     to   { transform: translateX(-50%); }
   }
 
-  :global(.bento-card.stack-card .stack-tile) {
+  :global([data-bento-stack] .stack-tile) {
     flex-shrink: 0;
-    width: 44px;
-    height: 44px;
-    border-radius: 11px;
+    width: var(--tile-size);
+    height: var(--tile-size);
+    border-radius: 25%;
     background: var(--bg-color, #333);
     display: grid;
     place-items: center;
@@ -169,36 +172,34 @@
       inset 0 1px 0 rgba(255, 255, 255, 0.18),
       0 4px 10px -6px rgba(0, 0, 0, 0.4);
   }
-  :global(.bento-card.stack-card .stack-tile img) {
+  :global([data-bento-stack] .stack-tile img) {
     width: 56%;
     height: 56%;
     object-fit: contain;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    :global(.bento-card.stack-card .marquee-track) {
+    :global([data-bento-stack] .marquee-track) {
       animation: none;
     }
   }
 
-  /* ── Expand-on-click lifecycle overrides ────────────────────── */
-  /* Marquee opacity through the lifecycle:
-     - is-expanding / is-expanded: hidden (cloned body content takes over).
-     - is-collapsing: 1 (fades back in immediately on close start so it's
-       at full opacity ~300ms before the 520ms morph back completes —
-       reappears as part of the closing motion rather than snapping in
-       after cleanup).
-     During close the card has BOTH .is-expanding and .is-collapsing;
-     same-specificity rules → source order wins → opacity:1 takes effect. */
-  :global(.bento-card.stack-card .marquee) {
+  /* ── Expand-on-click lifecycle ────────────────────────────────
+     bento-expand.ts pins the marquee to its rest viewport rect at open
+     (detach → body, position:fixed, z-index 199 below the card's 201),
+     reattaches at cleanup. The card covers the marquee's rest rect
+     throughout the morph, hiding it via stacking.
+
+     The opacity fade below is layered on top of the stacking hide so
+     the reveal at cleanup (and the hide at open) is animated rather
+     than a hard cut. Body class .bento-open is set during the entire
+     lifecycle by lockBodyScroll/unlockBodyScroll, so the rule covers
+     both the in-card (rest) and pinned-to-body (lifecycle) states. */
+  :global([data-bento-stack]) {
     transition: opacity 220ms ease;
   }
-  :global(.bento-card.stack-card.is-expanding .marquee),
-  :global(.bento-card.stack-card.is-expanded .marquee) {
+  :global(body.bento-open [data-bento-stack]) {
     opacity: 0;
-  }
-  :global(.bento-card.stack-card.is-collapsing .marquee) {
-    opacity: 1;
   }
 
   /* Paper-bg overrides for the cloned modal body (default rules in

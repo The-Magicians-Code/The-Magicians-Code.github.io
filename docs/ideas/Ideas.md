@@ -16,6 +16,8 @@
 - [Pretext.js](https://pretextjs.dev) for CV — DOM-free text measurement engine; candidate uses: smooth text reflow on Formal↔Interactive mode toggle, jank-free streamed/animated text reveals. [repo](https://github.com/chenglou/pretext) · [demo](http://chenglou.me/pretext/)
 - [CV](https://www.overleaf.com)
 - https://www.agentation.com
+- Chuck Norris queotes daily
+- Claude thinking rotating words
 
 ### Design
 - https://emilkowal.ski/ui/7-practical-animation-tips
@@ -29,6 +31,9 @@
 - https://lottiefiles.com/
 - https://yanhladchenko.com/
 - https://appstacks.club/mobile-apps
+- https://www.symbols.dev
+- https://designdotmd.directory
+- https://polpus.studio
 
 
 ### Glass

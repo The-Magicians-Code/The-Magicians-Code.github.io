@@ -29,12 +29,20 @@ const STACK: StackItem[] = [
   { slug: 'onnx', hex: '005CED' },
 ];
 
-const TILE = 44;        // .stack-tile width/height in px
-const GAP = 10;         // .marquee row gap in px
-const ROW_HEIGHT = TILE + GAP;
-const MAX_ROWS = 4;
+// Tile size and gap are owned by CSS via --tile-size / --tile-gap on the
+// marquee container — read at measure-time so the row-count math stays in
+// sync with the rendered tile geometry (e.g. mobile bumps --tile-size to
+// 64px).
+const MAX_ROWS = 3;
 const BOTTOM_OFFSET = 24; // matches .marquee CSS `bottom: 24px`
 const TOP_GAP = 12;       // breathing space below body text before marquee starts
+
+function readTileMetrics(marquee: HTMLElement): { tile: number; gap: number } {
+  const cs = getComputedStyle(marquee);
+  const tile = parseFloat(cs.getPropertyValue('--tile-size')) || 44;
+  const gap = parseFloat(cs.getPropertyValue('--tile-gap')) || 10;
+  return { tile, gap };
+}
 
 function buildTrack(): HTMLElement {
   const track = document.createElement('div');
@@ -74,9 +82,11 @@ function buildRows(marquee: HTMLElement): void {
   const marqueeTop = textRect.bottom - cardRect.top + TOP_GAP;
   const marqueeBottom = cardRect.height - BOTTOM_OFFSET;
   const available = Math.max(0, marqueeBottom - marqueeTop);
+  const { tile, gap } = readTileMetrics(marquee);
+  const rowHeight = tile + gap;
   const rowCount = Math.max(
     1,
-    Math.min(MAX_ROWS, Math.floor((available + GAP) / ROW_HEIGHT)),
+    Math.min(MAX_ROWS, Math.floor((available + gap) / rowHeight)),
   );
   // Only rebuild if the row count actually changed. Rebuilding clones the
   // tracks, which restarts the CSS marquee animation at translateX(0) — a

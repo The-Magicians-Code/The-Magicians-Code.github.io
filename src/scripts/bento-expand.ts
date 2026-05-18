@@ -21,6 +21,17 @@ const MORPH_DUR = 520; // must match --morph-dur in CSS
 
 let openState: OpenState | null = null;
 
+// Note: an earlier iteration pinned the stack-card marquee to position:fixed
+// at the placeholder rect during the close morph to avoid the marquee
+// sliding with the card's bottom edge. That approach reparented the
+// marquee (card → body → card), which restarts the CSS scroll animation
+// on the track elements each time the DOM is moved. We rely instead on
+// opacity (via body.bento-open) to hide the marquee through the
+// lifecycle — the slide still happens, but it's invisible — and the
+// placeholder-height fix below guarantees the morph lands at the exact
+// rest-state rect so the marquee ends up at its correct bottom:24px
+// slot inside the card with no jump at cleanup.
+
 // ── Viewport rect computation ────────────────────────────────────────────
 function getViewportRect(): DOMRect {
   const isMobile = window.innerWidth < 540;
@@ -262,11 +273,18 @@ function pretextOriginalTitle(titleEl: HTMLElement): string {
   return text;
 }
 
+// Set to false to disable per-word pretext layout interpolation.
+// When disabled, project-card titles flow as normal text and rely solely
+// on the container's translateY(rest-y → 0) for the vertical animation —
+// matches the stack card's "title doesn't morph" feel while still moving
+// from rest-centered to expanded-top. Disabled by default because the
+// per-word transforms produced a diagonal "wiggle" against card-body
+// padding interpolation and text-align:center re-centering.
+const PRETEXT_ENABLED = false;
+
 function pretextRenderCard(card: HTMLElement): void {
+  if (!PRETEXT_ENABLED) return;
   if (!_measureCtx) return;
-  // Pretext is scoped to project case-study cards (`.cs-card`). Other
-  // bento cards (e.g. the stack card) keep their natural-flow title so
-  // <em> accent words and other inline markup render normally.
   if (!card.classList.contains('cs-card')) return;
   const titleEl = card.querySelector<HTMLElement>('.card-title');
   if (!titleEl) return;
@@ -392,6 +410,12 @@ function doOpen(card: HTMLElement): void {
   const originalInline = card.getAttribute('style') ?? '';
 
   // Grid placeholder preserves the bento layout while the card lifts.
+  // Height is pinned to the card's actual rect rather than relying on the
+  // .bento-card-placeholder default aspect-ratio (4/1), because stack-card
+  // overrides aspect-ratio to 3/1 — without an explicit height the
+  // placeholder is shorter than the card, the close morph lands at the
+  // placeholder's wrong size, then the card snaps to its CSS rest height
+  // at cleanup. Explicit height keeps morph target === rest geometry.
   const cs = getComputedStyle(card);
   const placeholder = document.createElement('div');
   placeholder.className = 'bento-card-placeholder';
@@ -399,6 +423,8 @@ function doOpen(card: HTMLElement): void {
   placeholder.style.gridColumnEnd = cs.gridColumnEnd;
   placeholder.style.gridRowStart = cs.gridRowStart;
   placeholder.style.gridRowEnd = cs.gridRowEnd;
+  placeholder.style.height = `${rect.height}px`;
+  placeholder.style.aspectRatio = 'auto';
   card.parentNode?.insertBefore(placeholder, card);
 
   // Lift the card. Transition is forced off so the position swap doesn't
@@ -523,6 +549,7 @@ function closeCaseStudy(): void {
 
   // Re-measure the placeholder; resize may have moved it.
   const slotRect = placeholder.getBoundingClientRect();
+
   card.style.top = `${slotRect.top}px`;
   card.style.left = `${slotRect.left}px`;
   card.style.width = `${slotRect.width}px`;
