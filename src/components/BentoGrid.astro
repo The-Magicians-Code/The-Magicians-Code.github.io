@@ -319,11 +319,16 @@
   }
 
   /* ── Appended modal body content (cloned at open) ─────────────── */
+  /* Centered editorial column: max-width 60ch caps line length for
+     readable measure; margin: 0 auto centers the column within the
+     expanded card-body. Content inside stays left-aligned (default).
+     Matches the minimal-mode pattern in docs/ideas/bento-mchiu.html. */
   :global(.bento-card .bento-card-body-rendered) {
     font-size: 15px;
     line-height: 1.55;
     color: rgba(245, 241, 231, 0.75);
-    max-width: 64ch;
+    max-width: 60ch;
+    margin: 0 auto;
   }
   :global(.bento-card .body-para.appended) {
     margin: 14px 0;
