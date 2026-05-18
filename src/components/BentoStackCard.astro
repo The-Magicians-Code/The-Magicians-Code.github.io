@@ -1,0 +1,126 @@
+---
+// Tech-stack marquee card. Static (non-clickable) sibling of BentoCard,
+// inheriting the .bento-card base layout from BentoGrid.astro (must be on
+// the same page) and overriding for paper background, custom aspect, and
+// the marquee container. The runtime at src/scripts/bento-stack.ts
+// populates N rows of brand-icon tiles based on available vertical space.
+//
+// Preserves the #skills-tools anchor (linked from Nav.astro) so existing
+// in-page links still resolve after replacing SkillsTools.astro.
+---
+
+<article id="skills-tools" class="bento-card stack-card">
+  <div class="card-body">
+    <div class="card-eyebrow">04 · Stack</div>
+    <div class="card-title">Tools I <em>actually</em> reach for</div>
+    <p class="card-text">Languages, ML frameworks, infra.</p>
+  </div>
+  <div class="marquee" aria-hidden="true" data-bento-stack></div>
+</article>
+
+<script>
+  import '../scripts/bento-stack.ts';
+</script>
+
+<style>
+  /* Paper bg, default cursor, custom aspect. The .bento-card base sets
+     aspect-ratio: 4/1 (banner); we override to 3/1 for a slightly taller
+     box that fits 2-3 marquee rows comfortably. */
+  :global(.bento-card.stack-card),
+  :global(.bento-card.stack-card:hover) {
+    background-color: var(--paper);
+    cursor: default;
+    aspect-ratio: 3 / 1;
+  }
+  @media (max-width: 540px) {
+    :global(.bento-card.stack-card),
+    :global(.bento-card.stack-card:hover) {
+      aspect-ratio: 5 / 3;
+    }
+  }
+
+  /* Body content pinned top-left. Marquee fills the bottom area absolutely. */
+  :global(.bento-card.stack-card .card-body) {
+    text-align: left;
+    padding-bottom: 0;
+  }
+  /* Eyebrow visible at rest (project cards hide it for the minimal-mode
+     effect; the stack card isn't a case study, eyebrow is part of the
+     section header). */
+  :global(.bento-card.stack-card .card-eyebrow) {
+    opacity: 1;
+    color: var(--ink-3);
+  }
+  /* Title sits at its natural position — no rest-y translate (the stack
+     card doesn't expand, so the translate machinery doesn't apply). */
+  :global(.bento-card.stack-card .card-title) {
+    color: var(--ink);
+    font-size: clamp(1.5rem, 1vw + 1rem, 1.75rem);
+    transform: none;
+  }
+  :global(.bento-card.stack-card .card-title em) {
+    font-style: italic;
+    color: var(--accent);
+  }
+  :global(.bento-card.stack-card .card-text) {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--ink-dim);
+    margin-top: 6px;
+  }
+
+  /* Marquee container — anchored to card bottom; horizontal edge fade
+     via mask so tiles slide in/out gracefully. */
+  :global(.bento-card.stack-card .marquee) {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+            mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  }
+  :global(.bento-card.stack-card .marquee-row) {
+    overflow: hidden;
+  }
+  :global(.bento-card.stack-card .marquee-track) {
+    display: flex;
+    gap: 10px;
+    width: max-content;
+    animation: bento-stack-marquee 38s linear infinite;
+  }
+  /* Alternate-direction rows: every other row scrolls the opposite way. */
+  :global(.bento-card.stack-card .marquee-row.reverse .marquee-track) {
+    animation-direction: reverse;
+  }
+  @keyframes bento-stack-marquee {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+
+  :global(.bento-card.stack-card .stack-tile) {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: 11px;
+    background: var(--bg-color, #333);
+    display: grid;
+    place-items: center;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.18),
+      0 4px 10px -6px rgba(0, 0, 0, 0.4);
+  }
+  :global(.bento-card.stack-card .stack-tile img) {
+    width: 56%;
+    height: 56%;
+    object-fit: contain;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :global(.bento-card.stack-card .marquee-track) {
+      animation: none;
+    }
+  }
+</style>

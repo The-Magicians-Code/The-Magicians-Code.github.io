@@ -1,0 +1,100 @@
+// Tech-stack multi-row marquee runtime.
+//
+// Discovers [data-bento-stack] containers, measures the available vertical
+// space below the card's text content, and populates N independently-
+// scrolling marquee rows. Odd rows reverse direction so adjacent lanes
+// move in opposite directions. Re-evaluates on resize because card height
+// scales with viewport (aspect-ratio + width: 100%).
+//
+// Port of docs/ideas/bento-mchiu.html's stack-card marquee, restructured
+// for multiple rows.
+
+interface StackItem {
+  slug: string;
+  hex: string;
+}
+
+const STACK: StackItem[] = [
+  { slug: 'python', hex: '3776AB' },
+  { slug: 'pytorch', hex: 'EE4C2C' },
+  { slug: 'tensorflow', hex: 'FF6F00' },
+  { slug: 'docker', hex: '2496ED' },
+  { slug: 'kubernetes', hex: '326CE5' },
+  { slug: 'postgresql', hex: '4169E1' },
+  { slug: 'git', hex: 'F05032' },
+  { slug: 'grafana', hex: 'F46800' },
+  { slug: 'nvidia', hex: '76B900' },
+  { slug: 'jenkins', hex: 'D24939' },
+  { slug: 'opencv', hex: '5C3EE8' },
+  { slug: 'onnx', hex: '005CED' },
+];
+
+const TILE = 44;        // .stack-tile width/height in px
+const GAP = 10;         // .marquee row gap in px
+const ROW_HEIGHT = TILE + GAP;
+const MAX_ROWS = 4;
+const BOTTOM_OFFSET = 24; // matches .marquee CSS `bottom: 24px`
+const TOP_GAP = 12;       // breathing space below body text before marquee starts
+
+function buildTrack(): HTMLElement {
+  const track = document.createElement('div');
+  track.className = 'marquee-track';
+  // Doubled for the seamless -50% loop in @keyframes bento-stack-marquee.
+  for (const t of [...STACK, ...STACK]) {
+    const tile = document.createElement('div');
+    tile.className = 'stack-tile';
+    tile.style.setProperty('--bg-color', `#${t.hex}`);
+    const img = document.createElement('img');
+    img.src = `https://cdn.simpleicons.org/${t.slug}/white`;
+    img.alt = '';
+    img.loading = 'lazy';
+    tile.appendChild(img);
+    track.appendChild(tile);
+  }
+  return track;
+}
+
+function buildRows(marquee: HTMLElement): void {
+  marquee.replaceChildren();
+  const card = marquee.closest<HTMLElement>('.bento-card');
+  const text = card?.querySelector<HTMLElement>('.card-text');
+  if (!card || !text) return;
+  const cardRect = card.getBoundingClientRect();
+  const textRect = text.getBoundingClientRect();
+  const marqueeTop = textRect.bottom - cardRect.top + TOP_GAP;
+  const marqueeBottom = cardRect.height - BOTTOM_OFFSET;
+  const available = Math.max(0, marqueeBottom - marqueeTop);
+  const rowCount = Math.max(
+    1,
+    Math.min(MAX_ROWS, Math.floor((available + GAP) / ROW_HEIGHT)),
+  );
+  for (let i = 0; i < rowCount; i++) {
+    const row = document.createElement('div');
+    row.className = 'marquee-row' + (i % 2 === 1 ? ' reverse' : '');
+    row.appendChild(buildTrack());
+    marquee.appendChild(row);
+  }
+}
+
+function init(): void {
+  document.querySelectorAll<HTMLElement>('[data-bento-stack]').forEach(buildRows);
+}
+
+let resizeRaf: number | null = null;
+function onResize(): void {
+  if (resizeRaf !== null) cancelAnimationFrame(resizeRaf);
+  resizeRaf = requestAnimationFrame(() => {
+    resizeRaf = null;
+    init();
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
+window.addEventListener('resize', onResize);
+window.addEventListener('orientationchange', onResize);
+
+export {};
