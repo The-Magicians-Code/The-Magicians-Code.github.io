@@ -48,51 +48,20 @@ function getViewportRect(): DOMRect {
   );
 }
 
-// ── Body scroll lock + shift compensation (body + fixed elements) ───────
-// Locking body scroll hides the html scrollbar, which widens the viewport
-// by the scrollbar width (~15px). Two visual side-effects:
-//   1. Body's flow content (e.g. centered .page wrapper) re-centers within
-//      the wider body and shifts right by sbw/2.
-//   2. position:fixed elements anchored via `right: …` shift right by sbw.
-// Both need compensation to avoid visible motion at lock/unlock.
-//   - Body fix: add padding-right: sbw to body so its content stays put.
-//   - Fixed-element fix: query [data-scroll-lock-compensate] elements and
-//     bump their inline `right` by sbw. Opt-in via the attribute.
-function getScrollLockEls(): NodeListOf<HTMLElement> {
-  return document.querySelectorAll<HTMLElement>('[data-scroll-lock-compensate]');
-}
-
+// ── Body scroll lock ─────────────────────────────────────────────────────
+// Pre-`scrollbar-gutter` versions of this also added padding-right to body
+// and bumped [data-scroll-lock-compensate] elements' inline `right` by the
+// measured scrollbar width to avoid layout shift when overflow:hidden
+// hides the scrollbar. With `scrollbar-gutter: stable both-edges` on html
+// (see global.css) the gutter persists whether the scrollbar is rendered
+// or not, so the page no longer shifts at lock/unlock and the compensation
+// is redundant — removed.
 function lockBodyScroll(): void {
-  const sbw = window.innerWidth - document.documentElement.clientWidth;
-  if (sbw > 0) {
-    // Body padding compensation for flow / centered content.
-    const currentBodyPad = parseFloat(getComputedStyle(document.body).paddingRight) || 0;
-    document.body.dataset.bentoPrevPaddingRight = document.body.style.paddingRight || '';
-    document.body.style.paddingRight = `${currentBodyPad + sbw}px`;
-
-    // Per-element `right` compensation for fixed-positioned ancestors of
-    // the viewport (nav, blur layer, tuners).
-    getScrollLockEls().forEach((el) => {
-      const currentRight = parseFloat(getComputedStyle(el).right) || 0;
-      el.dataset.bentoPrevRight = el.style.right;
-      el.style.right = `${currentRight + sbw}px`;
-    });
-  }
   document.body.classList.add('bento-open');
 }
 
 function unlockBodyScroll(): void {
   document.body.classList.remove('bento-open');
-  if ('bentoPrevPaddingRight' in document.body.dataset) {
-    document.body.style.paddingRight = document.body.dataset.bentoPrevPaddingRight ?? '';
-    delete document.body.dataset.bentoPrevPaddingRight;
-  }
-  getScrollLockEls().forEach((el) => {
-    if ('bentoPrevRight' in el.dataset) {
-      el.style.right = el.dataset.bentoPrevRight ?? '';
-      delete el.dataset.bentoPrevRight;
-    }
-  });
 }
 
 // ── Close-button SVG (Lucide "minimize-2" / "shrink" glyph) ──────────────
