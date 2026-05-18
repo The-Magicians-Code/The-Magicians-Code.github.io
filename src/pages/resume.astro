@@ -237,7 +237,7 @@ import { resume } from '../data/resume';
   .resume-print-btn svg { width: 12px; height: 12px; }
 
   /* ── Header ── */
-  .resume-header { margin-bottom: 48px; }
+  .resume-header { margin-bottom: 24px; }
   .resume-header h1 {
     font-family: var(--font-serif);
     font-weight: 400;
@@ -542,7 +542,10 @@ import { resume } from '../data/resume';
 
     @page {
       size: A4;
-      margin: 14mm;
+      /* Asymmetric: visible top margin, tight bottom so the whole resume
+         fits on a single A4 page in Safari (which prints ~3% looser than
+         Chrome on vertical rhythm). Horizontal stays at 10mm. */
+      margin: 10mm 10mm 6mm 10mm;
     }
 
     .resume {
@@ -569,31 +572,57 @@ import { resume } from '../data/resume';
     }
 
     /* Print typography: slightly tighter, A4-friendly. */
-    .resume-header h1 { font-size: 22pt; }
-    .resume-title { font-size: 12pt; margin-top: 2pt; }
-    .resume-where { margin-top: 8pt; }
-    .resume-contact { font-size: 9.5pt; }
+    .resume-header { margin-bottom: 6pt; }
+    .resume-header h1 { font-size: 18pt; }
+    .resume-title { font-size: 10.5pt; margin-top: 1pt; }
+    .resume-where { margin-top: 4pt; }
+    .resume-contact { font-size: 9pt; }
     .contact-screen { display: none; }
     .contact-print {
       display: inline;
       color: var(--ink-dim);
     }
-    .resume-section { margin-bottom: 14pt; page-break-inside: auto; }
-    .resume-section h2 { font-size: 9pt; margin-bottom: 6pt; padding-bottom: 3pt; }
-    .resume-summary { font-size: 10pt; line-height: 1.45; }
-    .resume-entries { gap: 12pt; }
+    .resume-section { margin-bottom: 3pt; page-break-inside: auto; }
+    .resume-section h2 { font-size: 8pt; margin-bottom: 2pt; padding-bottom: 1.5pt; }
+    .resume-summary { font-size: 9pt; line-height: 1.25; }
+    .resume-entries { gap: 4pt; }
     .resume-entry-header { column-gap: 12pt; }
-    .entry-titles h3 { font-size: 11pt; }
-    .entry-company { font-size: 9pt; margin-top: 2pt; }
-    .entry-dates { font-size: 9pt; }
-    .entry-bullets li { font-size: 10pt; line-height: 1.4; padding-left: 12pt; }
-    .entry-bullets li::before { top: 0.55em; width: 5pt; }
-    .entry-bullets { gap: 4pt; }
-    .skill-row { grid-template-columns: 130pt 1fr; gap: 12pt; }
-    .skill-row dt { font-size: 8.5pt; }
-    .skill-row dd { font-size: 10pt; line-height: 1.4; }
-    .resume-skills { gap: 6pt; }
-    .resume-interests { font-size: 10pt; }
+    .resume .entry-body { padding-top: 1pt !important; }
+    .entry-titles h3 { font-size: 10pt; }
+    .entry-company { font-size: 8pt; margin-top: 1pt; }
+    .entry-dates { font-size: 8pt; }
+    .entry-bullets li { font-size: 8.5pt; line-height: 1.22; padding-left: 9pt; }
+    .entry-bullets li::before { top: 0.55em; width: 3.5pt; }
+    .entry-bullets { gap: 1pt; }
+    /* Print Skills as a 2-column grid (each cell still label:values).
+       Halves the vertical footprint vs the screen's stacked layout
+       without sacrificing readability. */
+    .resume-skills { grid-template-columns: 1fr 1fr; column-gap: 16pt; gap: 4pt; }
+    .skill-row { grid-template-columns: 86pt 1fr; gap: 6pt; }
+    .skill-row dt { font-size: 7.5pt; }
+    .skill-row dd { font-size: 9pt; line-height: 1.28; }
+    /* Interests inlined as a single row tacked onto the bottom of Skills —
+       its dedicated section + h2 + 1-line paragraph was just barely
+       overflowing page 1 with the break-after:avoid keeping the h2 tied
+       to the line. Flat single-row formatting drops its vertical
+       footprint to a single line and removes the section gap so it
+       always fits. */
+    .resume-section:has(.resume-interests) {
+      margin-top: 3pt;
+      margin-bottom: 0;
+    }
+    .resume-section:has(.resume-interests) > h2 {
+      display: inline-block;
+      font-size: 7.5pt;
+      border: none;
+      padding: 0;
+      margin: 0 6pt 0 0;
+      vertical-align: baseline;
+    }
+    .resume-interests {
+      display: inline;
+      font-size: 9pt;
+    }
     .resume-foot { display: none; }
 
     /* Page-break discipline — per Codex, scope to entries not whole section */
