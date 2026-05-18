@@ -176,16 +176,46 @@
        top-flow position. Transform interpolates smoothly between the two. */
     transform: translateY(var(--title-rest-y, 0));
   }
-  /* Title font-size + transform transition during the lifecycle so growth
-     (24 → 34px) AND vertical slide (rest-y → 0) animate smoothly with the
-     morph rather than snapping at class flip. */
+  /* Title container transitions its translateY (rest-y → 0) during the
+     morph. Word spans inside (when Pretext is active) have their own
+     transform transition; see .pretext-title rules below. Font-size stays
+     constant at 24px — Pretext conveys "growth" via horizontal layout
+     changes, not font scaling. */
   :global(.bento-card.is-expanding .card-title) {
-    transition:
-      font-size var(--morph-dur) var(--ease-snappy),
-      transform var(--morph-dur) var(--ease-snappy);
+    transition: transform var(--morph-dur) var(--ease-snappy);
   }
   :global(.bento-card.is-expanded .card-title) {
     transform: translateY(0);
+  }
+
+  /* Pretext: card-title's text is replaced at runtime with absolutely-
+     positioned .word spans whose transforms animate between source and
+     modal positions during .is-expanding. JS adds .pretext-title to the
+     card after rendering — these rules only apply once that's happened. */
+  :global(.bento-card.pretext-title .card-title) {
+    position: relative;
+    width: 100%;
+    /* Hide stray text nodes if any; .word spans set their own font-size. */
+    font-size: 0;
+    line-height: 1;
+  }
+  :global(.bento-card.pretext-title .card-title .word) {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: inline-block;
+    white-space: nowrap;
+    font-family: var(--font-serif);
+    font-size: 24px;
+    font-weight: 400;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    color: #f5f1e7;
+    transform-origin: top left;
+    will-change: transform;
+  }
+  :global(.bento-card.is-expanding.pretext-title .card-title .word) {
+    transition: transform var(--morph-dur) var(--ease-snappy);
   }
   :global(.bento-card .card-title em) {
     font-style: italic;
@@ -266,9 +296,6 @@
        has overflow: hidden for the morph; expanded state needs its body
        to scroll internally so content isn't silently clipped. */
     overflow-y: auto;
-  }
-  :global(.bento-card.is-expanded .card-title) {
-    font-size: 34px;
   }
   @media (max-width: 540px) {
     :global(.bento-card.is-expanded .card-body) { padding: 48px 22px 32px; }
