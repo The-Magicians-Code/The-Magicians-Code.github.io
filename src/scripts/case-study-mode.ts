@@ -36,6 +36,13 @@ export function applyMode(wrap: HTMLElement, mode: CaseStudyMode): void {
 // Updates the wrap's data-mode (with cross-fade) on click and writes the
 // new mode to sessionStorage.
 export function buildPillToggle(wrap: HTMLElement, initialMode: CaseStudyMode): HTMLElement {
+  // Generate IDs scoped to this toggle so aria-controls + aria-labelledby
+  // can wire the tabs to the wrap (which acts as the tabpanel).
+  const uid = `cs-${Math.random().toString(36).slice(2, 9)}`;
+  const wrapId = wrap.id || `${uid}-panel`;
+  wrap.id = wrapId;
+  wrap.setAttribute('role', 'tabpanel');
+
   const root = document.createElement('div');
   root.className = 'cs-mode-toggle';
   root.setAttribute('role', 'tablist');
@@ -44,9 +51,11 @@ export function buildPillToggle(wrap: HTMLElement, initialMode: CaseStudyMode): 
   const makeTab = (mode: CaseStudyMode, label: string): HTMLButtonElement => {
     const btn = document.createElement('button');
     btn.type = 'button';
+    btn.id = `${uid}-${mode}`;
     btn.dataset.mode = mode;
     btn.setAttribute('role', 'tab');
     btn.setAttribute('aria-selected', String(mode === initialMode));
+    btn.setAttribute('aria-controls', wrapId);
     btn.tabIndex = mode === initialMode ? 0 : -1;
     btn.textContent = label;
     return btn;
@@ -57,10 +66,19 @@ export function buildPillToggle(wrap: HTMLElement, initialMode: CaseStudyMode): 
   root.appendChild(tldrBtn);
   root.appendChild(detailBtn);
 
+  // Wire the wrap's aria-labelledby to the currently-active tab so screen
+  // readers announce the active mode when entering the panel.
+  wrap.setAttribute('aria-labelledby', (initialMode === 'tldr' ? tldrBtn : detailBtn).id);
+
   const setActive = (next: CaseStudyMode): void => {
     if (wrap.dataset.mode === next) return;
     wrap.classList.add('is-swapping');
     window.setTimeout(() => {
+      // If the modal closed mid-swap (user hit Escape during the fade),
+      // the wrap is no longer in the DOM. Bail out before touching it —
+      // no-op'ing harmlessly today, but defensive against future code
+      // inside this callback that might read mutated state.
+      if (!wrap.isConnected) return;
       applyMode(wrap, next);
       writeMode(next);
       [tldrBtn, detailBtn].forEach((b) => {
@@ -68,6 +86,7 @@ export function buildPillToggle(wrap: HTMLElement, initialMode: CaseStudyMode): 
         b.setAttribute('aria-selected', String(isActive));
         b.tabIndex = isActive ? 0 : -1;
       });
+      wrap.setAttribute('aria-labelledby', (next === 'tldr' ? tldrBtn : detailBtn).id);
       // Trigger fade-in on the next frame so the browser commits the
       // data-mode swap before the opacity transition kicks back in.
       requestAnimationFrame(() => wrap.classList.remove('is-swapping'));
@@ -77,8 +96,9 @@ export function buildPillToggle(wrap: HTMLElement, initialMode: CaseStudyMode): 
   tldrBtn.addEventListener('click', () => setActive('tldr'));
   detailBtn.addEventListener('click', () => setActive('detailed'));
 
-  // Keyboard: Left/Right arrows move focus + activate (standard ARIA
-  // tablist pattern: roving tabindex).
+  // Keyboard: Left/Right arrows toggle to the other tab (with only two
+  // tabs, direction has no semantic meaning — either arrow flips).
+  // Standard ARIA tablist roving-tabindex pattern.
   root.addEventListener('keydown', (e) => {
     if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
     e.preventDefault();
