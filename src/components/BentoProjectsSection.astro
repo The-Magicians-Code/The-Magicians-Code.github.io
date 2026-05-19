@@ -30,6 +30,7 @@ const projectsWithContent = await Promise.all(
         slug={project.id}
         bentoSpan={project.data.bentoSpan}
         coverVariant={project.data.coverVariant}
+        deepwikiUrl={project.data.deepwikiUrl}
       >
         <Content />
       </BentoCard>

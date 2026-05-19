@@ -507,6 +507,19 @@ function doOpen(card: HTMLElement): void {
     openState.appendedBodyWrap = wrap;
     openState.pillToggle = pillToggle;
 
+    const deepwikiUrl = card.dataset.deepwikiUrl;
+    if (deepwikiUrl) {
+      const footer = document.createElement('p');
+      footer.className = 'cs-nerds-footer';
+      const link = document.createElement('a');
+      link.href = deepwikiUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = 'For the nerds — full architecture wiki →';
+      footer.appendChild(link);
+      wrap.appendChild(footer);
+    }
+
     // Per-child stagger via inline custom property.
     [...wrap.children].forEach((el, idx) => {
       (el as HTMLElement).style.setProperty('--stagger-idx', String(idx));

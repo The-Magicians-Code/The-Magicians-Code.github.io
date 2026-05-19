@@ -5,6 +5,7 @@ interface Props {
   slug: string;
   bentoSpan?: 'hero' | 'wide' | 'tall' | 'normal';
   coverVariant?: 'base' | 'alt';
+  deepwikiUrl?: string;
 }
 
 const {
@@ -13,6 +14,7 @@ const {
   slug,
   bentoSpan = 'normal',
   coverVariant = 'base',
+  deepwikiUrl,
 } = Astro.props;
 ---
 
@@ -26,6 +28,7 @@ const {
   ]}
   data-bento-card
   data-slug={slug}
+  data-deepwiki-url={deepwikiUrl ?? undefined}
   role="button"
   tabindex="0"
   aria-haspopup="dialog"

@@ -578,6 +578,34 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
   }
 
+  /* ── "For the nerds" footer ──────────────────────────────────────
+     Surfaces only in Detailed mode when frontmatter.deepwikiUrl is
+     set. Hidden in TL;DR mode by the existing
+     `[data-mode="tldr"] h2 + blockquote ~ *` rule (the footer is a
+     sibling that follows the last section's blockquote — so it
+     naturally hides). Explicit selector below also hides it in case
+     the footer ever lands before any blockquote (e.g. a case study
+     with no sections — defensive). */
+  :global(.bento-card-body-rendered .cs-nerds-footer) {
+    margin: 32px 0 0;
+    text-align: right;
+    font-size: 13px;
+    color: var(--ink-dim);
+  }
+  :global(.bento-card-body-rendered[data-mode="tldr"] .cs-nerds-footer) {
+    display: none;
+  }
+  :global(.bento-card-body-rendered .cs-nerds-footer a) {
+    color: var(--ink-dim);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-color: rgba(26, 26, 28, 0.25);
+    transition: color 200ms ease;
+  }
+  :global(.bento-card-body-rendered .cs-nerds-footer a:hover) {
+    color: var(--ink);
+  }
+
   /* ── Close button ─────────────────────────────────────────────── */
   :global(.cs-close) {
     position: absolute;
