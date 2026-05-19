@@ -57,8 +57,8 @@ a fixed three-element pattern per section:
 1. **One `## Heading`** per T2 section. Section order is fixed (Context →
    Problem → Approach → Results) but the heading text is freely worded
    ("The problem", "The rebuild", "What changed", etc.).
-2. **A `> [!summary]` GitHub-style alert callout** as the first child of each
-   section. This is the section's TL;DR — 1–2 sentences, ~25–40 words.
+2. **A plain blockquote (`>`)** as the first child of each section. This is
+   the section's TL;DR — 1–2 sentences, ~25–40 words.
 3. **Everything else under the heading** is the Detail prose — paragraphs,
    lists, code, links, all standard Markdown.
 
@@ -67,7 +67,6 @@ Example skeleton:
 ```markdown
 ## The problem
 
-> [!summary]
 > One- or two-sentence summary with a number in it.
 
 Detailed paragraph or two of the why, the what-broke, the symptoms.
@@ -75,13 +74,14 @@ Detailed paragraph or two of the why, the what-broke, the symptoms.
 Another paragraph with more depth.
 ```
 
-**Why this convention:** prose is the natural habitat for both layers. YAML
-multi-paragraph strings are awkward to author; structured frontmatter for 8
-content blocks (one TL;DR + one Detail × four sections) sacrifices Markdown's
-flexibility (no inline code, no lists, no links inside YAML strings). The
-`> [!summary]` alert is plain Markdown, renders sensibly even without our
-mode-swap logic (e.g. when previewed on GitHub), and parses through Astro's
-default remark-gfm pipeline.
+**Why a plain blockquote:** Astro v6's default Markdown pipeline doesn't ship
+remark-gfm or a github-alerts plugin, so a richer `> [!summary]` callout
+would require adding a plugin. A plain blockquote needs no plugin, renders
+sensibly on GitHub previews, and is a stable Markdown primitive. The
+trade-off: this codebase loses the ability to use blockquotes for actual
+quotation. Acceptable — technical case studies rarely use literal
+blockquotes, and if one is ever needed, we can switch to a `<figure><blockquote>`
+HTML block instead.
 
 ## Schema additions
 
@@ -119,19 +119,18 @@ We extend that wrap with two structural additions:
    `data-mode="detailed"`.
 
 Markdown is rendered with the standard Astro pipeline (no remark plugin). The
-GFM alert callout `> [!summary]` becomes a `<blockquote class="alert
-alert-summary">` (or whatever class Astro's `remark-gfm` produces — verify
-during plan-writing). We use CSS to gate visibility based on the body's
-`data-mode`:
+first child of each `<h2>` is a `<blockquote>` (the section's TL;DR); the rest
+of the section's content follows as sibling elements. We use CSS sibling
+combinators to gate visibility based on the body's `data-mode`:
 
 ```css
-/* In TL;DR mode: hide everything except the summary callouts. */
-.bento-card-body-rendered[data-mode="tldr"] .alert-summary ~ * {
+/* In TL;DR mode: keep the H2 and its first blockquote visible; hide
+   every sibling that follows the blockquote until the next H2. */
+.bento-card-body-rendered[data-mode="tldr"] h2 + blockquote ~ * {
   display: none;
 }
-/* In Detailed mode: render the summary callout styled as a lede, then
-   everything else. */
-.bento-card-body-rendered[data-mode="detailed"] .alert-summary {
+/* In Detailed mode: render the first blockquote styled as a lede. */
+.bento-card-body-rendered[data-mode="detailed"] h2 + blockquote {
   border-left: 2px solid var(--ink-3);
   padding-left: 12px;
   margin: 0 0 12px;
@@ -140,18 +139,20 @@ during plan-writing). We use CSS to gate visibility based on the body's
 }
 ```
 
-The CSS uses `~ *` (general sibling combinator) after `.alert-summary` to hide
-everything between the summary callout and the next H2 in TL;DR mode. H2s
-themselves stay visible in both modes (they're scannable structure).
+The CSS uses `h2 + blockquote ~ *` to hide everything that follows the
+section-leading blockquote in TL;DR mode. H2s themselves stay visible in both
+modes (they're scannable structure). The next H2 inside the same wrap remains
+visible because it's matched by its own `h2 + blockquote` rule.
 
-**Edge case:** if a section is missing the summary callout, `~ *` doesn't fire
-and the section renders its raw content in both modes. Visually noisy but
-non-fatal. We add an `astro check`-time validator (see "Validation" below) to
-warn.
+**Edge case:** if a section is missing the leading blockquote, the
+`h2 + blockquote` selector doesn't match and that section's content stays
+visible in both modes. Visually noisy but non-fatal. The validator
+(see "Validation" below) warns at build time.
 
-**Edge case:** if a section is missing detail content (summary callout but
-nothing after it), Detailed mode shows just the lede. Acceptable — some
-sections might genuinely only have a one-line summary worth making.
+**Edge case:** if a section has only a leading blockquote and no detail
+content, both modes render the same thing (the blockquote — as plain in
+TL;DR, as italic lede in Detailed). Acceptable — some sections might
+genuinely have only a one-line summary worth making.
 
 ## Pill toggle UI
 
@@ -248,18 +249,17 @@ Styled muted (uses `--ink-dim`) so it reads as an escape hatch, not a CTA.
 
 ## Validation
 
-Add a build-time check inside the existing Astro content collection schema
-(via `z.string().transform(...)` or a separate validation pass) that:
+A standalone Node script run alongside `npm run check` walks every project
+Markdown body and:
 
-1. Parses the body for `## ` H2 sections.
-2. For each H2, checks that the first non-whitespace child is a
-   `> [!summary]` block.
-3. Warns (not fails) on missing summary or missing detail. We don't want a
-   missing TL;DR to block the build — we want to know about it during
-   `npm run check`.
+1. Tokenises the file looking for `## ` H2 headings.
+2. For each H2, checks that the first non-empty content block is a
+   blockquote (`> ...`).
+3. Logs a warning (not an error) for any section missing a leading
+   blockquote, naming the file and the heading.
 
-Implementation choice deferred to plan: simplest path is a remark visitor that
-runs during the content collection's load step.
+Run via a new package script: `npm run check:content`. Wired into the
+existing `npm run check` as a sequential follow-up.
 
 ## Trade-offs considered and chosen against
 
@@ -312,7 +312,5 @@ runs during the content collection's load step.
 
 ## Open questions
 
-None pending implementation. Schema is settled, convention is settled, mode
-behavior is settled. Specific class names produced by Astro's remark-gfm for
-the `> [!summary]` callout will be verified at plan-writing time and the CSS
-selector adjusted to match.
+None pending implementation. Schema is settled, convention is settled
+(plain blockquote, no plugin), mode behavior is settled.
