@@ -577,6 +577,17 @@
     color: var(--ink);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
   }
+  /* Fade the pill out alongside the body paragraphs during the close
+     morph. The toggle is a sibling of the rendered wrap (not a child),
+     so it doesn't inherit the .body-para.appended fade rule that
+     handles the rest of the content. Without this, the pill stays at
+     full opacity through the entire shrink and only disappears
+     abruptly at cleanup. Duration matches .is-collapsing .body-para. */
+  :global(.bento-card.is-collapsing .cs-mode-toggle) {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 180ms ease;
+  }
 
   /* ── "For the nerds" footer ──────────────────────────────────────
      Surfaces only in Detailed mode when frontmatter.deepwikiUrl is
