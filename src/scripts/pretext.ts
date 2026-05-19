@@ -102,8 +102,20 @@ function pretextOriginalWords(titleEl: HTMLElement): WordWithEm[] {
 function pretextMeasureWords(words: WordWithEm[]): WordMetric[] {
   const mirror = getMirror();
   mirror.style.fontStyle = 'normal';
-  mirror.textContent = ' ';
-  const spaceWidth = mirror.getBoundingClientRect().width;
+  // Space-width via subtraction. A span containing only ' ' renders at
+  // zero width because CSS layout collapses leading/trailing whitespace.
+  // Measure 'ii' and 'i i' (where the middle space sits between glyphs
+  // and is preserved), then back out the space width, accounting for
+  // the extra inter-glyph letter-spacing the middle span introduces:
+  //   width('ii')  = 2*Wi + 1*ls
+  //   width('i i') = 2*Wi + Wspace + 2*ls
+  //   spaceWidth   = width('i i') - width('ii') - ls
+  const lsPx = parseFloat(getComputedStyle(mirror).letterSpacing) || 0;
+  mirror.textContent = 'ii';
+  const wii = mirror.getBoundingClientRect().width;
+  mirror.textContent = 'i i';
+  const wisi = mirror.getBoundingClientRect().width;
+  const spaceWidth = Math.max(0, wisi - wii - lsPx);
   return words.map((w) => {
     mirror.style.fontStyle = w.isEm ? 'italic' : 'normal';
     mirror.textContent = w.word;
