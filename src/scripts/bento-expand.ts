@@ -12,9 +12,19 @@ interface OpenState {
   placeholder: HTMLElement;
   closeBtn: HTMLButtonElement;
   backdrop: HTMLElement;
+  blurTop: HTMLElement;
+  blurBottom: HTMLElement;
   originalInline: string;
   appendedBodyWrap: HTMLElement | null;
   closing: boolean;
+}
+
+function makeBlurStrip(position: 'top' | 'bottom'): HTMLElement {
+  const strip = document.createElement('div');
+  strip.className = `card-blur card-blur-${position}`;
+  strip.setAttribute('aria-hidden', 'true');
+  for (let i = 0; i < 5; i++) strip.appendChild(document.createElement('div'));
+  return strip;
 }
 
 const MORPH_DUR = 520; // must match --morph-dur in CSS
@@ -415,6 +425,27 @@ function doOpen(card: HTMLElement): void {
   closeBtn.appendChild(makeCloseIcon());
   card.appendChild(closeBtn);
 
+  // Progressive blur strips at the card's top + bottom edges. Apple-style
+  // multi-layer stacked blur — mounted dynamically so resting cards pay
+  // zero GPU cost. See BentoGrid.astro .card-blur rules for the per-
+  // layer blur radii and mask gradients.
+  const blurTop = makeBlurStrip('top');
+  const blurBottom = makeBlurStrip('bottom');
+  card.appendChild(blurTop);
+  card.appendChild(blurBottom);
+
+  // Double-rAF before flipping .is-on so the browser fully paints the
+  // backdrop-filter layers at opacity:0 first. Without the warm-up
+  // frame, the GPU rasterizes the filter as the opacity transition
+  // starts and the blur visibly "pops" instead of fading.
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      if (!openState || openState.closing) return;
+      blurTop.classList.add('is-on');
+      blurBottom.classList.add('is-on');
+    });
+  });
+
   card.classList.add('is-expanding');
   card.setAttribute('aria-expanded', 'true');
   backdrop.classList.add('is-open');
@@ -440,6 +471,8 @@ function doOpen(card: HTMLElement): void {
     placeholder,
     closeBtn,
     backdrop,
+    blurTop,
+    blurBottom,
     originalInline,
     appendedBodyWrap: null,
     closing: false,
@@ -493,7 +526,7 @@ function closeCaseStudy(): void {
   if (!openState || openState.closing) return;
   openState.closing = true;
   const state = openState;
-  const { card, placeholder, closeBtn, backdrop, originalInline, appendedBodyWrap } = state;
+  const { card, placeholder, closeBtn, backdrop, blurTop, blurBottom, originalInline, appendedBodyWrap } = state;
 
   // Blur BEFORE the morph so the UA focus outline doesn't trace the shrink.
   card.blur();
@@ -514,6 +547,12 @@ function closeCaseStudy(): void {
   // close transition would inherit `transition: none !important`.
   card.classList.remove('is-expanded', 'is-resizing');
   card.classList.add('is-collapsing');
+
+  // Drop the .is-on class to trigger the blur fade-out; the
+  // .bento-card.is-collapsing .card-blur rule swaps in the quicker
+  // close-side transition timing.
+  blurTop.classList.remove('is-on');
+  blurBottom.classList.remove('is-on');
   card.setAttribute('aria-expanded', 'false');
 
   // Re-measure the placeholder; resize may have moved it.
@@ -535,9 +574,11 @@ function closeCaseStudy(): void {
     window.clearTimeout(fallbackTimer);
     card.removeEventListener('transitionend', onTransitionEnd);
 
-    // 1) Remove appended children + close button.
+    // 1) Remove appended children + close button + blur strips.
     if (appendedBodyWrap) appendedBodyWrap.remove();
     closeBtn.remove();
+    blurTop.remove();
+    blurBottom.remove();
 
     // 2) Apply guarded style (originalInline + transition:none) so the
     //    inline-style swap doesn't animate. THEN remove placeholder.

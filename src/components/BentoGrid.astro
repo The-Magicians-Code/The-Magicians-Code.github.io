@@ -313,6 +313,122 @@
     :global(.bento-card.is-expanded .card-body) { padding: 48px 22px 32px; }
   }
 
+  /* ── Progressive blur edges on the expanded card ─────────────────
+     Apple-style multi-layer stacked blur. .card-blur-top and
+     .card-blur-bottom are dynamically mounted by bento-expand.ts when
+     a card opens (same pattern as .cs-close) and removed on close, so
+     they cost nothing when cards are at rest. Each strip contains 5
+     child layers, each with a different backdrop-filter blur radius
+     and a mask gradient that confines it to a band. Layers feather
+     into each other so the cumulative blur intensity varies smoothly
+     from clear (interior) to maximum (edge) without a visible "shelf"
+     at any single mask transition. */
+  :global(.card-blur) {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 80px;
+    /* Above .card-body (z-index: 1) so backdrop-filter sees the
+       scrolled content painted underneath. Close button is bumped to
+       z-index: 3 below to stay sharp. */
+    z-index: 2;
+    pointer-events: none;
+    opacity: 0;
+    /* Gentle ease-out (not --ease-snappy's strong S-curve) so the fade
+       is perceptually smooth rather than popping near the midpoint.
+       Slight delay lets the card morph start visibly before the blur
+       begins fading in, so the two animations are sequenced rather
+       than fighting for attention. */
+    transition: opacity 420ms cubic-bezier(0.22, 1, 0.36, 1) 120ms;
+  }
+  :global(.bento-card.is-collapsing .card-blur) {
+    /* On close, fade out quickly with no delay so the blur clears
+       before the morph completes — leaving the page underneath sharp. */
+    transition: opacity 220ms ease-out 0ms;
+  }
+  :global(.card-blur > div) {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  :global(.card-blur-top) { top: 0; }
+  :global(.card-blur-bottom) { bottom: 0; }
+  /* .is-on is toggled by bento-expand.ts via a double-rAF after the
+     strips are appended — this gives the browser time to rasterize
+     the backdrop-filter layers at opacity:0 (warming up the GPU
+     pipeline) before the fade-in transition fires. Without the warm-
+     up window the filter "pops" at the start of the transition. */
+  :global(.card-blur.is-on) { opacity: 1; }
+
+  /* TOP strip — heaviest blur at y=0 (edge), fades toward interior. */
+  :global(.card-blur-top > div:nth-child(1)) {
+    -webkit-backdrop-filter: blur(0.5px);
+    backdrop-filter: blur(0.5px);
+    -webkit-mask-image: linear-gradient(to bottom, black 0 80%, transparent 100%);
+    mask-image: linear-gradient(to bottom, black 0 80%, transparent 100%);
+  }
+  :global(.card-blur-top > div:nth-child(2)) {
+    -webkit-backdrop-filter: blur(1.5px);
+    backdrop-filter: blur(1.5px);
+    -webkit-mask-image: linear-gradient(to bottom, black 0 60%, transparent 80%);
+    mask-image: linear-gradient(to bottom, black 0 60%, transparent 80%);
+  }
+  :global(.card-blur-top > div:nth-child(3)) {
+    -webkit-backdrop-filter: blur(3px);
+    backdrop-filter: blur(3px);
+    -webkit-mask-image: linear-gradient(to bottom, black 0 40%, transparent 60%);
+    mask-image: linear-gradient(to bottom, black 0 40%, transparent 60%);
+  }
+  :global(.card-blur-top > div:nth-child(4)) {
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    -webkit-mask-image: linear-gradient(to bottom, black 0 20%, transparent 40%);
+    mask-image: linear-gradient(to bottom, black 0 20%, transparent 40%);
+  }
+  :global(.card-blur-top > div:nth-child(5)) {
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    -webkit-mask-image: linear-gradient(to bottom, black 0 5%, transparent 20%);
+    mask-image: linear-gradient(to bottom, black 0 5%, transparent 20%);
+  }
+
+  /* BOTTOM strip — same radii, gradient direction flipped so blur is
+     heaviest at the bottom edge and fades upward. */
+  :global(.card-blur-bottom > div:nth-child(1)) {
+    -webkit-backdrop-filter: blur(0.5px);
+    backdrop-filter: blur(0.5px);
+    -webkit-mask-image: linear-gradient(to top, black 0 80%, transparent 100%);
+    mask-image: linear-gradient(to top, black 0 80%, transparent 100%);
+  }
+  :global(.card-blur-bottom > div:nth-child(2)) {
+    -webkit-backdrop-filter: blur(1.5px);
+    backdrop-filter: blur(1.5px);
+    -webkit-mask-image: linear-gradient(to top, black 0 60%, transparent 80%);
+    mask-image: linear-gradient(to top, black 0 60%, transparent 80%);
+  }
+  :global(.card-blur-bottom > div:nth-child(3)) {
+    -webkit-backdrop-filter: blur(3px);
+    backdrop-filter: blur(3px);
+    -webkit-mask-image: linear-gradient(to top, black 0 40%, transparent 60%);
+    mask-image: linear-gradient(to top, black 0 40%, transparent 60%);
+  }
+  :global(.card-blur-bottom > div:nth-child(4)) {
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    -webkit-mask-image: linear-gradient(to top, black 0 20%, transparent 40%);
+    mask-image: linear-gradient(to top, black 0 20%, transparent 40%);
+  }
+  :global(.card-blur-bottom > div:nth-child(5)) {
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    -webkit-mask-image: linear-gradient(to top, black 0 5%, transparent 20%);
+    mask-image: linear-gradient(to top, black 0 5%, transparent 20%);
+  }
+
+  @media (max-width: 540px) {
+    :global(.card-blur) { height: 60px; }
+  }
+
   /* Resizing suppresses transitions for instant snap. */
   :global(.bento-card.is-resizing) {
     transition: none !important;
@@ -398,7 +514,10 @@
     display: grid;
     place-items: center;
     cursor: pointer;
-    z-index: 2;
+    /* Above the .bento-card::before/::after progressive-blur strips
+       (z-index: 2) so the close button stays sharp at the top-right
+       corner even though it overlaps the top blur strip. */
+    z-index: 3;
     border: 0;
     opacity: 0;
     pointer-events: none;
