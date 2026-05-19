@@ -1,5 +1,5 @@
 ---
-title: Organic Flow
+title: Edge-native *commerce stack*
 description: A Polish Brazilian Zouk dance school's WordPress + WooCommerce site, rebuilt as a custom edge-native commerce stack — lighter on the wire, easier to operate, deeper in abuse controls.
 repoUrl: https://github.com/The-Magicians-Code/organic-flow
 deepwikiUrl: https://deepwiki.com/The-Magicians-Code/organic-flow

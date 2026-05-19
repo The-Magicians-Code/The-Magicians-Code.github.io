@@ -1,5 +1,5 @@
 ---
-title: Yolo-dualdev
+title: Vision pipeline for *edge inference*
 description: Bachelor's thesis (TalTech, 2023) — a real-time computer-vision system that gives an autonomous Baltic Workboats Navy 18 WP patrol vessel the situational awareness it needs to run its own sea trials.
 repoUrl: https://github.com/The-Magicians-Code/Yolo-dualdev/
 deepwikiUrl: https://deepwiki.com/The-Magicians-Code/yolo-dualdev

@@ -3,6 +3,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import { Icon } from 'astro-icon/components';
 import { getCollection, render } from 'astro:content';
 import type { GetStaticPaths } from 'astro';
+import { titleToHtml, titleToText } from '../../lib/title';
 
 export const getStaticPaths = (async () => {
   const projects = await getCollection('projects');
@@ -14,10 +15,11 @@ export const getStaticPaths = (async () => {
 
 const { project } = Astro.props;
 const { Content } = await render(project);
+const titleText = titleToText(project.data.title);
 ---
 
 <BaseLayout
-  title={`${project.data.title} · Tanel Treuberg`}
+  title={`${titleText} · Tanel Treuberg`}
   description={project.data.description}
   canonicalPath={`/projects/${project.id}/`}
   ogType="article"
@@ -25,14 +27,14 @@ const { Content } = await render(project);
   <main class="project-page">
     <header class="project-header section-fade-in" style="--delay: 0.1s">
       <div class="section-eyebrow">Project</div>
-      <h1 class="project-title">{project.data.title}</h1>
+      <h1 class="project-title" set:html={titleToHtml(project.data.title)}></h1>
       <p class="project-lede">{project.data.description}</p>
       <a
         href={project.data.repoUrl}
         target="_blank"
         rel="noopener noreferrer"
         class="link-accent project-repo-link"
-        aria-label={`View ${project.data.title} on GitHub`}
+        aria-label={`View ${titleText} on GitHub`}
       >
         View on GitHub
         <Icon name="lucide:arrow-up-right" class="inline-block w-4 h-4 ml-1" aria-hidden="true" />

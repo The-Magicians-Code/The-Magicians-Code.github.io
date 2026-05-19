@@ -1,5 +1,5 @@
 ---
-title: Strato_Pi
+title: Remote test bench for *electric motors*
 description: A COVID-era TalTech course project — five engineers retrofitting an electrical-motor test rig with full remote control so coursework didn't stall when the lab closed.
 repoUrl: https://github.com/The-Magicians-Code/Strato_Pi/
 deepwikiUrl: https://deepwiki.com/The-Magicians-Code/Strato-Pi

@@ -1,4 +1,6 @@
 ---
+import { titleToHtml } from '../lib/title';
+
 interface Props {
   title: string;
   eyebrow?: string;
@@ -45,7 +47,7 @@ const {
   </span>
   <div class="card-body">
     {eyebrow && <div class="card-eyebrow">{eyebrow}</div>}
-    <div class="card-title">{title}</div>
+    <div class="card-title" set:html={titleToHtml(title)}></div>
   </div>
   <div class="bento-card-body" hidden>
     <slot />

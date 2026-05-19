@@ -1,5 +1,6 @@
 ---
 import { Icon } from 'astro-icon/components';
+import { titleToHtml, titleToText } from '../lib/title';
 
 interface Props {
   title: string;
@@ -8,11 +9,12 @@ interface Props {
   slug: string;
 }
 const { title, description, repoUrl, slug } = Astro.props;
+const titleText = titleToText(title);
 ---
 
 <article class="card project-card">
   <h3 class="project-title">
-    <a href={`/projects/${slug}/`}>{title}</a>
+    <a href={`/projects/${slug}/`} set:html={titleToHtml(title)}></a>
   </h3>
   <p class="project-desc">{description}</p>
   <a
@@ -20,7 +22,7 @@ const { title, description, repoUrl, slug } = Astro.props;
     target="_blank"
     rel="noopener noreferrer"
     class="link-accent project-link"
-    aria-label={`View ${title} project on GitHub`}
+    aria-label={`View ${titleText} project on GitHub`}
   >
     View on GitHub
     <Icon name="lucide:arrow-up-right" class="inline-block w-4 h-4 ml-1" aria-hidden="true" />
