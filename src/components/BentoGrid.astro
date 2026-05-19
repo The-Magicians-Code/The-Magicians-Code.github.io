@@ -188,6 +188,60 @@
     color: var(--accent);
   }
 
+  /* ── Pretext: per-word title layout (for .cs-card only) ───────────────
+     When pretext.ts runs at init, it replaces the title's text with
+     absolutely-positioned <span class="word"> / <em class="word"> spans
+     pre-computed at two widths (card rest + modal expanded). The card
+     gets .pretext-title; these rules apply only once it's set.
+
+     Idle visual is preserved: source positions are natural-flow
+     left-aligned. Only the modal layout centers each line. */
+  :global(.bento-card.pretext-title .card-title) {
+    position: relative;
+    width: 100%;
+    /* No font-size: 0, no min-height — flex-shrink: 0 on header
+       siblings (already in place) keeps the inline style.height
+       intact under iOS Safari's flex algorithm. */
+  }
+  :global(.bento-card.pretext-title .card-title .word) {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: inline-block;
+    white-space: nowrap;
+    font-family: var(--font-serif);
+    font-size: 24px;
+    font-weight: 400;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    transform-origin: top left;
+    will-change: transform;
+  }
+  /* Accent words render as <em class="word"> so .card-title em styling
+     applies via the existing rule. Pin specificity here in case the
+     plain .word color rule wins under cascade tie. */
+  :global(.bento-card.pretext-title .card-title em.word) {
+    font-style: italic;
+    color: var(--accent);
+  }
+  /* During the morph, each word transitions between its source and
+     modal transforms in lockstep with the card morph. */
+  :global(.bento-card.is-expanding.pretext-title .card-title .word) {
+    transition: transform var(--morph-dur) var(--ease-snappy);
+  }
+  /* When expanded, words own horizontal centering (their target mx
+     positions already include the modal-width centering offset).
+     Override the parent's translate(var(--title-center-x), 0) — Y only. */
+  :global(.bento-card.pretext-title.is-expanded .card-title) {
+    transform: translateY(0);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :global(.bento-card.is-expanding.pretext-title .card-title .word) {
+      transition: none;
+    }
+  }
+
   /* Hidden body source for the modal (cloned on open) */
   :global(.bento-card .bento-card-body) {
     display: none;
