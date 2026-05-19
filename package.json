@@ -10,7 +10,8 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "check": "astro check"
+    "check": "astro check && npm run check:content",
+    "check:content": "node scripts/check-content.mjs"
   },
   "dependencies": {
     "@iconify-json/lucide": "^1.2.105",
