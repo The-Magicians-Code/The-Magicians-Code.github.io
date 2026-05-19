@@ -489,6 +489,7 @@ function doOpen(card: HTMLElement): void {
 
     const wrap = document.createElement('div');
     wrap.className = 'bento-card-body-rendered';
+    wrap.dataset.mode = 'tldr';
     // Clone children so the original hidden source stays intact for a
     // potential re-open (state isn't destroyed; only inline copies are).
     for (const child of source.children) {

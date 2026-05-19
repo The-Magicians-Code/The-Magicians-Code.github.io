@@ -498,6 +498,52 @@
     text-underline-offset: 3px;
   }
 
+  /* ── Dual-mode reading (TL;DR ↔ Detailed) ─────────────────────
+     The rendered case-study wrap carries data-mode="tldr|detailed".
+     Authoring convention: each ## H2 section is followed by a single
+     leading blockquote (the TL;DR) and zero or more sibling elements
+     (the Detail). In TL;DR mode we hide everything that follows the
+     leading blockquote until the next H2. In Detailed mode the
+     leading blockquote is styled as an italic lede above the detail
+     prose. See docs/superpowers/specs/2026-05-19-case-study-dual-
+     mode-design.md. */
+  :global(.bento-card-body-rendered) {
+    transition: opacity 160ms ease-out;
+  }
+  :global(.bento-card-body-rendered.is-swapping) {
+    opacity: 0;
+  }
+  /* Hide everything that follows the section-leading blockquote in TL;DR
+     mode. The next H2 reopens its own section's leading blockquote
+     because the selector is scoped by the blockquote's sibling chain. */
+  :global(.bento-card-body-rendered[data-mode="tldr"] h2 + blockquote ~ *) {
+    display: none;
+  }
+  /* Style the section-leading blockquote as an italic lede in Detailed
+     mode so it reads as the section's nut graph rather than a generic
+     quotation. */
+  :global(.bento-card-body-rendered[data-mode="detailed"] h2 + blockquote) {
+    border-left: 2px solid var(--ink-3);
+    padding: 2px 0 2px 14px;
+    margin: 0 0 14px;
+    font-style: italic;
+    color: var(--ink-dim);
+    font-size: 15px;
+    line-height: 1.55;
+  }
+  /* In TL;DR mode, the leading blockquote IS the content for the
+     section — drop the indent + bar styling so it reads as a normal
+     paragraph under the heading. */
+  :global(.bento-card-body-rendered[data-mode="tldr"] h2 + blockquote) {
+    border-left: none;
+    padding: 0;
+    margin: 0 0 14px;
+    font-style: normal;
+    color: var(--ink);
+    font-size: 15px;
+    line-height: 1.55;
+  }
+
   /* ── Close button ─────────────────────────────────────────────── */
   :global(.cs-close) {
     position: absolute;
