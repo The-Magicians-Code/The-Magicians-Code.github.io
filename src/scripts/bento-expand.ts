@@ -7,6 +7,8 @@
 // behind the non-obvious bits (focus-outline suppression via card.blur(),
 // cleanup ordering to avoid the one-frame silver snap, etc.).
 
+import { readMode, applyMode, buildPillToggle } from './case-study-mode';
+
 interface OpenState {
   card: HTMLElement;
   placeholder: HTMLElement;
@@ -16,6 +18,7 @@ interface OpenState {
   blurBottom: HTMLElement;
   originalInline: string;
   appendedBodyWrap: HTMLElement | null;
+  pillToggle: HTMLElement | null;
   closing: boolean;
 }
 
@@ -475,6 +478,7 @@ function doOpen(card: HTMLElement): void {
     blurBottom,
     originalInline,
     appendedBodyWrap: null,
+    pillToggle: null,
     closing: false,
   };
 
@@ -489,15 +493,19 @@ function doOpen(card: HTMLElement): void {
 
     const wrap = document.createElement('div');
     wrap.className = 'bento-card-body-rendered';
-    wrap.dataset.mode = 'tldr';
+    const initialMode = readMode();
+    applyMode(wrap, initialMode);
     // Clone children so the original hidden source stays intact for a
     // potential re-open (state isn't destroyed; only inline copies are).
     for (const child of source.children) {
       const cloned = child.cloneNode(true) as HTMLElement;
       wrap.appendChild(cloned);
     }
+    const pillToggle = buildPillToggle(wrap, initialMode);
+    body.appendChild(pillToggle);
     body.appendChild(wrap);
     openState.appendedBodyWrap = wrap;
+    openState.pillToggle = pillToggle;
 
     // Per-child stagger via inline custom property.
     [...wrap.children].forEach((el, idx) => {
@@ -527,7 +535,7 @@ function closeCaseStudy(): void {
   if (!openState || openState.closing) return;
   openState.closing = true;
   const state = openState;
-  const { card, placeholder, closeBtn, backdrop, blurTop, blurBottom, originalInline, appendedBodyWrap } = state;
+  const { card, placeholder, closeBtn, backdrop, blurTop, blurBottom, originalInline, appendedBodyWrap, pillToggle } = state;
 
   // Blur BEFORE the morph so the UA focus outline doesn't trace the shrink.
   card.blur();
@@ -577,6 +585,7 @@ function closeCaseStudy(): void {
 
     // 1) Remove appended children + close button + blur strips.
     if (appendedBodyWrap) appendedBodyWrap.remove();
+    if (pillToggle) pillToggle.remove();
     closeBtn.remove();
     blurTop.remove();
     blurBottom.remove();
