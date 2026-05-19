@@ -100,40 +100,18 @@
       0 2px 6px rgba(0, 0, 0, 0.04);
   }
 
-  /* Project cards: no border, no shadow, bg matches cover (the prototype's
-     hard-won fix to avoid cream/white leak at sub-pixel rounded corners). */
-  :global(.bento-card.project-card),
-  :global(.bento-card.project-card:hover) {
-    border: 0;
-    box-shadow: none;
-    background-color: #16140f;
-  }
-  :global(.bento-card.project-card.cover-alt),
-  :global(.bento-card.project-card.cover-alt:hover) {
-    background-color: #1f1c16;
-  }
-
-  /* ── Cover layer ──────────────────────────────────────────────── */
+  /* Project cards inherit the .bento-card base shell (paper bg, default
+     soft shadow, 32px radius) so the visual treatment matches the
+     stack card. The earlier dark-cover override (and its no-shadow
+     workaround for cream-leak at sub-pixel corners) is no longer
+     needed now that card and page share the same paper background.
+     The .cover div stays in the markup as a positioned overlay slot
+     in case future per-card visuals are added, but renders as a
+     transparent no-op. */
   :global(.project-card .cover) {
     position: absolute;
     inset: 0;
     border-radius: inherit;
-    background:
-      radial-gradient(120% 120% at 0% 0%,   oklch(72% 0.16 28 / 0.35), transparent 60%),
-      radial-gradient(120% 120% at 100% 100%, oklch(60% 0.14 250 / 0.35), transparent 60%),
-      #16140f;
-  }
-  :global(.project-card .cover::after) {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(180deg, transparent 30%, rgba(0,0,0,0.55) 100%);
-  }
-  :global(.project-card.cover-alt .cover) {
-    background:
-      radial-gradient(120% 120% at 0% 0%,   oklch(72% 0.14 140 / 0.35), transparent 60%),
-      radial-gradient(120% 120% at 100% 100%, oklch(64% 0.18 28 / 0.40), transparent 60%),
-      #1f1c16;
   }
 
   /* ── Card body (rest) ─────────────────────────────────────────── */
@@ -152,11 +130,10 @@
     flex-direction: column;
     justify-content: flex-start;
     gap: 12px;
-    /* Minimal-mode editorial pattern: body text centered horizontally
-       (eyebrow + fallback title text), body markdown column overrides
-       to left-align below. Pretext word-span title is centered via JS-
-       computed positions, so text-align doesn't affect it either way. */
-    text-align: center;
+    /* Left-aligned eyebrow + title across all bento cards. Unified with
+       the stack card. Expanded-modal markdown overrides keep their own
+       text-align: left rule (.bento-card-body-rendered). */
+    text-align: left;
   }
   /* Eyebrow is hidden at rest — resting card reads as just the title.
      Fades in late in the morph (65% through) so it appears as context
@@ -167,7 +144,7 @@
     font-size: 10px;
     text-transform: uppercase;
     letter-spacing: 0.10em;
-    color: rgba(245, 241, 231, 0.7);
+    color: var(--ink-dim);
     opacity: 0;
     transition: opacity 320ms ease;
   }
@@ -181,12 +158,22 @@
     font-size: 24px;
     line-height: 1.15;
     letter-spacing: -0.01em;
-    color: #f5f1e7;
-    /* At rest, translated down to the bottom of the body by a per-card
-       value computed in JS (sees the body's available vertical space).
-       In .is-expanded, translateY(0) returns the title to its natural
-       top-flow position. Transform interpolates smoothly between the two. */
-    transform: translateY(var(--title-rest-y, 0));
+    color: var(--ink);
+    /* Size to content (not stretched to body width) so translateX can
+       shift the title block horizontally during the morph. align-self
+       opts out of the flex column's default stretch behavior; max-width
+       lets long titles still wrap inside the body rather than
+       overflowing. */
+    width: fit-content;
+    max-width: 100%;
+    align-self: flex-start;
+    /* At rest: translated down to the body's vertical center via JS-
+       measured --title-rest-y, and left-aligned (translateX 0). In
+       .is-expanded: translated to JS-measured --title-center-x to sit
+       horizontally centered within the expanded body, and translateY 0
+       to return to the natural top-flow position. Single transform
+       interpolates both axes in lockstep with the morph. */
+    transform: translate(0, var(--title-rest-y, 0));
   }
   /* Title container transitions its translateY (rest-y → 0) during the
      morph. Word spans inside (when Pretext is active) have their own
@@ -197,7 +184,7 @@
     transition: transform var(--morph-dur) var(--ease-snappy);
   }
   :global(.bento-card.is-expanded .card-title) {
-    transform: translateY(0);
+    transform: translate(var(--title-center-x, 0), 0);
   }
 
   /* Pretext: card-title's text is replaced at runtime with absolutely-
@@ -222,7 +209,7 @@
     font-weight: 400;
     line-height: 1.15;
     letter-spacing: -0.01em;
-    color: #f5f1e7;
+    color: var(--ink);
     transform-origin: top left;
     will-change: transform;
   }
@@ -245,12 +232,11 @@
     top: 16px; right: 16px;
     width: 40px; height: 40px;
     border-radius: 999px;
-    background: rgba(245, 241, 231, 0.10);
-    color: #f5f1e7;
+    background: rgba(26, 26, 28, 0.08);
+    color: var(--ink);
     display: grid;
     place-items: center;
     z-index: 2;
-    box-shadow: 0 2px 40px rgba(0, 0, 0, 0.40);
     opacity: 0;
     transform: scale(0.8);
     pointer-events: none;
@@ -265,7 +251,7 @@
   :global(.bento-card:focus-visible .cs-expand) {
     opacity: 1; transform: scale(1); pointer-events: auto;
   }
-  :global(.cs-expand:hover) { background: rgba(245, 241, 231, 0.18); }
+  :global(.cs-expand:hover) { background: rgba(26, 26, 28, 0.14); }
   @media (prefers-reduced-motion: reduce) {
     :global(.cs-expand) { transform: none; transition: opacity 200ms ease; }
   }
@@ -308,6 +294,17 @@
        has overflow: hidden for the morph; expanded state needs its body
        to scroll internally so content isn't silently clipped. */
     overflow-y: auto;
+  }
+  /* Centered editorial layout — eyebrow + body prose centered while the
+     card is expanded OR collapsing. The .is-collapsing branch keeps the
+     center alignment in place during the close morph; without it,
+     text-align would flip to left the instant .is-expanded is removed
+     and visible body content (still fading over 180ms) would visibly
+     snap leftward before the fade completes. Title is positioned via
+     translateX so text-align doesn't affect it. */
+  :global(.bento-card.is-expanded .card-body),
+  :global(.bento-card.is-collapsing .card-body) {
+    text-align: center;
   }
   @media (max-width: 540px) {
     :global(.bento-card.is-expanded .card-body) { padding: 48px 22px 32px; }
@@ -454,12 +451,10 @@
   :global(.bento-card .bento-card-body-rendered) {
     font-size: 15px;
     line-height: 1.55;
-    color: rgba(245, 241, 231, 0.75);
+    color: var(--ink-dim);
     max-width: 60ch;
     margin: 0 auto;
-    /* Override card-body's text-align: center so the prose column reads
-       left-aligned within the centered column. */
-    text-align: left;
+    text-align: center;
   }
   :global(.bento-card .body-para.appended) {
     margin: 14px 0;
@@ -479,7 +474,7 @@
   /* Markdown body styling — rendered content may carry headings, lists, code, links. */
   :global(.bento-card .bento-card-body-rendered :is(h2, h3)) {
     font-family: var(--font-serif);
-    color: #f5f1e7;
+    color: var(--ink);
     font-weight: 400;
     letter-spacing: -0.01em;
     margin: 1.4em 0 0.5em;
@@ -493,7 +488,7 @@
   :global(.bento-card .bento-card-body-rendered code) {
     font-family: var(--font-mono);
     font-size: 0.92em;
-    background: rgba(245, 241, 231, 0.10);
+    background: rgba(26, 26, 28, 0.08);
     padding: 1px 5px;
     border-radius: 4px;
   }
@@ -509,8 +504,8 @@
     top: 16px; right: 16px;
     width: 40px; height: 40px;
     border-radius: 999px;
-    background: rgba(245, 241, 231, 0.10);
-    color: #f5f1e7;
+    background: rgba(26, 26, 28, 0.08);
+    color: var(--ink);
     display: grid;
     place-items: center;
     cursor: pointer;
@@ -534,7 +529,7 @@
     transition: opacity 180ms ease, background 200ms ease;
     transition-delay: 0ms;
   }
-  :global(.cs-close:hover) { background: rgba(245, 241, 231, 0.18); }
+  :global(.cs-close:hover) { background: rgba(26, 26, 28, 0.14); }
   :global(.cs-close svg) { width: 16px; height: 16px; }
 
   /* ── Backdrop ─────────────────────────────────────────────────── */

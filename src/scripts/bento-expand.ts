@@ -651,6 +651,7 @@ function syncTitleRestY(card: HTMLElement): void {
   if (!body || !title) return;
   // Reset to 0 so getBoundingClientRect reflects the natural-flow position.
   card.style.setProperty('--title-rest-y', '0px');
+  card.style.setProperty('--title-center-x', '0px');
   void body.offsetHeight;
   // Vertically center the title within the body: translate by the delta
   // between body's vertical center and title's natural-flow vertical center.
@@ -659,6 +660,22 @@ function syncTitleRestY(card: HTMLElement): void {
   const yOffset =
     bodyRect.top + bodyRect.height / 2 - (titleRect.top + titleRect.height / 2);
   card.style.setProperty('--title-rest-y', `${yOffset}px`);
+
+  // Horizontal center offset for the .is-expanded state. Title text doesn't
+  // change between rest and expanded, so titleRect.width is stable. The
+  // expanded body's inner width is derived from getViewportRect() (the
+  // morph target) minus the expanded-state body padding (48px desktop /
+  // 22px mobile, mirroring the .bento-card.is-expanded .card-body rule).
+  // The transform from 0 → centerX runs in lockstep with the morph, so
+  // intermediate frames sit between left-aligned (rest) and centered
+  // (final) — they land precisely centered at morph end.
+  const isMobile = window.innerWidth < 540;
+  const expandPad = isMobile ? 16 : Math.max(24, Math.min(48, window.innerWidth * 0.05));
+  const expandedCardW = Math.min(window.innerWidth - expandPad * 2, 920);
+  const expandedBodyPadX = isMobile ? 22 : 48;
+  const expandedBodyInnerW = expandedCardW - 2 * expandedBodyPadX;
+  const centerX = Math.max(0, (expandedBodyInnerW - titleRect.width) / 2);
+  card.style.setProperty('--title-center-x', `${centerX}px`);
 }
 
 function syncAllTitleRestY(): void {
