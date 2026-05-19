@@ -474,6 +474,17 @@ function syncTitleRestY(card: HTMLElement): void {
     bodyRect.top + bodyRect.height / 2 - (titleRect.top + titleRect.height / 2);
   card.style.setProperty('--title-rest-y', `${yOffset}px`);
 
+  // For pretext cards, word transforms own horizontal centering — the
+  // container's --title-center-x must be 0 so the title block doesn't
+  // double-translate. The existing centerX math below would also
+  // collapse anyway because .pretext-title sets width: 100%, making
+  // titleRect.width = body width and centerX ≈ 0. Branch explicitly
+  // for clarity.
+  if (card.classList.contains('pretext-title')) {
+    card.style.setProperty('--title-center-x', '0px');
+    return;
+  }
+
   // Horizontal center offset for the .is-expanded state. Title text doesn't
   // change between rest and expanded, so titleRect.width is stable. The
   // expanded body's inner width is derived from getViewportRect() (the
