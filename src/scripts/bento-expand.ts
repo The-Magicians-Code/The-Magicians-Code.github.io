@@ -8,6 +8,11 @@
 // cleanup ordering to avoid the one-frame silver snap, etc.).
 
 import { readMode, applyMode, buildPillToggle } from './case-study-mode';
+import {
+  pretextRenderCard,
+  pretextAnimateCard,
+  pretextRenderAll,
+} from './pretext';
 
 interface OpenState {
   card: HTMLElement;
@@ -266,6 +271,10 @@ function doOpen(card: HTMLElement): void {
     card.style.left = `${vr.left}px`;
     card.style.width = `${vr.width}px`;
     card.style.height = `${vr.height}px`;
+    // Animate pretext word spans to modal positions in lockstep with the morph.
+    if (card.classList.contains('pretext-title')) {
+      pretextAnimateCard(card, true);
+    }
   });
 
   openState = {
@@ -358,6 +367,12 @@ function closeCaseStudy(): void {
     [...appendedBodyWrap.children].forEach((el) => el.classList.remove('in'));
   }
 
+  // Reverse pretext word transforms back to source positions. .is-expanding
+  // is still on the card, so the transition rule animates the change.
+  if (card.classList.contains('pretext-title')) {
+    pretextAnimateCard(card, false);
+  }
+
   // Clear is-resizing in case a resize snap was mid-flight; otherwise the
   // close transition would inherit `transition: none !important`.
   card.classList.remove('is-expanded', 'is-resizing');
@@ -423,7 +438,12 @@ function closeCaseStudy(): void {
       // boundary line around the card. Permanent visual cleanliness wins
       // over keyboard place-keeping for v1.
       card.blur();
-      // Re-measure rest-y in case the viewport changed during the open.
+      // Re-measure pretext + rest-y in case viewport changed during the
+      // open. Order matters: pretext sets the title height; rest-y
+      // depends on that height.
+      if (document.fonts?.check?.('24px Fraunces')) {
+        pretextRenderCard(card, getViewportRect);
+      }
       syncTitleRestY(card);
     });
 
@@ -517,6 +537,12 @@ function onResize(): void {
   resizeRaf = requestAnimationFrame(() => {
     resizeRaf = null;
 
+    // Re-measure pretext for idle cards (their rest width changed with
+    // the viewport via the 4:1 aspect ratio). Skip the open card —
+    // its geometry reflects the modal, not the rest position.
+    if (document.fonts?.check?.('24px Fraunces')) {
+      pretextRenderAll(getViewportRect, openState?.card ?? null);
+    }
     // Re-measure rest-y for all idle cards (their card height changed
     // with the viewport via the 4:1 aspect ratio).
     syncAllTitleRestY();
@@ -581,10 +607,19 @@ function init(): void {
   // Google Fonts). Gate on document.fonts.ready so the measurement uses
   // actual serif metrics rather than the fallback.
   const measureWhenFontsReady = (): void => {
-    if (document.fonts?.ready) {
-      document.fonts.ready.then(syncAllTitleRestY).catch(syncAllTitleRestY);
-    } else {
+    const run = (): void => {
+      // Belt-and-suspenders: even after document.fonts.ready, double-check
+      // Fraunces specifically. If not loaded, skip pretext entirely so
+      // measurements don't fall back to Georgia metrics.
+      if (document.fonts?.check?.('24px Fraunces')) {
+        pretextRenderAll(getViewportRect);
+      }
       syncAllTitleRestY();
+    };
+    if (document.fonts?.ready) {
+      document.fonts.ready.then(run).catch(run);
+    } else {
+      run();
     }
   };
   measureWhenFontsReady();
