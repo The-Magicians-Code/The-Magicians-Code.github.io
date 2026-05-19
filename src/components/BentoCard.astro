@@ -1,5 +1,5 @@
 ---
-import { titleToHtml } from '../lib/title';
+import { titleToHtml, titleToText } from '../lib/title';
 
 interface Props {
   title: string;
@@ -35,6 +35,7 @@ const {
   tabindex="0"
   aria-haspopup="dialog"
   aria-expanded="false"
+  aria-label={titleToText(title)}
 >
   <div class="cover"></div>
   <span class="cs-expand" aria-hidden="true">
