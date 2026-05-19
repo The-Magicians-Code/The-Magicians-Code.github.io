@@ -47,6 +47,20 @@ export function buildPillToggle(wrap: HTMLElement, initialMode: CaseStudyMode): 
   root.className = 'cs-mode-toggle';
   root.setAttribute('role', 'tablist');
   root.setAttribute('aria-label', 'Reading mode');
+  // Sliding thumb behind the buttons. Two-element structure so the
+  // translateX slide (on the outer) and the scaleX squash-stretch
+  // keyframe animation (on the inner) live on separate transform
+  // contexts and don't fight each other. The active button still gets
+  // its text-color change via aria-selected; the background fill +
+  // shadow live on the inner element.
+  const thumb = document.createElement('span');
+  thumb.className = 'cs-mode-toggle__thumb';
+  thumb.setAttribute('aria-hidden', 'true');
+  const thumbInner = document.createElement('span');
+  thumbInner.className = 'cs-mode-toggle__thumb-inner';
+  thumb.appendChild(thumbInner);
+  root.appendChild(thumb);
+  root.dataset.active = initialMode;
 
   const makeTab = (mode: CaseStudyMode, label: string): HTMLButtonElement => {
     const btn = document.createElement('button');
@@ -72,6 +86,24 @@ export function buildPillToggle(wrap: HTMLElement, initialMode: CaseStudyMode): 
 
   const setActive = (next: CaseStudyMode): void => {
     if (wrap.dataset.mode === next) return;
+    // Move the pill IMMEDIATELY on click — the thumb should respond to
+    // the input the instant it lands, not 160ms later. The body
+    // content's fade-out/swap still runs on its own schedule below.
+    root.dataset.active = next;
+    [tldrBtn, detailBtn].forEach((b) => {
+      const isActive = b.dataset.mode === next;
+      b.setAttribute('aria-selected', String(isActive));
+      b.tabIndex = isActive ? 0 : -1;
+    });
+    wrap.setAttribute('aria-labelledby', (next === 'tldr' ? tldrBtn : detailBtn).id);
+    // Trigger the squash-stretch keyframe animation on the thumb's
+    // inner element. Remove then force a reflow then re-add so the
+    // animation restarts cleanly on rapid toggles.
+    thumbInner.classList.remove('is-squashing');
+    void thumbInner.offsetWidth;
+    thumbInner.classList.add('is-squashing');
+    writeMode(next);
+    // Body content swap runs after the fade-out window.
     wrap.classList.add('is-swapping');
     window.setTimeout(() => {
       // If the modal closed mid-swap (user hit Escape during the fade),
@@ -79,14 +111,14 @@ export function buildPillToggle(wrap: HTMLElement, initialMode: CaseStudyMode): 
       // no-op'ing harmlessly today, but defensive against future code
       // inside this callback that might read mutated state.
       if (!wrap.isConnected) return;
+      // Reset the modal's scroll position to top before the layout
+      // change lands. Going Detailed → TL;DR shrinks the wrap
+      // dramatically; without this, the browser snaps the scroll
+      // offset to fit the shorter content and the swap reads as a
+      // jarring "jump". Resetting inside the opacity-0 window means
+      // the user never sees the scroll change happen.
+      wrap.parentElement?.scrollTo({ top: 0 });
       applyMode(wrap, next);
-      writeMode(next);
-      [tldrBtn, detailBtn].forEach((b) => {
-        const isActive = b.dataset.mode === next;
-        b.setAttribute('aria-selected', String(isActive));
-        b.tabIndex = isActive ? 0 : -1;
-      });
-      wrap.setAttribute('aria-labelledby', (next === 'tldr' ? tldrBtn : detailBtn).id);
       // Trigger fade-in on the next frame so the browser commits the
       // data-mode swap before the opacity transition kicks back in.
       requestAnimationFrame(() => wrap.classList.remove('is-swapping'));

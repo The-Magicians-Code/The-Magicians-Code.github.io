@@ -159,11 +159,10 @@
     line-height: 1.15;
     letter-spacing: -0.01em;
     color: var(--ink);
-    /* Size to content (not stretched to body width) so translateX can
+    /* Sized to content (not stretched to body width) so translateX can
        shift the title block horizontally during the morph. align-self
-       opts out of the flex column's default stretch behavior; max-width
-       lets long titles still wrap inside the body rather than
-       overflowing. */
+       opts out of the flex column's default stretch; max-width lets
+       long titles still wrap inside the body rather than overflowing. */
     width: fit-content;
     max-width: 100%;
     align-self: flex-start;
@@ -175,46 +174,14 @@
        interpolates both axes in lockstep with the morph. */
     transform: translate(0, var(--title-rest-y, 0));
   }
-  /* Title container transitions its translateY (rest-y → 0) during the
-     morph. Word spans inside (when Pretext is active) have their own
-     transform transition; see .pretext-title rules below. Font-size stays
-     constant at 24px — Pretext conveys "growth" via horizontal layout
-     changes, not font scaling. */
+  /* Title transitions its translate (rest-y → 0, centered X) during the
+     morph. Font-size stays constant at 24px — the title doesn't scale,
+     only translates. */
   :global(.bento-card.is-expanding .card-title) {
     transition: transform var(--morph-dur) var(--ease-snappy);
   }
   :global(.bento-card.is-expanded .card-title) {
     transform: translate(var(--title-center-x, 0), 0);
-  }
-
-  /* Pretext: card-title's text is replaced at runtime with absolutely-
-     positioned .word spans whose transforms animate between source and
-     modal positions during .is-expanding. JS adds .pretext-title to the
-     card after rendering — these rules only apply once that's happened. */
-  :global(.bento-card.pretext-title .card-title) {
-    position: relative;
-    width: 100%;
-    /* Hide stray text nodes if any; .word spans set their own font-size. */
-    font-size: 0;
-    line-height: 1;
-  }
-  :global(.bento-card.pretext-title .card-title .word) {
-    position: absolute;
-    top: 0;
-    left: 0;
-    display: inline-block;
-    white-space: nowrap;
-    font-family: var(--font-serif);
-    font-size: 24px;
-    font-weight: 400;
-    line-height: 1.15;
-    letter-spacing: -0.01em;
-    color: var(--ink);
-    transform-origin: top left;
-    will-change: transform;
-  }
-  :global(.bento-card.is-expanding.pretext-title .card-title .word) {
-    transition: transform var(--morph-dur) var(--ease-snappy);
   }
   :global(.bento-card .card-title em) {
     font-style: italic;
@@ -232,7 +199,16 @@
     top: 16px; right: 16px;
     width: 40px; height: 40px;
     border-radius: 999px;
-    background: rgba(26, 26, 28, 0.08);
+    /* White-tinted glass disc: translucent white fill + backdrop blur
+       frosts what's behind, a small drop shadow lifts it off the
+       card, and a 1px inset highlight gives the rim a glassy edge. */
+    background: rgba(255, 255, 255, 0.55);
+    -webkit-backdrop-filter: blur(10px) saturate(140%);
+    backdrop-filter: blur(10px) saturate(140%);
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.08),
+      0 2px 8px rgba(0, 0, 0, 0.08),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.30);
     color: var(--ink);
     display: grid;
     place-items: center;
@@ -251,7 +227,7 @@
   :global(.bento-card:focus-visible .cs-expand) {
     opacity: 1; transform: scale(1); pointer-events: auto;
   }
-  :global(.cs-expand:hover) { background: rgba(26, 26, 28, 0.14); }
+  :global(.cs-expand:hover) { background: rgba(255, 255, 255, 0.78); }
   @media (prefers-reduced-motion: reduce) {
     :global(.cs-expand) { transform: none; transition: opacity 200ms ease; }
   }
@@ -290,10 +266,24 @@
   :global(.bento-card.is-expanded .card-body) {
     padding: 56px 48px 48px;
     justify-content: flex-start;
-    /* Real project markdown bodies can exceed the modal height. The card
-       has overflow: hidden for the morph; expanded state needs its body
-       to scroll internally so content isn't silently clipped. */
+    /* Whole modal scrolls as one unit — header (eyebrow + title +
+       pill) flows with the case-study body. Single scroll context;
+       no locked/fixed header. */
     overflow-y: auto;
+  }
+  /* iOS Safari's flex-column algorithm shrinks "auto-sized" children
+     when a sibling grows (e.g. TL;DR → Detailed swap makes the
+     rendered wrap several × taller). The title and pill then briefly
+     collapse to their min-content, taking everything below them
+     down a notch — reads as a "shift down" on tap. Chromium's flex
+     algorithm doesn't do this. Locking flex-shrink to 0 on the
+     header siblings keeps their height at their measured/intrinsic
+     box and forces the column to scroll instead of relaying out
+     other children. */
+  :global(.bento-card.is-expanded .card-eyebrow),
+  :global(.bento-card.is-expanded .card-title),
+  :global(.bento-card.is-expanded .cs-mode-toggle) {
+    flex-shrink: 0;
   }
   /* Centered editorial layout — eyebrow + body prose centered while the
      card is expanded OR collapsing. The .is-collapsing branch keeps the
@@ -454,7 +444,10 @@
     color: var(--ink-dim);
     max-width: 60ch;
     margin: 0 auto;
-    text-align: center;
+    /* Column stays centered via max-width + margin: 0 auto. Body text
+       reads left-aligned for prose readability; the eyebrow + title
+       above the wrap stay centered via the parent .card-body rule. */
+    text-align: left;
   }
   :global(.bento-card .body-para.appended) {
     margin: 14px 0;
@@ -509,6 +502,13 @@
      mode-design.md. */
   :global(.bento-card-body-rendered) {
     transition: opacity 160ms ease-out;
+    /* Safari short-circuits an in-progress opacity transition when child
+       elements flip display:none ↔ block mid-fade (which is exactly what
+       happens during a mode swap). Promoting the wrap to its own
+       compositing layer keeps the opacity animation on the GPU,
+       independent of the subtree's layout mutations. */
+    will-change: opacity;
+    transform: translateZ(0);
   }
   :global(.bento-card-body-rendered.is-swapping) {
     opacity: 0;
@@ -550,16 +550,73 @@
      existing pill aesthetic: translucent ink-toned background,
      paper-toned active segment. */
   :global(.cs-mode-toggle) {
+    position: relative;
     display: flex;
     justify-content: center;
     gap: 0;
-    margin: 0 auto 18px;
+    /* Explicit top margin guarantees vertical separation from the
+       preceding flex sibling (the case-study title). */
+    margin: 24px auto 18px;
     width: fit-content;
     background: rgba(26, 26, 28, 0.06);
     border-radius: 999px;
     padding: 4px;
   }
+  /* Sliding "thumb" behind the buttons. The active button's background
+     fill lives on this single element and translates between the two
+     segment positions on mode swap, producing an iOS-style slide
+     instead of the previous flick (where the fill was a property on
+     each button and snapped between them). The buttons themselves get
+     equal flex-basis so the thumb's translateX(100%) lands precisely
+     on the second segment. */
+  /* Outer thumb — owns the horizontal slide via translateX transition.
+     Background + shadow live on the inner element so the slide and
+     the squash-stretch animation can compose without fighting over
+     the same `transform` property. */
+  :global(.cs-mode-toggle__thumb) {
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    left: 4px;
+    width: calc(50% - 4px);
+    /* Faster than the previous soft-glass setting (which was ~3×
+       slower than the screeny.mov reference). 260ms with a small
+       cubic-bezier overshoot leaves the squash-stretch keyframe
+       room to sell the physics on its own track. */
+    transition: transform 260ms cubic-bezier(0.32, 1.25, 0.4, 1);
+    pointer-events: none;
+  }
+  :global(.cs-mode-toggle[data-active="detailed"] .cs-mode-toggle__thumb) {
+    transform: translateX(100%);
+  }
+  /* Inner thumb — carries the visible fill and the scaleX squash-
+     stretch animation. Stretches horizontally at peak velocity (mid-
+     flight) and returns to round at rest, mimicking a rubber band
+     under tension. JS toggles the .is-squashing class per swap so
+     the animation restarts cleanly on rapid toggles. */
+  :global(.cs-mode-toggle__thumb-inner) {
+    position: absolute;
+    inset: 0;
+    background: var(--paper);
+    border-radius: 999px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    transform-origin: center;
+    will-change: transform;
+  }
+  :global(.cs-mode-toggle__thumb-inner.is-squashing) {
+    animation: cs-thumb-squash 280ms cubic-bezier(0.45, 0, 0.55, 1);
+  }
+  @keyframes cs-thumb-squash {
+    0%   { transform: scaleX(1); }
+    40%  { transform: scaleX(1.18); }
+    100% { transform: scaleX(1); }
+  }
   :global(.cs-mode-toggle button) {
+    position: relative;
+    z-index: 1;
+    flex: 1 1 0;
+    min-width: 88px;
+    text-align: center;
     background: transparent;
     border: 0;
     color: var(--ink-dim);
@@ -567,15 +624,13 @@
     padding: 7px 16px;
     border-radius: 999px;
     cursor: pointer;
-    transition: background 200ms ease, color 200ms ease;
+    transition: color 200ms ease;
   }
   :global(.cs-mode-toggle button:hover) {
     color: var(--ink);
   }
   :global(.cs-mode-toggle button[aria-selected="true"]) {
-    background: var(--paper);
     color: var(--ink);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
   }
   /* Fade the pill out alongside the body paragraphs during the close
      morph. The toggle is a sibling of the rendered wrap (not a child),
@@ -623,7 +678,19 @@
     top: 16px; right: 16px;
     width: 40px; height: 40px;
     border-radius: 999px;
-    background: rgba(26, 26, 28, 0.08);
+    /* White-tinted glass disc — backdrop blur frosts scrolling body
+       content underneath for legibility no matter what's behind, a
+       small drop shadow lifts the button off the modal, and a 1px
+       inset highlight gives the rim a glassy edge. Matches the
+       .cs-expand sibling on the resting card so the same affordance
+       reads the same in both states. */
+    background: rgba(255, 255, 255, 0.6);
+    -webkit-backdrop-filter: blur(12px) saturate(140%);
+    backdrop-filter: blur(12px) saturate(140%);
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.10),
+      0 2px 10px rgba(0, 0, 0, 0.10),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.32);
     color: var(--ink);
     display: grid;
     place-items: center;
@@ -648,7 +715,7 @@
     transition: opacity 180ms ease, background 200ms ease;
     transition-delay: 0ms;
   }
-  :global(.cs-close:hover) { background: rgba(26, 26, 28, 0.14); }
+  :global(.cs-close:hover) { background: rgba(255, 255, 255, 0.82); }
   :global(.cs-close svg) { width: 16px; height: 16px; }
 
   /* ── Backdrop ─────────────────────────────────────────────────── */

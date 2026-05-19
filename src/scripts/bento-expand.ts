@@ -162,203 +162,6 @@ async function ensureCardClearOfNav(card: HTMLElement): Promise<void> {
   await new Promise<void>((r) => window.setTimeout(r, SCROLL_SETTLE_PAUSE));
 }
 
-// ── Pretext title rendering ──────────────────────────────────────────────
-// Replace each card-title's text node with absolutely-positioned <span class="word">
-// elements pre-computed at TWO widths: the card's rest width and the modal target
-// width. Each span carries data-sx/sy/mx/my (source/modal x,y) and starts with
-// transform: translate(sx, sy). On open we set transforms to (mx, my); on close
-// back to (sx, sy). The CSS transition on .is-expanding .word interpolates them.
-//
-// Visual payoff: when a multi-word title's line breaks differ between rest and
-// modal widths, each word slides to its new home rather than the whole title
-// reflowing mid-morph. For single-word titles it's a no-op (positions match).
-//
-// Port of docs/ideas/bento-mchiu.html's pretext machinery. Font-size stays
-// constant at 24px throughout — "growth" comes from horizontal layout changes.
-
-interface WordMetric {
-  word: string;
-  width: number;
-  spaceWidth: number;
-}
-
-interface WordPosition {
-  word: string;
-  x: number;
-  y: number;
-  line: number;
-}
-
-interface LayoutResult {
-  positions: WordPosition[];
-  lineWidths: number[];
-}
-
-const TITLE_FONT_SIZE = 24;
-const TITLE_LINE_HEIGHT_RATIO = 1.15;
-const PRETEXT_FONT = `400 ${TITLE_FONT_SIZE}px 'Fraunces', Georgia, serif`;
-
-const _measureCanvas: HTMLCanvasElement | null =
-  typeof document !== 'undefined' ? document.createElement('canvas') : null;
-const _measureCtx: CanvasRenderingContext2D | null = _measureCanvas?.getContext('2d') ?? null;
-
-function pretextMeasureWords(text: string): WordMetric[] {
-  if (!_measureCtx) return [];
-  _measureCtx.font = PRETEXT_FONT;
-  const spaceWidth = _measureCtx.measureText(' ').width;
-  return text
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((word) => ({
-      word,
-      width: _measureCtx!.measureText(word).width,
-      spaceWidth,
-    }));
-}
-
-function pretextLayout(words: WordMetric[], maxWidth: number, lineHeight: number): LayoutResult {
-  const positions: WordPosition[] = [];
-  const lineWidths: number[] = [];
-  if (words.length === 0) return { positions, lineWidths };
-  let x = 0;
-  let line = 0;
-  for (let i = 0; i < words.length; i++) {
-    const w = words[i];
-    if (x > 0 && x + w.width > maxWidth) {
-      lineWidths[line] = positions[positions.length - 1].x + words[i - 1].width;
-      line++;
-      x = 0;
-    }
-    positions.push({ word: w.word, x, y: line * lineHeight, line });
-    x += w.width + w.spaceWidth;
-  }
-  lineWidths[line] = positions[positions.length - 1].x + words[words.length - 1].width;
-  return { positions, lineWidths };
-}
-
-function pretextCenterPositions(
-  positions: WordPosition[],
-  lineWidths: number[],
-  containerWidth: number,
-): WordPosition[] {
-  return positions.map((p) => ({
-    ...p,
-    x: p.x + (containerWidth - lineWidths[p.line]) / 2,
-  }));
-}
-
-function pretextOriginalTitle(titleEl: HTMLElement): string {
-  // Cache the original text so re-renders don't accumulate "WordWordWord" (no spaces).
-  if (titleEl.dataset.pretextOrig) return titleEl.dataset.pretextOrig;
-  const text = (titleEl.textContent ?? '').trim();
-  titleEl.dataset.pretextOrig = text;
-  return text;
-}
-
-// Set to false to disable per-word pretext layout interpolation.
-// When disabled, project-card titles flow as normal text and rely solely
-// on the container's translateY(rest-y → 0) for the vertical animation —
-// matches the stack card's "title doesn't morph" feel while still moving
-// from rest-centered to expanded-top. Disabled by default because the
-// per-word transforms produced a diagonal "wiggle" against card-body
-// padding interpolation and text-align:center re-centering.
-const PRETEXT_ENABLED = false;
-
-function pretextRenderCard(card: HTMLElement): void {
-  if (!PRETEXT_ENABLED) return;
-  if (!_measureCtx) return;
-  if (!card.classList.contains('cs-card')) return;
-  const titleEl = card.querySelector<HTMLElement>('.card-title');
-  if (!titleEl) return;
-  const titleText = pretextOriginalTitle(titleEl);
-  if (!titleText) return;
-
-  // Source width: actual card width minus its body's horizontal padding.
-  const body = card.querySelector<HTMLElement>('.card-body');
-  if (!body) return;
-  const bodyStyles = getComputedStyle(body);
-  const bodyPadX =
-    (parseFloat(bodyStyles.paddingLeft) || 0) + (parseFloat(bodyStyles.paddingRight) || 0);
-  const sourceWidth = card.getBoundingClientRect().width - bodyPadX;
-
-  // Modal width: viewport-centered target minus the expanded body's horizontal padding.
-  const vr = getViewportRect();
-  const modalHPad = window.innerWidth <= 540 ? 22 : 48;
-  const modalWidth = vr.width - modalHPad * 2;
-
-  if (sourceWidth <= 0 || modalWidth <= 0) return;
-
-  const metrics = pretextMeasureWords(titleText);
-  if (metrics.length === 0) return;
-
-  const lineHeight = TITLE_FONT_SIZE * TITLE_LINE_HEIGHT_RATIO;
-  const sourceLayout = pretextLayout(metrics, sourceWidth, lineHeight);
-  const modalLayout = pretextLayout(metrics, modalWidth, lineHeight);
-  const sourcePositions = pretextCenterPositions(
-    sourceLayout.positions,
-    sourceLayout.lineWidths,
-    sourceWidth,
-  );
-  const modalPositions = pretextCenterPositions(
-    modalLayout.positions,
-    modalLayout.lineWidths,
-    modalWidth,
-  );
-
-  titleEl.replaceChildren();
-  for (let i = 0; i < sourcePositions.length; i++) {
-    const sp = sourcePositions[i];
-    const mp = modalPositions[i];
-    const span = document.createElement('span');
-    span.className = 'word';
-    span.textContent = sp.word;
-    span.style.transform = `translate(${sp.x.toFixed(2)}px, ${sp.y}px)`;
-    span.dataset.sx = sp.x.toFixed(2);
-    span.dataset.sy = String(sp.y);
-    span.dataset.mx = mp.x.toFixed(2);
-    span.dataset.my = String(mp.y);
-    titleEl.appendChild(span);
-  }
-
-  // Title container must be tall enough to hold the taller of the two layouts.
-  const sourceMaxLine =
-    sourceLayout.positions.length > 0
-      ? sourceLayout.positions[sourceLayout.positions.length - 1].line
-      : 0;
-  const modalMaxLine =
-    modalLayout.positions.length > 0
-      ? modalLayout.positions[modalLayout.positions.length - 1].line
-      : 0;
-  const tallestLine = Math.max(sourceMaxLine, modalMaxLine);
-  titleEl.style.height = `${(tallestLine + 1) * lineHeight}px`;
-
-  card.classList.add('pretext-title');
-}
-
-function pretextAnimateCard(card: HTMLElement, toModal: boolean): void {
-  card.querySelectorAll<HTMLElement>('.card-title .word').forEach((span) => {
-    const x = toModal ? span.dataset.mx : span.dataset.sx;
-    const y = toModal ? span.dataset.my : span.dataset.sy;
-    if (x == null || y == null) return;
-    span.style.transform = `translate(${x}px, ${y}px)`;
-  });
-}
-
-function pretextRenderAll(skipCard?: HTMLElement | null): void {
-  document.querySelectorAll<HTMLElement>('[data-bento-card]').forEach((card) => {
-    if (card === skipCard) return;
-    // Skip cards mid-lifecycle — their rect reflects the modal, not rest.
-    if (
-      card.classList.contains('is-expanding') ||
-      card.classList.contains('is-expanded') ||
-      card.classList.contains('is-collapsing')
-    ) {
-      return;
-    }
-    pretextRenderCard(card);
-  });
-}
-
 // ── Open ─────────────────────────────────────────────────────────────────
 let openInProgress = false;
 
@@ -463,10 +266,6 @@ function doOpen(card: HTMLElement): void {
     card.style.left = `${vr.left}px`;
     card.style.width = `${vr.width}px`;
     card.style.height = `${vr.height}px`;
-    // Animate pretext word spans to modal positions in lockstep with the morph.
-    if (card.classList.contains('pretext-title')) {
-      pretextAnimateCard(card, true);
-    }
   });
 
   openState = {
@@ -559,12 +358,6 @@ function closeCaseStudy(): void {
     [...appendedBodyWrap.children].forEach((el) => el.classList.remove('in'));
   }
 
-  // Reverse pretext word transforms back to source positions. .is-expanding
-  // is still on the card, so the transition rule animates the change.
-  if (card.classList.contains('pretext-title')) {
-    pretextAnimateCard(card, false);
-  }
-
   // Clear is-resizing in case a resize snap was mid-flight; otherwise the
   // close transition would inherit `transition: none !important`.
   card.classList.remove('is-expanded', 'is-resizing');
@@ -630,10 +423,7 @@ function closeCaseStudy(): void {
       // boundary line around the card. Permanent visual cleanliness wins
       // over keyboard place-keeping for v1.
       card.blur();
-      // Re-render pretext + re-measure rest-y in case viewport changed
-      // during the open. Order matters: pretext sets the title height,
-      // rest-y depends on that height.
-      pretextRenderCard(card);
+      // Re-measure rest-y in case the viewport changed during the open.
       syncTitleRestY(card);
     });
 
@@ -716,9 +506,8 @@ function onResize(): void {
   resizeRaf = requestAnimationFrame(() => {
     resizeRaf = null;
 
-    // Re-render pretext for all idle cards (their card width changed with
-    // the viewport via the 4:1 aspect ratio), then re-measure rest-y.
-    pretextRenderAll(openState?.card ?? null);
+    // Re-measure rest-y for all idle cards (their card height changed
+    // with the viewport via the 4:1 aspect ratio).
     syncAllTitleRestY();
 
     if (!openState || openState.closing) return;
@@ -777,20 +566,14 @@ function init(): void {
 
   initCardEnter();
 
-  // Pretext word measurement + title rest-y both depend on the rendered
-  // font (Fraunces, loaded from Google Fonts). Gate on document.fonts.ready
-  // so the measurement uses actual serif metrics rather than the fallback.
-  // Order matters: pretext sets the title's height (multi-line layouts can
-  // be taller than a single line); rest-y depends on that final height.
+  // Title rest-y depends on the rendered font (Fraunces, loaded from
+  // Google Fonts). Gate on document.fonts.ready so the measurement uses
+  // actual serif metrics rather than the fallback.
   const measureWhenFontsReady = (): void => {
-    const run = (): void => {
-      pretextRenderAll();
-      syncAllTitleRestY();
-    };
     if (document.fonts?.ready) {
-      document.fonts.ready.then(run).catch(run);
+      document.fonts.ready.then(syncAllTitleRestY).catch(syncAllTitleRestY);
     } else {
-      run();
+      syncAllTitleRestY();
     }
   };
   measureWhenFontsReady();

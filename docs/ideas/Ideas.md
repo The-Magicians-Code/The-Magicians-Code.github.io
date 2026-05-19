@@ -34,6 +34,7 @@
 - https://www.symbols.dev
 - https://designdotmd.directory
 - https://polpus.studio
+- https://flighty.com/
 
 
 ### Glass
