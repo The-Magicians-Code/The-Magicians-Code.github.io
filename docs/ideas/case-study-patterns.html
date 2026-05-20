@@ -1,0 +1,731 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Case Study Patterns — Playground</title>
+<style>
+  :root {
+    --bg: #14151a;
+    --panel: #1c1e26;
+    --panel-2: #23262f;
+    --ink: #ececef;
+    --ink-dim: #a0a4ad;
+    --ink-3: #6c6f78;
+    --accent: #e2825d;
+    --rule: rgba(255, 255, 255, 0.08);
+    --paper: #f4f0e6;
+    --paper-ink: #1a1a1c;
+    --paper-ink-dim: #4d4d52;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    display: grid;
+    grid-template-rows: 1fr auto;
+    height: 100vh;
+  }
+  .layout {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    overflow: hidden;
+    min-height: 0;
+  }
+  /* ── Controls panel ─────────────────────────────────────── */
+  .controls {
+    background: var(--panel);
+    border-right: 1px solid var(--rule);
+    padding: 18px 20px;
+    overflow-y: auto;
+  }
+  .controls h1 {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0 0 4px;
+  }
+  .controls .lead {
+    font-size: 12px;
+    color: var(--ink-dim);
+    margin: 0 0 22px;
+    line-height: 1.45;
+  }
+  .group { margin-bottom: 22px; }
+  .group-label {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 10px;
+    color: var(--ink-3);
+    font-weight: 600;
+    margin: 0 0 8px;
+  }
+  .pattern-list { display: flex; flex-direction: column; gap: 6px; }
+  .pattern-btn {
+    text-align: left;
+    background: var(--panel-2);
+    color: var(--ink);
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font: inherit;
+    cursor: pointer;
+    transition: background 120ms, border-color 120ms;
+  }
+  .pattern-btn:hover { background: #2a2d36; }
+  .pattern-btn.active {
+    border-color: var(--accent);
+    background: #2c2520;
+  }
+  .pattern-btn .name { font-weight: 600; margin-bottom: 2px; }
+  .pattern-btn.active .name { color: var(--accent); }
+  .pattern-btn .desc {
+    font-size: 11.5px;
+    color: var(--ink-dim);
+    line-height: 1.4;
+  }
+  .preset-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .preset-chip {
+    background: var(--panel-2);
+    color: var(--ink-dim);
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    padding: 4px 10px;
+    font: 500 11px/1 inherit;
+    cursor: pointer;
+    transition: color 120ms, border-color 120ms;
+  }
+  .preset-chip:hover { color: var(--ink); border-color: rgba(255,255,255,0.18); }
+  .opt-row { display: flex; flex-direction: column; gap: 6px; }
+  .opt-row label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+    color: var(--ink-dim);
+    cursor: pointer;
+  }
+  .opt-row input { accent-color: var(--accent); }
+  .hint {
+    font-size: 11px;
+    color: var(--ink-3);
+    margin-top: 8px;
+    line-height: 1.45;
+  }
+  .hint code { font-family: ui-monospace, monospace; font-size: 11px; }
+
+  /* ── Preview pane ──────────────────────────────────────── */
+  .preview { background: var(--bg); overflow-y: auto; padding: 32px; }
+  .preview-stage { max-width: 720px; margin: 0 auto; }
+  .preview-stage.compare-stage { max-width: 1200px; }
+
+  /* Hide all panes by default; root data-pattern reveals the active one. */
+  .pane { display: none; }
+  body[data-pattern="A"] .pane[data-pattern="A"],
+  body[data-pattern="B"] .pane[data-pattern="B"],
+  body[data-pattern="C"] .pane[data-pattern="C"],
+  body[data-pattern="compare"] .pane[data-pattern="compare"] { display: block; }
+  body[data-pattern="compare"] .preview-stage { max-width: 1200px; }
+
+  .frame {
+    background: var(--paper);
+    color: var(--paper-ink);
+    border-radius: 28px;
+    padding: 48px 44px 56px;
+    font-family: Georgia, "Iowan Old Style", "Apple Garamond", serif;
+    line-height: 1.55;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+    min-height: 540px;
+  }
+  .frame h1 {
+    font-family: "Iowan Old Style", Georgia, serif;
+    font-size: 30px;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    margin: 0 0 6px;
+  }
+  .frame .deck {
+    color: var(--paper-ink-dim);
+    font-style: italic;
+    font-size: 16px;
+    margin: 0 0 18px;
+    line-height: 1.4;
+  }
+  .frame .eyebrow {
+    font: 600 10px/1 -apple-system, ui-monospace, monospace;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--paper-ink-dim);
+    margin: 0 0 14px;
+  }
+  .case-section { margin-bottom: 22px; }
+  .case-section h2 {
+    font-family: "Iowan Old Style", Georgia, serif;
+    font-size: 17px;
+    font-weight: 400;
+    margin: 0 0 6px;
+  }
+  .case-section .tldr { margin: 0; color: var(--paper-ink); }
+  .case-section .detail {
+    margin: 8px 0 0;
+    color: var(--paper-ink-dim);
+    font-size: 14.5px;
+    line-height: 1.55;
+  }
+  .case-section .reveal {
+    background: none;
+    border: 0;
+    color: var(--paper-ink-dim);
+    font: inherit;
+    font-size: 12.5px;
+    cursor: pointer;
+    padding: 4px 0;
+    margin-top: 4px;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-color: rgba(26,26,28,0.25);
+  }
+  .case-section .reveal:hover { color: var(--paper-ink); }
+  .case-section .reveal .when-expanded { display: none; }
+  .case-section .reveal .when-collapsed { display: inline; }
+  .case-section.expanded .reveal .when-expanded { display: inline; }
+  .case-section.expanded .reveal .when-collapsed { display: none; }
+
+  /* Pattern A: pill toggle */
+  .toggle-row { display: flex; justify-content: center; margin-bottom: 22px; }
+  .pill-toggle {
+    display: inline-flex;
+    background: rgba(26, 26, 28, 0.06);
+    border-radius: 999px;
+    padding: 4px;
+  }
+  .pill-toggle button {
+    background: transparent;
+    border: 0;
+    color: var(--paper-ink-dim);
+    font: 500 12.5px/1 -apple-system, system-ui, sans-serif;
+    padding: 7px 16px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 200ms, color 200ms;
+  }
+  .pill-toggle button.active {
+    background: var(--paper);
+    color: var(--paper-ink);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  /* In Pattern A, the active mode controls which section content is visible. */
+  .frame.a-tldr .case-section .detail { display: none; }
+  .frame.a-detailed .case-section .detail { display: block; }
+
+  /* Pattern B: per-section expansion */
+  .frame.b-default .case-section .detail { display: none; }
+  .frame.b-default .case-section.expanded .detail { display: block; }
+  .frame.b-allopen .case-section .detail { display: block; }
+  /* Mirror reveal label */
+  .frame.b-allopen .case-section.expanded .reveal .when-expanded { display: inline; }
+  .frame.b-allopen .case-section.expanded .reveal .when-collapsed { display: none; }
+  .read-full-row {
+    display: flex; justify-content: center; margin-bottom: 18px;
+  }
+  .read-full-row.hidden { display: none; }
+  .read-full {
+    background: rgba(26,26,28,0.06);
+    border: 0;
+    color: var(--paper-ink);
+    font: 500 12.5px/1 -apple-system, system-ui, sans-serif;
+    padding: 8px 16px;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .read-full:hover { background: rgba(26,26,28,0.12); }
+
+  /* Pattern C: depth markers */
+  .depth-marker {
+    float: right;
+    margin: 0 0 4px 12px;
+    background: rgba(26,26,28,0.08);
+    color: var(--paper-ink-dim);
+    border-radius: 999px;
+    padding: 4px 9px;
+    font: 600 10px/1 ui-monospace, monospace;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .frame.c-nomarker .depth-marker { display: none; }
+
+  /* Compare view */
+  .compare-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .compare-cell {
+    background: var(--paper);
+    color: var(--paper-ink);
+    border-radius: 22px;
+    padding: 24px 22px;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.30);
+    overflow: hidden;
+    font-family: Georgia, serif;
+    line-height: 1.5;
+  }
+  .compare-cell h1 {
+    font-family: "Iowan Old Style", Georgia, serif;
+    font-size: 18px;
+    line-height: 1.2;
+    margin: 0 0 6px;
+  }
+  .compare-cell .deck {
+    font-style: italic;
+    font-size: 13px;
+    color: var(--paper-ink-dim);
+    margin: 0 0 14px;
+    line-height: 1.4;
+  }
+  .compare-cell .case-section { margin-bottom: 14px; }
+  .compare-cell .case-section h2 { font-size: 13px; margin: 0 0 4px; }
+  .compare-cell .case-section .tldr,
+  .compare-cell .case-section .detail { font-size: 12.5px; line-height: 1.45; }
+  .compare-cell .pill-toggle { transform: scale(0.85); transform-origin: top left; }
+  .compare-cell-label {
+    font: 600 10.5px/1 -apple-system, system-ui, sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink-3);
+    margin-bottom: 10px;
+  }
+  .compare-cell .reveal { font-size: 11.5px; }
+
+  /* ── Output strip ──────────────────────────────────────── */
+  .output {
+    background: var(--panel);
+    border-top: 1px solid var(--rule);
+    padding: 14px 22px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 14px;
+    align-items: start;
+  }
+  .output pre {
+    margin: 0;
+    font: 12.5px/1.55 ui-monospace, "SF Mono", Menlo, monospace;
+    color: var(--ink);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .copy-btn {
+    background: var(--accent);
+    color: #1a1a1c;
+    border: 0;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font: 600 12.5px/1 -apple-system, system-ui, sans-serif;
+    cursor: pointer;
+    transition: background 120ms;
+    height: fit-content;
+  }
+  .copy-btn:hover { background: #efa581; }
+  .copy-btn.copied { background: #6cd089; }
+</style>
+</head>
+<body data-pattern="A">
+  <div class="layout">
+    <aside class="controls">
+      <h1>Case study reading-mode patterns</h1>
+      <p class="lead">
+        Three ways to let one case study serve recruiters, peers, and clients
+        at once. Switch between them to see how each pattern shapes the
+        reading experience. Sample content uses the Organic Flow rebuild.
+      </p>
+
+      <div class="group">
+        <div class="group-label">Pattern</div>
+        <div class="pattern-list" id="patternList">
+          <button class="pattern-btn active" data-pattern="A">
+            <div class="name">A · Global toggle</div>
+            <div class="desc">One switch flips the whole writeup between two complete versions.</div>
+          </button>
+          <button class="pattern-btn" data-pattern="B">
+            <div class="name">B · Per-section disclosure</div>
+            <div class="desc">Each section shows a TL;DR; reader expands sections individually.</div>
+          </button>
+          <button class="pattern-btn" data-pattern="C">
+            <div class="name">C · Progressive scroll</div>
+            <div class="desc">No toggle — content thickens with depth as the reader scrolls.</div>
+          </button>
+          <button class="pattern-btn" data-pattern="compare">
+            <div class="name">Compare all three</div>
+            <div class="desc">Side-by-side preview of A, B, and C.</div>
+          </button>
+        </div>
+      </div>
+
+      <div class="group" id="optsA">
+        <div class="group-label">Pattern A · options</div>
+        <div class="opt-row">
+          <label><input type="radio" name="aDefault" value="tldr"> Start in TL;DR</label>
+          <label><input type="radio" name="aDefault" value="detailed" checked> Start in Detailed</label>
+        </div>
+        <div class="hint">
+          A binary choice for every reader. Whoever lands chooses once,
+          gets a self-contained narrative tuned to that depth.
+        </div>
+      </div>
+
+      <div class="group" id="optsB" hidden>
+        <div class="group-label">Pattern B · options</div>
+        <div class="opt-row">
+          <label><input type="radio" name="bInit" value="collapsed" checked> Start with all sections collapsed</label>
+          <label><input type="radio" name="bInit" value="expanded"> Start with all sections expanded</label>
+        </div>
+        <div class="opt-row" style="margin-top:8px;">
+          <label><input type="checkbox" id="bReadFull"> Show a "Read full case" button</label>
+        </div>
+        <div class="hint">
+          Default is selective — reader picks which sections to deepen.
+          The "Read full case" affordance is for peers who want everything.
+        </div>
+      </div>
+
+      <div class="group" id="optsC" hidden>
+        <div class="group-label">Pattern C · options</div>
+        <div class="opt-row">
+          <label><input type="checkbox" id="cDepthMarker" checked> Show depth markers (<code>Summary → For peers → For nerds</code>)</label>
+        </div>
+        <div class="hint">
+          The case study reads as one continuous narrative. Markers hint
+          that stopping mid-page is fine.
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="group-label">Presets</div>
+        <div class="preset-row">
+          <button class="preset-chip" data-preset="recruiter">Recruiter-skim</button>
+          <button class="preset-chip" data-preset="peer">Peer-deep</button>
+          <button class="preset-chip" data-preset="client">Client-trust</button>
+        </div>
+        <div class="hint">Snap pattern + options to a cohesive combo for a given reader profile.</div>
+      </div>
+    </aside>
+
+    <main class="preview">
+      <div class="preview-stage">
+
+        <!-- ─── PATTERN A ─────────────────────────────────────── -->
+        <article class="pane" data-pattern="A">
+          <div class="frame a-detailed" id="frameA">
+            <p class="eyebrow">Case study</p>
+            <h1>Organic Flow — rebuilt for speed, control, and a CMS that doesn’t fight you</h1>
+            <p class="deck">A legacy bespoke-PHP site rebuilt from the ground up in Astro on Cloudflare Pages. Faster, cheaper, easier to keep current.</p>
+
+            <div class="toggle-row">
+              <div class="pill-toggle" id="aToggle">
+                <button class="active" data-mode="detailed">Detailed</button>
+                <button data-mode="tldr">TL;DR</button>
+              </div>
+            </div>
+
+            <section class="case-section">
+              <h2>The problem</h2>
+              <p class="tldr">The old site was slow, hard to update, and stuck in 2015 conventions.</p>
+              <p class="detail">Time-to-interactive sat around 8 seconds on simulated 3G. Lighthouse performance hovered at 42. The bespoke PHP CMS had no preview, no rollback, no per-PR staging. Any content change required a developer in the loop — so by month two of launch the site was already stale. SEO suffered from server-rendered template bloat that shipped 1.4MB of JS most readers never touched.</p>
+            </section>
+            <section class="case-section">
+              <h2>The rebuild</h2>
+              <p class="tldr">Astro on Cloudflare Pages, Python + OpenAPI backend, Apache ECharts for visuals.</p>
+              <p class="detail">Astro’s partial hydration model means the default ship is zero JS — islands opt in only where they’re needed. Content lives in structured collections, so editing copy is a Markdown edit and a CI run, not a deploy. The Python backend exposes OpenAPI, making the data contract self-documenting and typed end-to-end. Visuals render through Apache ECharts, declarative enough to keep chart logic out of components. Cloudflare Pages handles static-asset distribution at the edge and gives every PR its own preview URL.</p>
+            </section>
+            <section class="case-section">
+              <h2>The results</h2>
+              <p class="tldr">3× faster page loads, Lighthouse 100, 78% smaller JS bundle, content edits in 30 seconds.</p>
+              <p class="detail">Time-to-interactive dropped from 8.1s to 2.3s on simulated 3G. Lighthouse performance moved from 42 to 100. The JS bundle shrank by 78%. What used to be a deploy-gated content edit is now a Markdown edit that lands at the edge in under 30 seconds. Per-PR previews caught two regressions before merge in the first week alone.</p>
+            </section>
+          </div>
+        </article>
+
+        <!-- ─── PATTERN B ─────────────────────────────────────── -->
+        <article class="pane" data-pattern="B">
+          <div class="frame b-default" id="frameB">
+            <p class="eyebrow">Case study</p>
+            <h1>Organic Flow — rebuilt for speed, control, and a CMS that doesn’t fight you</h1>
+            <p class="deck">A legacy bespoke-PHP site rebuilt from the ground up in Astro on Cloudflare Pages. Faster, cheaper, easier to keep current.</p>
+
+            <div class="read-full-row hidden" id="readFullRow">
+              <button class="read-full" id="readFullBtn">Read full case</button>
+            </div>
+
+            <section class="case-section">
+              <h2>The problem</h2>
+              <p class="tldr">The old site was slow, hard to update, and stuck in 2015 conventions.</p>
+              <p class="detail">Time-to-interactive sat around 8 seconds on simulated 3G. Lighthouse performance hovered at 42. The bespoke PHP CMS had no preview, no rollback, no per-PR staging. Any content change required a developer in the loop — so by month two of launch the site was already stale.</p>
+              <button class="reveal"><span class="when-collapsed">▸ More detail</span><span class="when-expanded">▾ Hide detail</span></button>
+            </section>
+            <section class="case-section">
+              <h2>The rebuild</h2>
+              <p class="tldr">Astro on Cloudflare Pages, Python + OpenAPI backend, Apache ECharts for visuals.</p>
+              <p class="detail">Astro’s partial hydration model means the default ship is zero JS — islands opt in only where they’re needed. Content lives in structured collections, so editing copy is a Markdown edit and a CI run, not a deploy. The Python backend exposes OpenAPI, making the data contract self-documenting and typed end-to-end.</p>
+              <button class="reveal"><span class="when-collapsed">▸ More detail</span><span class="when-expanded">▾ Hide detail</span></button>
+            </section>
+            <section class="case-section">
+              <h2>The results</h2>
+              <p class="tldr">3× faster page loads, Lighthouse 100, 78% smaller JS bundle, content edits in 30 seconds.</p>
+              <p class="detail">Time-to-interactive dropped from 8.1s to 2.3s on simulated 3G. Lighthouse performance moved from 42 to 100. JS bundle shrank by 78%. What used to be a deploy-gated content edit now lands at the edge in under 30 seconds.</p>
+              <button class="reveal"><span class="when-collapsed">▸ More detail</span><span class="when-expanded">▾ Hide detail</span></button>
+            </section>
+          </div>
+        </article>
+
+        <!-- ─── PATTERN C ─────────────────────────────────────── -->
+        <article class="pane" data-pattern="C">
+          <div class="frame" id="frameC">
+            <p class="eyebrow">Case study</p>
+            <h1>Organic Flow — rebuilt for speed, control, and a CMS that doesn’t fight you</h1>
+            <p class="deck">A legacy bespoke-PHP site rebuilt from the ground up in Astro on Cloudflare Pages. Faster, cheaper, easier to keep current.</p>
+
+            <section class="case-section">
+              <div class="depth-marker">Summary</div>
+              <h2>The problem</h2>
+              <p class="tldr">The old site was slow, hard to update, and stuck in 2015 conventions.</p>
+              <p class="detail">Time-to-interactive sat around 8 seconds on simulated 3G. Lighthouse performance hovered at 42. By month two of launch the site was already stale because every content change required a developer in the loop.</p>
+            </section>
+            <section class="case-section">
+              <div class="depth-marker">For peers</div>
+              <h2>The rebuild</h2>
+              <p class="tldr">Astro on Cloudflare Pages, Python + OpenAPI backend, Apache ECharts for visuals.</p>
+              <p class="detail">Astro’s partial hydration ships zero JS by default — islands opt in only where needed. Content lives in structured collections so editing copy is a Markdown edit and a CI run, not a deploy. The Python backend exposes OpenAPI, making the data contract self-documenting and typed end-to-end. Visuals render through Apache ECharts, declarative enough to keep chart logic out of components. Cloudflare Pages handles edge distribution and per-PR previews.</p>
+            </section>
+            <section class="case-section">
+              <div class="depth-marker">For nerds</div>
+              <h2>The results — and how we measured them</h2>
+              <p class="tldr">3× faster, Lighthouse 100, 78% smaller bundle, content edits land at the edge in 30s.</p>
+              <p class="detail">Time-to-interactive moved from 8.1s to 2.3s on simulated 3G (Lighthouse mobile, Slow 4G profile, throttled CPU 4×). The JS bundle shrank from 1.4MB to ~310KB after gzip — most of that win is Astro's "no JS by default" island model rather than aggressive code splitting. Lighthouse perf went 42 → 100 driven mostly by TBT collapsing from 2,800ms to under 50ms once we stopped shipping a global hydration runtime. CMS workflow: a Markdown commit hits Cloudflare Pages edge cache in ~30s after CI, with per-PR previews catching layout regressions before merge.</p>
+            </section>
+          </div>
+        </article>
+
+        <!-- ─── COMPARE ─────────────────────────────────────── -->
+        <article class="pane" data-pattern="compare">
+          <div class="compare-grid">
+
+            <div class="compare-cell">
+              <div class="compare-cell-label">Pattern A · Global toggle</div>
+              <h1>Organic Flow — rebuilt for speed</h1>
+              <p class="deck">A legacy site rebuilt in Astro on Cloudflare Pages.</p>
+              <div class="toggle-row">
+                <div class="pill-toggle">
+                  <button class="active">Detailed</button>
+                  <button>TL;DR</button>
+                </div>
+              </div>
+              <section class="case-section">
+                <h2>The problem</h2>
+                <p class="tldr">Slow, hard to update, stuck in 2015 conventions.</p>
+                <p class="detail">~8s TTI on 3G, Lighthouse 42, bespoke PHP CMS with no preview…</p>
+              </section>
+              <section class="case-section">
+                <h2>The rebuild</h2>
+                <p class="tldr">Astro, Python + OpenAPI, ECharts, Cloudflare Pages.</p>
+              </section>
+            </div>
+
+            <div class="compare-cell">
+              <div class="compare-cell-label">Pattern B · Per-section</div>
+              <h1>Organic Flow — rebuilt for speed</h1>
+              <p class="deck">A legacy site rebuilt in Astro on Cloudflare Pages.</p>
+              <section class="case-section">
+                <h2>The problem</h2>
+                <p class="tldr">Slow, hard to update, stuck in 2015.</p>
+                <button class="reveal">▸ More detail</button>
+              </section>
+              <section class="case-section expanded">
+                <h2>The rebuild</h2>
+                <p class="tldr">Astro, Python + OpenAPI, ECharts.</p>
+                <p class="detail">Astro's partial hydration ships zero JS by default; islands opt in where needed…</p>
+                <button class="reveal">▾ Hide detail</button>
+              </section>
+              <section class="case-section">
+                <h2>The results</h2>
+                <p class="tldr">3× faster, Lighthouse 100, 78% smaller bundle.</p>
+                <button class="reveal">▸ More detail</button>
+              </section>
+            </div>
+
+            <div class="compare-cell">
+              <div class="compare-cell-label">Pattern C · Progressive scroll</div>
+              <h1>Organic Flow — rebuilt for speed</h1>
+              <p class="deck">A legacy site rebuilt in Astro on Cloudflare Pages.</p>
+              <section class="case-section">
+                <div class="depth-marker">Summary</div>
+                <h2>The problem</h2>
+                <p class="tldr">Slow, hard to update, stuck in 2015.</p>
+              </section>
+              <section class="case-section">
+                <div class="depth-marker">Peers</div>
+                <h2>The rebuild</h2>
+                <p class="tldr">Astro + Python + ECharts + Cloudflare Pages.</p>
+                <p class="detail">Partial hydration, content collections, OpenAPI…</p>
+              </section>
+              <section class="case-section">
+                <div class="depth-marker">Nerds</div>
+                <h2>The results</h2>
+                <p class="detail">TTI 8.1s → 2.3s, bundle 1.4MB → 310KB after gzip…</p>
+              </section>
+            </div>
+
+          </div>
+        </article>
+
+      </div>
+    </main>
+  </div>
+
+  <div class="output">
+    <pre id="prompt"></pre>
+    <button class="copy-btn" id="copyBtn">Copy prompt</button>
+  </div>
+
+<script>
+  const DEFAULTS = {
+    pattern: 'A',
+    aDefault: 'detailed',
+    bInit: 'collapsed',
+    bReadFull: false,
+    cDepthMarker: true,
+  };
+  const state = { ...DEFAULTS };
+
+  const body = document.body;
+  const frameA = document.getElementById('frameA');
+  const frameB = document.getElementById('frameB');
+  const frameC = document.getElementById('frameC');
+  const readFullRow = document.getElementById('readFullRow');
+  const readFullBtn = document.getElementById('readFullBtn');
+  const promptEl = document.getElementById('prompt');
+  const copyBtn = document.getElementById('copyBtn');
+
+  function applyState() {
+    body.setAttribute('data-pattern', state.pattern);
+    document.querySelectorAll('#patternList .pattern-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.pattern === state.pattern);
+    });
+    document.getElementById('optsA').hidden = state.pattern !== 'A';
+    document.getElementById('optsB').hidden = state.pattern !== 'B';
+    document.getElementById('optsC').hidden = state.pattern !== 'C';
+
+    // Pattern A: pill toggle + frame class
+    frameA.classList.toggle('a-tldr', state.aDefault === 'tldr');
+    frameA.classList.toggle('a-detailed', state.aDefault === 'detailed');
+    document.querySelectorAll('#aToggle button').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.mode === state.aDefault);
+    });
+    document.querySelectorAll('input[name="aDefault"]').forEach(i => {
+      i.checked = i.value === state.aDefault;
+    });
+
+    // Pattern B: initial collapsed/expanded + read-full button
+    frameB.classList.toggle('b-default', state.bInit === 'collapsed');
+    frameB.classList.toggle('b-allopen', state.bInit === 'expanded');
+    frameB.querySelectorAll('.case-section').forEach(sec => {
+      sec.classList.toggle('expanded', state.bInit === 'expanded');
+    });
+    document.querySelectorAll('input[name="bInit"]').forEach(i => {
+      i.checked = i.value === state.bInit;
+    });
+    document.getElementById('bReadFull').checked = state.bReadFull;
+    readFullRow.classList.toggle('hidden', !state.bReadFull);
+
+    // Pattern C: depth marker
+    frameC.classList.toggle('c-nomarker', !state.cDepthMarker);
+    document.getElementById('cDepthMarker').checked = state.cDepthMarker;
+
+    updatePrompt();
+  }
+
+  function updatePrompt() {
+    const lines = [];
+    if (state.pattern === 'A') {
+      lines.push('For the expanded case-study modal, use Pattern A: a global pill toggle at the top of the writeup that flips the entire body between two parallel modes — Detailed and TL;DR.');
+      lines.push(`Default mode on open: ${state.aDefault === 'tldr' ? 'TL;DR' : 'Detailed'}.`);
+      lines.push('Each section needs both a short summary (1–2 sentences) and a fuller paragraph version; render only one based on the active mode.');
+    } else if (state.pattern === 'B') {
+      lines.push('For the expanded case-study modal, use Pattern B: no global toggle. Each section renders a TL;DR by default with an inline "More detail" button that reveals a paragraph of deeper context inline.');
+      lines.push(`Initial state: ${state.bInit === 'expanded' ? 'all sections expanded' : 'all sections collapsed (TL;DR only)'}.`);
+      if (state.bReadFull) lines.push('Include a "Read full case" button near the top that expands every section at once.');
+      lines.push('Authoring: each section in the Markdown source has a summary field plus a detail body.');
+    } else if (state.pattern === 'C') {
+      lines.push('For the expanded case-study modal, use Pattern C: no toggle. The page reads as a single continuous narrative that progressively deepens — early sections are summary-level, later sections add technical depth.');
+      if (state.cDepthMarker) lines.push('Show small depth-marker labels (Summary / For peers / For nerds) at the start of each section as a hint to the reader.');
+      lines.push('Authoring: one continuous Markdown body, structured so each later section assumes the reader of the previous one.');
+    } else if (state.pattern === 'compare') {
+      lines.push('Show me Patterns A, B, and C side-by-side so I can pick. (Decision pending.)');
+    }
+    promptEl.textContent = lines.join('\n\n');
+  }
+
+  // Pattern picker
+  document.querySelectorAll('#patternList .pattern-btn').forEach(btn => {
+    btn.addEventListener('click', () => { state.pattern = btn.dataset.pattern; applyState(); });
+  });
+  // Pattern A toggle (in preview pill)
+  document.querySelectorAll('#aToggle button').forEach(btn => {
+    btn.addEventListener('click', () => { state.aDefault = btn.dataset.mode; applyState(); });
+  });
+  // Pattern A radio
+  document.querySelectorAll('input[name="aDefault"]').forEach(i => {
+    i.addEventListener('change', () => { state.aDefault = i.value; applyState(); });
+  });
+  // Pattern B radios + checkbox
+  document.querySelectorAll('input[name="bInit"]').forEach(i => {
+    i.addEventListener('change', () => { state.bInit = i.value; applyState(); });
+  });
+  document.getElementById('bReadFull').addEventListener('change', e => {
+    state.bReadFull = e.target.checked; applyState();
+  });
+  // Pattern B per-section reveal
+  frameB.querySelectorAll('.case-section .reveal').forEach(btn => {
+    btn.addEventListener('click', () => {
+      btn.closest('.case-section').classList.toggle('expanded');
+    });
+  });
+  // Pattern B "Read full case"
+  readFullBtn.addEventListener('click', () => {
+    frameB.querySelectorAll('.case-section').forEach(s => s.classList.add('expanded'));
+  });
+  // Pattern C checkbox
+  document.getElementById('cDepthMarker').addEventListener('change', e => {
+    state.cDepthMarker = e.target.checked; applyState();
+  });
+
+  // Presets
+  const PRESETS = {
+    recruiter: { pattern: 'A', aDefault: 'tldr' },
+    peer:      { pattern: 'B', bInit: 'expanded', bReadFull: true },
+    client:    { pattern: 'C', cDepthMarker: true },
+  };
+  document.querySelectorAll('.preset-chip').forEach(c => {
+    c.addEventListener('click', () => {
+      Object.assign(state, DEFAULTS, PRESETS[c.dataset.preset]);
+      applyState();
+    });
+  });
+
+  // Copy
+  copyBtn.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(promptEl.textContent);
+      copyBtn.classList.add('copied');
+      copyBtn.textContent = 'Copied!';
+      setTimeout(() => {
+        copyBtn.classList.remove('copied');
+        copyBtn.textContent = 'Copy prompt';
+      }, 1400);
+    } catch {}
+  });
+
+  applyState();
+</script>
+</body>
+</html>

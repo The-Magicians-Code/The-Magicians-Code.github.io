@@ -5,14 +5,15 @@
   "private": true,
   "scripts": {
     "dev": "astro dev",
+    "dev:lan": "astro dev --host",
     "start": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "check": "astro check"
+    "check": "astro check && npm run check:content",
+    "check:content": "node scripts/check-content.mjs"
   },
   "dependencies": {
-    "@fontsource/inter": "^5.2.8",
     "@iconify-json/lucide": "^1.2.105",
     "@tailwindcss/vite": "^4.2.4",
     "astro": "^6.2.2",

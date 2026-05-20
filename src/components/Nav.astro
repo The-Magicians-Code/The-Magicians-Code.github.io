@@ -5,7 +5,7 @@ import ThemeToggle from './ThemeToggle.astro';
 const isDev = import.meta.env.DEV;
 ---
 
-<nav id="site-nav">
+<nav id="site-nav" data-scroll-lock-compensate>
   <div class="nav-shell max-w-4xl mx-auto px-6 md:px-10">
     <div id="nav-pill" class="liquid-glass">
       <div class="side-wrap brand-wrap">
@@ -16,8 +16,10 @@ const isDev = import.meta.env.DEV;
       </div>
 
       <div class="nav-links">
-        <a href="/#projects">Projects</a>
-        <a href="/#skills-tools">Skills & Tools</a>
+        <a href="/#about">About</a>
+        <a href="/#projects">Work</a>
+        <a href="/#skills-tools">Stack</a>
+        <a href="/resume/">Resume</a>
         <a href="/#contact">Contact</a>
       </div>
 
@@ -45,14 +47,31 @@ const isDev = import.meta.env.DEV;
   </div>
 </nav>
 
+<script>
+  // When the Home brand is clicked AND we're already on the home page,
+  // scroll to top instead of triggering a full reload. Other pages keep
+  // the normal navigation behavior.
+  const brand = document.querySelector<HTMLAnchorElement>('#site-nav .brand-pill');
+  brand?.addEventListener('click', (e) => {
+    const onHome = window.location.pathname === '/' || window.location.pathname === '/index.html';
+    if (!onHome) return;
+    e.preventDefault();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Drop any anchor hash so the URL stays clean.
+    if (window.location.hash) {
+      history.replaceState(null, '', window.location.pathname);
+    }
+  });
+</script>
+
 {isDev && (
   <Fragment>
-    <div class="nav-progressive-blur" aria-hidden="true"></div>
+    <div class="nav-progressive-blur" aria-hidden="true" data-scroll-lock-compensate></div>
 
-    <aside id="nav-tuner-panel" class="nav-tuner mode-simple" aria-label="Liquid glass tuner">
+    <aside id="nav-tuner-panel" class="nav-tuner mode-simple collapsed" aria-label="Liquid glass tuner" data-scroll-lock-compensate>
       <header class="nav-tuner__head">
         <span>Nav glass tuner</span>
-        <button type="button" id="nav-tuner-toggle" aria-label="Collapse tuner">−</button>
+        <button type="button" id="nav-tuner-toggle" aria-label="Expand tuner">+</button>
       </header>
       <div class="nav-tuner__body">
         <div class="nav-tuner__mode-toggle" role="tablist" aria-label="Tuner mode">
@@ -435,8 +454,9 @@ const isDev = import.meta.env.DEV;
           });
 
           document.getElementById('nav-tuner-toggle').addEventListener('click', (ev) => {
-            panel.classList.toggle('collapsed');
-            ev.target.textContent = panel.classList.contains('collapsed') ? '+' : '−';
+            const collapsed = panel.classList.toggle('collapsed');
+            ev.target.textContent = collapsed ? '+' : '−';
+            ev.target.setAttribute('aria-label', collapsed ? 'Expand tuner' : 'Collapse tuner');
           });
 
           pushCssVars();

@@ -3,6 +3,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import { Icon } from 'astro-icon/components';
 import { getCollection, render } from 'astro:content';
 import type { GetStaticPaths } from 'astro';
+import { titleToHtml, titleToText } from '../../lib/title';
 
 export const getStaticPaths = (async () => {
   const projects = await getCollection('projects');
@@ -14,31 +15,107 @@ export const getStaticPaths = (async () => {
 
 const { project } = Astro.props;
 const { Content } = await render(project);
+const titleText = titleToText(project.data.title);
 ---
 
 <BaseLayout
-  title={`${project.data.title} · Tanel Treuberg`}
+  title={`${titleText} · Tanel Treuberg`}
   description={project.data.description}
   canonicalPath={`/projects/${project.id}/`}
   ogType="article"
 >
-  <main class="max-w-4xl mx-auto p-6 md:p-10 space-y-8">
-    <header class="section-fade-in pt-6 md:pt-10" style="--delay: 0.1s">
-      <h1 class="text-4xl md:text-5xl font-bold mb-2 dark:text-white">{project.data.title}</h1>
-      <p class="text-lg text-gray-600 dark:text-neutral-400">{project.data.description}</p>
+  <main class="project-page">
+    <header class="project-header section-fade-in" style="--delay: 0.1s">
+      <div class="section-eyebrow">Project</div>
+      <h1 class="project-title" set:html={titleToHtml(project.data.title)}></h1>
+      <p class="project-lede">{project.data.description}</p>
       <a
         href={project.data.repoUrl}
         target="_blank"
         rel="noopener noreferrer"
-        class="mt-4 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium inline-flex items-center"
-        aria-label={`View ${project.data.title} on GitHub`}
+        class="link-accent project-repo-link"
+        aria-label={`View ${titleText} on GitHub`}
       >
         View on GitHub
         <Icon name="lucide:arrow-up-right" class="inline-block w-4 h-4 ml-1" aria-hidden="true" />
       </a>
     </header>
-    <article class="section-fade-in prose dark:prose-invert max-w-none" style="--delay: 0.2s">
+    <article class="project-body section-fade-in" style="--delay: 0.2s">
       <Content />
     </article>
   </main>
 </BaseLayout>
+
+<style>
+  .project-page {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+  }
+  @media (min-width: 720px) {
+    .project-page {
+      padding: 0 40px;
+      gap: 48px;
+    }
+  }
+  .project-header { padding-top: 24px; }
+  .project-title {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: clamp(2.25rem, 4vw + 1rem, 3.5rem);
+    line-height: 1.05;
+    letter-spacing: -0.015em;
+    margin: 6px 0 14px;
+  }
+  .project-lede {
+    font-size: 1.125rem;
+    color: var(--ink-dim);
+    line-height: 1.55;
+    max-width: 60ch;
+    margin-bottom: 18px;
+  }
+  .project-repo-link {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    display: inline-flex;
+    align-items: center;
+  }
+  .project-body {
+    color: var(--ink-dim);
+    line-height: 1.7;
+  }
+  .project-body :global(h1),
+  .project-body :global(h2),
+  .project-body :global(h3),
+  .project-body :global(h4) {
+    color: var(--ink);
+    font-family: var(--font-serif);
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    margin: 1.6em 0 0.5em;
+  }
+  .project-body :global(a) {
+    color: var(--accent);
+    transition: opacity 0.2s ease;
+  }
+  .project-body :global(a:hover) { opacity: 0.82; }
+  .project-body :global(code) {
+    font-family: var(--font-mono);
+    font-size: 0.92em;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-brd);
+    border-radius: 4px;
+    padding: 1px 6px;
+  }
+  .project-body :global(p) { margin-bottom: 1em; }
+  .project-body :global(ul),
+  .project-body :global(ol) {
+    margin: 0 0 1em 1.25em;
+  }
+  .project-body :global(li) { margin-bottom: 0.4em; }
+</style>

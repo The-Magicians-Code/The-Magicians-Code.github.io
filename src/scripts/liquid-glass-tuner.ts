@@ -37,6 +37,9 @@ function buildPanel(target: HTMLElement): HTMLElement {
   const panel = document.createElement('aside');
   panel.id = 'lg-tuner-panel';
   panel.setAttribute('aria-label', 'Liquid glass tuner');
+  // Opt in to bento-expand's scroll-lock right-edge compensation so the
+  // panel doesn't shift when a bento modal hides the page scrollbar.
+  panel.setAttribute('data-scroll-lock-compensate', '');
   panel.style.cssText = [
     'position: fixed',
     'top: 12px',

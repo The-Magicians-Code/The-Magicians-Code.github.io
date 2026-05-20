@@ -1,21 +1,40 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Hero from '../components/Hero.astro';
-import ProjectsSection from '../components/ProjectsSection.astro';
-import SkillsTools from '../components/SkillsTools.astro';
+import About from '../components/About.astro';
+import BentoProjectsSection from '../components/BentoProjectsSection.astro';
+import BentoStackCard from '../components/BentoStackCard.astro';
 import Contact from '../components/Contact.astro';
 ---
 
 <BaseLayout
   title="Tanel Treuberg - SWE"
-  description="Software engineer specializing in Python, Docker, BASH, and Swift development."
+  description="Software engineer working across backend, infrastructure, and applied ML."
   canonicalPath="/"
   includePersonSchema={true}
 >
-  <main class="max-w-4xl mx-auto p-6 md:p-10 space-y-12 md:space-y-16">
+  <main class="page">
     <Hero />
-    <ProjectsSection />
-    <SkillsTools />
+    <About />
+    <BentoProjectsSection />
+    <BentoStackCard />
     <Contact />
   </main>
 </BaseLayout>
+
+<style>
+  .page {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 64px;
+  }
+  @media (min-width: 720px) {
+    .page {
+      padding: 0 40px;
+      gap: 88px;
+    }
+  }
+</style>

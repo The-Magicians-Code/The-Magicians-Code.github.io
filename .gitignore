@@ -28,3 +28,6 @@ dist/
 # Logs
 logs/
 *.log
+
+# Local screenshot scratchpad (e.g. Chrome DevTools MCP captures)
+.scratch/

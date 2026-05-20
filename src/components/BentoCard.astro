@@ -1,0 +1,56 @@
+---
+import { titleToHtml, titleToText } from '../lib/title';
+
+interface Props {
+  title: string;
+  eyebrow?: string;
+  slug: string;
+  bentoSpan?: 'hero' | 'wide' | 'tall' | 'normal';
+  coverVariant?: 'base' | 'alt';
+  deepwikiUrl?: string;
+}
+
+const {
+  title,
+  eyebrow,
+  slug,
+  bentoSpan = 'normal',
+  coverVariant = 'base',
+  deepwikiUrl,
+} = Astro.props;
+---
+
+<article
+  class:list={[
+    'bento-card',
+    'project-card',
+    'cs-card',
+    `span-${bentoSpan}`,
+    `cover-${coverVariant}`,
+  ]}
+  data-bento-card
+  data-slug={slug}
+  data-deepwiki-url={deepwikiUrl ?? undefined}
+  role="button"
+  tabindex="0"
+  aria-haspopup="dialog"
+  aria-expanded="false"
+  aria-label={titleToText(title)}
+>
+  <div class="cover"></div>
+  <span class="cs-expand" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="15 3 21 3 21 9" />
+      <polyline points="9 21 3 21 3 15" />
+      <line x1="21" y1="3" x2="14" y2="10" />
+      <line x1="3" y1="21" x2="10" y2="14" />
+    </svg>
+  </span>
+  <div class="card-body">
+    {eyebrow && <div class="card-eyebrow">{eyebrow}</div>}
+    <div class="card-title" set:html={titleToHtml(title)}></div>
+  </div>
+  <div class="bento-card-body" hidden>
+    <slot />
+  </div>
+</article>

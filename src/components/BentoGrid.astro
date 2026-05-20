@@ -1,0 +1,819 @@
+---
+// BentoGrid — layout shell for BentoCards. Owns the asymmetric grid CSS,
+// the single shared backdrop, the lifecycle visual rules, and the script
+// import. See docs/superpowers/specs/2026-05-17-bento-projects-section-design.md.
+---
+
+<section class="bento-section">
+  <div class="bento-grid" data-bento-grid>
+    <slot />
+  </div>
+  <div class="bento-backdrop" data-bento-backdrop aria-hidden="true"></div>
+</section>
+
+<script>
+  import '../scripts/bento-expand.ts';
+</script>
+
+<style>
+  /* ── Bento-scoped tokens ──────────────────────────────────────── */
+  .bento-section {
+    --gap: 18px;
+    /* Inherits column width from parent .page (max-width: 880px). No breakout. */
+    width: 100%;
+  }
+  /* Morph timing tokens are declared on .bento-card so any card has them
+     regardless of whether it sits inside a .bento-section. The stack card
+     mounts directly in .page (outside any .bento-section); without these
+     here, its .is-expanding transition rule resolves var() to invalid
+     and the morph degrades to an instant snap. */
+  :global(.bento-card) {
+    --morph-dur: 520ms;
+    --ease-snappy: cubic-bezier(0.77, 0, 0.175, 1);
+  }
+
+  /* ── Vertical stack ───────────────────────────────────────────── */
+  .bento-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap);
+  }
+
+  /* All cards full-width with a fixed aspect. bentoSpan stays in the
+     schema for future use but doesn't affect layout in v1's vertical stack. */
+  :global(.bento-card) {
+    width: 100%;
+    aspect-ratio: 4 / 1;
+  }
+  @media (max-width: 540px) {
+    :global(.bento-card) { aspect-ratio: 1 / 1; }
+  }
+
+
+  /* ── Card base (port of .bento-card from bento-mchiu) ─────────── */
+  :global(.bento-card) {
+    position: relative;
+    background: var(--paper);
+    border: 0;
+    border-radius: 32px;
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.04),
+      0 1px 2px rgba(0, 0, 0, 0.04),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.02);
+    overflow: hidden;
+    transition: box-shadow 240ms var(--ease, cubic-bezier(0.22, 1, 0.36, 1));
+    cursor: pointer;
+    /* Suppress the UA focus ring permanently. The card uses .cs-expand
+       (hover/focus-visible reveal) as its visible affordance; the default
+       outline reads as a white boundary line on the dark cover and
+       reappears whenever focus lands here. */
+    outline: none;
+  }
+  :global(.bento-card:focus),
+  :global(.bento-card:focus-visible) {
+    outline: none;
+  }
+  /* Card-enter starting state scoped to interactive bento cards only
+     (those with [data-bento-card]). Other .bento-card-shaped elements
+     would otherwise be stuck at opacity:0 with no animation to clear it. */
+  :global([data-bento-card]) {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  :global([data-bento-card].in) {
+    animation: bento-card-enter 720ms var(--ease, cubic-bezier(0.22, 1, 0.36, 1)) forwards;
+    animation-delay: var(--card-enter-delay, 0s);
+  }
+  @keyframes bento-card-enter {
+    0%   { opacity: 0; transform: translateY(24px); }
+    100% { opacity: 1; transform: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :global([data-bento-card])    { opacity: 1; transform: none; }
+    :global([data-bento-card].in) { animation: none; }
+  }
+
+  :global(.bento-card:hover) {
+    transform: translateY(-2px);
+    box-shadow:
+      0 6px 24px rgba(0, 0, 0, 0.06),
+      0 2px 6px rgba(0, 0, 0, 0.04);
+  }
+
+  /* Project cards inherit the .bento-card base shell (paper bg, default
+     soft shadow, 32px radius) so the visual treatment matches the
+     stack card. The earlier dark-cover override (and its no-shadow
+     workaround for cream-leak at sub-pixel corners) is no longer
+     needed now that card and page share the same paper background.
+     The .cover div stays in the markup as a positioned overlay slot
+     in case future per-card visuals are added, but renders as a
+     transparent no-op. */
+  :global(.project-card .cover) {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+  }
+
+  /* ── Card body (rest) ─────────────────────────────────────────── */
+  /* justify-content: flex-start keeps content top-anchored at every state.
+     The title is then visually pushed to the bottom at rest via a per-card
+     --title-rest-y translateY computed in JS (bento-expand.ts). Doing it
+     this way — rather than flipping justify-content between flex-end (rest)
+     and flex-start (expanded) — keeps the title's transition through the
+     morph smooth: justify-content isn't animatable, transforms are. */
+  :global(.bento-card .card-body) {
+    position: relative;
+    z-index: 1;
+    padding: 28px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 12px;
+    /* Left-aligned eyebrow + title across all bento cards. Unified with
+       the stack card. Expanded-modal markdown overrides keep their own
+       text-align: left rule (.bento-card-body-rendered). */
+    text-align: left;
+  }
+  /* Eyebrow is hidden at rest — resting card reads as just the title.
+     Fades in late in the morph (65% through) so it appears as context
+     once the card is settled at modal size. Ported from the prototype's
+     minimal-mode pattern. */
+  :global(.bento-card .card-eyebrow) {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.10em;
+    color: var(--ink-dim);
+    opacity: 0;
+    transition: opacity 320ms ease;
+  }
+  :global(.bento-card.is-expanded .card-eyebrow) {
+    opacity: 1;
+    transition-delay: calc(var(--morph-dur) * 0.65);
+  }
+  :global(.bento-card .card-title) {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: 24px;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    /* Sized to content (not stretched to body width) so translateX can
+       shift the title block horizontally during the morph. align-self
+       opts out of the flex column's default stretch; max-width lets
+       long titles still wrap inside the body rather than overflowing. */
+    width: fit-content;
+    max-width: 100%;
+    align-self: flex-start;
+    /* At rest: translated down to the body's vertical center via JS-
+       measured --title-rest-y, and left-aligned (translateX 0). In
+       .is-expanded: translated to JS-measured --title-center-x to sit
+       horizontally centered within the expanded body, and translateY 0
+       to return to the natural top-flow position. Single transform
+       interpolates both axes in lockstep with the morph. */
+    transform: translate(0, var(--title-rest-y, 0));
+  }
+  /* Title transitions its translate (rest-y → 0, centered X) during the
+     morph. Font-size stays constant at 24px — the title doesn't scale,
+     only translates. */
+  :global(.bento-card.is-expanding .card-title) {
+    transition: transform var(--morph-dur) var(--ease-snappy);
+  }
+  :global(.bento-card.is-expanded .card-title) {
+    transform: translate(var(--title-center-x, 0), 0);
+  }
+  :global(.bento-card .card-title em) {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  /* ── Pretext: per-word title layout (for .cs-card only) ───────────────
+     When pretext.ts runs at init, it replaces the title's text with
+     absolutely-positioned <span class="word"> / <em class="word"> spans
+     pre-computed at two widths (card rest + modal expanded). The card
+     gets .pretext-title; these rules apply only once it's set.
+
+     Idle visual is preserved: source positions are natural-flow
+     left-aligned. Only the modal layout centers each line. */
+  :global(.bento-card.pretext-title .card-title) {
+    position: relative;
+    width: 100%;
+    /* No font-size: 0, no min-height — flex-shrink: 0 on header
+       siblings (already in place) keeps the inline style.height
+       intact under iOS Safari's flex algorithm. */
+  }
+  :global(.bento-card.pretext-title .card-title .word) {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: inline-block;
+    white-space: nowrap;
+    font-family: var(--font-serif);
+    font-size: inherit;
+    font-weight: 400;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    transform-origin: top left;
+    will-change: transform;
+  }
+  /* Accent words render as <em class="word"> so .card-title em styling
+     applies via the existing rule. Pin specificity here in case the
+     plain .word color rule wins under cascade tie. */
+  :global(.bento-card.pretext-title .card-title em.word) {
+    font-style: italic;
+    color: var(--accent);
+  }
+  /* During the morph, each word transitions between its source and
+     modal transforms in lockstep with the card morph. */
+  :global(.bento-card.is-expanding.pretext-title .card-title .word) {
+    transition: transform var(--morph-dur) var(--ease-snappy);
+  }
+  /* When expanded, words own horizontal centering (their target mx
+     positions already include the modal-width centering offset).
+     Override the parent's translate(var(--title-center-x), 0) — Y only. */
+  :global(.bento-card.pretext-title.is-expanded .card-title) {
+    transform: translateY(0);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :global(.bento-card.is-expanding.pretext-title .card-title .word) {
+      transition: none;
+    }
+  }
+
+  /* Hidden body source for the modal (cloned on open) */
+  :global(.bento-card .bento-card-body) {
+    display: none;
+  }
+
+  /* ── Hover-revealed expand affordance ─────────────────────────── */
+  :global(.cs-expand) {
+    position: absolute;
+    top: 16px; right: 16px;
+    width: 40px; height: 40px;
+    border-radius: 999px;
+    /* White-tinted glass disc: translucent white fill + backdrop blur
+       frosts what's behind, a small drop shadow lifts it off the
+       card, and a 1px inset highlight gives the rim a glassy edge. */
+    background: rgba(255, 255, 255, 0.55);
+    -webkit-backdrop-filter: blur(10px) saturate(140%);
+    backdrop-filter: blur(10px) saturate(140%);
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.08),
+      0 2px 8px rgba(0, 0, 0, 0.08),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.30);
+    color: var(--ink);
+    display: grid;
+    place-items: center;
+    z-index: 2;
+    opacity: 0;
+    transform: scale(0.8);
+    pointer-events: none;
+    transition: opacity 200ms ease, transform 200ms ease, background 200ms var(--ease);
+  }
+  :global(.cs-expand svg) { width: 16px; height: 16px; }
+  @media (hover: hover) and (pointer: fine) {
+    :global(.bento-card:hover .cs-expand) {
+      opacity: 1; transform: scale(1); pointer-events: auto;
+    }
+  }
+  :global(.bento-card:focus-visible .cs-expand) {
+    opacity: 1; transform: scale(1); pointer-events: auto;
+  }
+  :global(.cs-expand:hover) { background: rgba(255, 255, 255, 0.78); }
+  @media (prefers-reduced-motion: reduce) {
+    :global(.cs-expand) { transform: none; transition: opacity 200ms ease; }
+  }
+  /* Suppress entirely during lifecycle so it can't peek over the modal. */
+  :global(.bento-card.is-expanding .cs-expand),
+  :global(.bento-card.is-expanded .cs-expand),
+  :global(.bento-card.is-collapsing .cs-expand) {
+    opacity: 0 !important;
+    transform: scale(0.8) !important;
+    pointer-events: none !important;
+  }
+
+  /* ── Lifecycle states ─────────────────────────────────────────── */
+  :global(.bento-card.is-expanding) {
+    z-index: 201;
+    /* border-color deliberately omitted — snap in lockstep with bg.
+       See spec "Carried-over fixes from the prototype". */
+    transition:
+      top        var(--morph-dur) var(--ease-snappy),
+      left       var(--morph-dur) var(--ease-snappy),
+      width      var(--morph-dur) var(--ease-snappy),
+      height     var(--morph-dur) var(--ease-snappy),
+      box-shadow var(--morph-dur) var(--ease-snappy);
+    will-change: top, left, width, height;
+  }
+  :global(.bento-card.is-expanding),
+  :global(.bento-card.is-expanded),
+  :global(.bento-card.is-collapsing) {
+    cursor: default;
+    box-shadow: none;
+    border-color: transparent;
+  }
+  :global(.bento-card.is-expanding .card-body) {
+    transition: padding var(--morph-dur) var(--ease-snappy);
+  }
+  :global(.bento-card.is-expanded .card-body) {
+    padding: 56px 48px 48px;
+    justify-content: flex-start;
+    /* Whole modal scrolls as one unit — header (eyebrow + title +
+       pill) flows with the case-study body. Single scroll context;
+       no locked/fixed header. */
+    overflow-y: auto;
+  }
+  /* Preserve the scroll context through the close morph. Without this,
+     dropping .is-expanded reverts overflow-y to `visible`, which kills
+     the card-body's scroll context — scrollTop snaps to 0, and the
+     visible content jumps to the top of the body just as the title
+     starts transitioning back. Reads as the pill + content below
+     shifting up. Only triggers when the user has scrolled away from
+     the top (which only happens in Detailed mode; TL;DR fits without
+     scrolling). Keeping overflow-y:auto during is-collapsing lets the
+     scroll position survive the close, so the fade-out of body
+     content happens in place. */
+  :global(.bento-card.is-collapsing .card-body) {
+    overflow-y: auto;
+  }
+  /* iOS Safari's flex-column algorithm shrinks "auto-sized" children
+     when a sibling grows (e.g. TL;DR → Detailed swap makes the
+     rendered wrap several × taller). The title and pill then briefly
+     collapse to their min-content, taking everything below them
+     down a notch — reads as a "shift down" on tap. Chromium's flex
+     algorithm doesn't do this. Locking flex-shrink to 0 on the
+     header siblings keeps their height at their measured/intrinsic
+     box and forces the column to scroll instead of relaying out
+     other children.
+
+     Must also apply during .is-collapsing: dropping .is-expanded mid-
+     close releases flex-shrink, the title's box collapses to its
+     min-content, and the pill+content below shift up by the lost
+     height. Only triggers in Detailed mode because TL;DR doesn't
+     overflow the flex container (so flex-shrink never engages). */
+  :global(.bento-card.is-expanded .card-eyebrow),
+  :global(.bento-card.is-collapsing .card-eyebrow),
+  :global(.bento-card.is-expanded .card-title),
+  :global(.bento-card.is-collapsing .card-title),
+  :global(.bento-card.is-expanded .cs-mode-toggle),
+  :global(.bento-card.is-collapsing .cs-mode-toggle) {
+    flex-shrink: 0;
+  }
+  /* Centered editorial layout — eyebrow + body prose centered while the
+     card is expanded OR collapsing. The .is-collapsing branch keeps the
+     center alignment in place during the close morph; without it,
+     text-align would flip to left the instant .is-expanded is removed
+     and visible body content (still fading over 180ms) would visibly
+     snap leftward before the fade completes. Title is positioned via
+     translateX so text-align doesn't affect it. */
+  :global(.bento-card.is-expanded .card-body),
+  :global(.bento-card.is-collapsing .card-body) {
+    text-align: center;
+  }
+  @media (max-width: 540px) {
+    :global(.bento-card.is-expanded .card-body) { padding: 48px 22px 32px; }
+  }
+
+  /* ── Progressive blur edges on the expanded card ─────────────────
+     Apple-style multi-layer stacked blur. .card-blur-top and
+     .card-blur-bottom are dynamically mounted by bento-expand.ts when
+     a card opens (same pattern as .cs-close) and removed on close, so
+     they cost nothing when cards are at rest. Each strip contains 5
+     child layers, each with a different backdrop-filter blur radius
+     and a mask gradient that confines it to a band. Layers feather
+     into each other so the cumulative blur intensity varies smoothly
+     from clear (interior) to maximum (edge) without a visible "shelf"
+     at any single mask transition. */
+  :global(.card-blur) {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 80px;
+    /* Above .card-body (z-index: 1) so backdrop-filter sees the
+       scrolled content painted underneath. Close button is bumped to
+       z-index: 3 below to stay sharp. */
+    z-index: 2;
+    pointer-events: none;
+    opacity: 0;
+    /* Gentle ease-out (not --ease-snappy's strong S-curve) so the fade
+       is perceptually smooth rather than popping near the midpoint.
+       Slight delay lets the card morph start visibly before the blur
+       begins fading in, so the two animations are sequenced rather
+       than fighting for attention. */
+    transition: opacity 420ms cubic-bezier(0.22, 1, 0.36, 1) 120ms;
+  }
+  :global(.bento-card.is-collapsing .card-blur) {
+    /* On close, fade out quickly with no delay so the blur clears
+       before the morph completes — leaving the page underneath sharp. */
+    transition: opacity 220ms ease-out 0ms;
+  }
+  :global(.card-blur > div) {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  :global(.card-blur-top) { top: 0; }
+  :global(.card-blur-bottom) { bottom: 0; }
+  /* .is-on is toggled by bento-expand.ts via a double-rAF after the
+     strips are appended — this gives the browser time to rasterize
+     the backdrop-filter layers at opacity:0 (warming up the GPU
+     pipeline) before the fade-in transition fires. Without the warm-
+     up window the filter "pops" at the start of the transition. */
+  :global(.card-blur.is-on) { opacity: 1; }
+
+  /* TOP strip — heaviest blur at y=0 (edge), fades toward interior. */
+  :global(.card-blur-top > div:nth-child(1)) {
+    -webkit-backdrop-filter: blur(0.5px);
+    backdrop-filter: blur(0.5px);
+    -webkit-mask-image: linear-gradient(to bottom, black 0 80%, transparent 100%);
+    mask-image: linear-gradient(to bottom, black 0 80%, transparent 100%);
+  }
+  :global(.card-blur-top > div:nth-child(2)) {
+    -webkit-backdrop-filter: blur(1.5px);
+    backdrop-filter: blur(1.5px);
+    -webkit-mask-image: linear-gradient(to bottom, black 0 60%, transparent 80%);
+    mask-image: linear-gradient(to bottom, black 0 60%, transparent 80%);
+  }
+  :global(.card-blur-top > div:nth-child(3)) {
+    -webkit-backdrop-filter: blur(3px);
+    backdrop-filter: blur(3px);
+    -webkit-mask-image: linear-gradient(to bottom, black 0 40%, transparent 60%);
+    mask-image: linear-gradient(to bottom, black 0 40%, transparent 60%);
+  }
+  :global(.card-blur-top > div:nth-child(4)) {
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    -webkit-mask-image: linear-gradient(to bottom, black 0 20%, transparent 40%);
+    mask-image: linear-gradient(to bottom, black 0 20%, transparent 40%);
+  }
+  :global(.card-blur-top > div:nth-child(5)) {
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    -webkit-mask-image: linear-gradient(to bottom, black 0 5%, transparent 20%);
+    mask-image: linear-gradient(to bottom, black 0 5%, transparent 20%);
+  }
+
+  /* BOTTOM strip — same radii, gradient direction flipped so blur is
+     heaviest at the bottom edge and fades upward. */
+  :global(.card-blur-bottom > div:nth-child(1)) {
+    -webkit-backdrop-filter: blur(0.5px);
+    backdrop-filter: blur(0.5px);
+    -webkit-mask-image: linear-gradient(to top, black 0 80%, transparent 100%);
+    mask-image: linear-gradient(to top, black 0 80%, transparent 100%);
+  }
+  :global(.card-blur-bottom > div:nth-child(2)) {
+    -webkit-backdrop-filter: blur(1.5px);
+    backdrop-filter: blur(1.5px);
+    -webkit-mask-image: linear-gradient(to top, black 0 60%, transparent 80%);
+    mask-image: linear-gradient(to top, black 0 60%, transparent 80%);
+  }
+  :global(.card-blur-bottom > div:nth-child(3)) {
+    -webkit-backdrop-filter: blur(3px);
+    backdrop-filter: blur(3px);
+    -webkit-mask-image: linear-gradient(to top, black 0 40%, transparent 60%);
+    mask-image: linear-gradient(to top, black 0 40%, transparent 60%);
+  }
+  :global(.card-blur-bottom > div:nth-child(4)) {
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    -webkit-mask-image: linear-gradient(to top, black 0 20%, transparent 40%);
+    mask-image: linear-gradient(to top, black 0 20%, transparent 40%);
+  }
+  :global(.card-blur-bottom > div:nth-child(5)) {
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    -webkit-mask-image: linear-gradient(to top, black 0 5%, transparent 20%);
+    mask-image: linear-gradient(to top, black 0 5%, transparent 20%);
+  }
+
+  @media (max-width: 540px) {
+    :global(.card-blur) { height: 60px; }
+  }
+
+  /* Resizing suppresses transitions for instant snap. */
+  :global(.bento-card.is-resizing) {
+    transition: none !important;
+  }
+
+  /* Placeholder holds the stack slot while the card lifts to position:fixed.
+     Must match the card's width + aspect so the column doesn't collapse. */
+  :global(.bento-card-placeholder) {
+    visibility: hidden;
+    pointer-events: none;
+    width: 100%;
+    aspect-ratio: 4 / 1;
+  }
+  @media (max-width: 540px) {
+    :global(.bento-card-placeholder) { aspect-ratio: 1 / 1; }
+  }
+
+  /* ── Appended modal body content (cloned at open) ─────────────── */
+  /* Centered editorial column: max-width 60ch caps line length for
+     readable measure; margin: 0 auto centers the column within the
+     expanded card-body. Content inside stays left-aligned (default).
+     Matches the minimal-mode pattern in docs/ideas/bento-mchiu.html. */
+  :global(.bento-card .bento-card-body-rendered) {
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--ink-dim);
+    max-width: 60ch;
+    margin: 0 auto;
+    /* Column stays centered via max-width + margin: 0 auto. Body text
+       reads left-aligned for prose readability; the eyebrow + title
+       above the wrap stay centered via the parent .card-body rule. */
+    text-align: left;
+  }
+  :global(.bento-card .body-para.appended) {
+    margin: 14px 0;
+    opacity: 0;
+    transition: opacity 280ms ease;
+  }
+  :global(.bento-card .body-para.appended.in) {
+    opacity: 1;
+    transition-delay: calc(var(--stagger-idx, 0) * 80ms);
+  }
+  :global(.bento-card.is-collapsing .body-para.appended),
+  :global(.bento-card.is-collapsing .body-para.appended.in) {
+    opacity: 0;
+    transition: opacity 180ms ease;
+    transition-delay: 0ms;
+  }
+  /* Markdown body styling — rendered content may carry headings, lists, code, links. */
+  :global(.bento-card .bento-card-body-rendered :is(h2, h3)) {
+    font-family: var(--font-serif);
+    color: var(--ink);
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    margin: 1.4em 0 0.5em;
+  }
+  :global(.bento-card .bento-card-body-rendered :is(ul, ol)) {
+    margin: 0.8em 0 0.8em 1.2em;
+  }
+  :global(.bento-card .bento-card-body-rendered li) {
+    margin-bottom: 0.4em;
+  }
+  :global(.bento-card .bento-card-body-rendered code) {
+    font-family: var(--font-mono);
+    font-size: 0.92em;
+    background: rgba(26, 26, 28, 0.08);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+  :global(.bento-card .bento-card-body-rendered a) {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  /* ── Dual-mode reading (TL;DR ↔ Detailed) ─────────────────────
+     The rendered case-study wrap carries data-mode="tldr|detailed".
+     Authoring convention: each ## H2 section is followed by a single
+     leading blockquote (the TL;DR) and zero or more sibling elements
+     (the Detail). In TL;DR mode we hide everything that follows the
+     leading blockquote until the next H2. In Detailed mode the
+     leading blockquote is styled as an italic lede above the detail
+     prose. See docs/superpowers/specs/2026-05-19-case-study-dual-
+     mode-design.md. */
+  :global(.bento-card-body-rendered) {
+    transition: opacity 160ms ease-out;
+    /* Safari short-circuits an in-progress opacity transition when child
+       elements flip display:none ↔ block mid-fade (which is exactly what
+       happens during a mode swap). Promoting the wrap to its own
+       compositing layer keeps the opacity animation on the GPU,
+       independent of the subtree's layout mutations. */
+    will-change: opacity;
+    transform: translateZ(0);
+  }
+  :global(.bento-card-body-rendered.is-swapping) {
+    opacity: 0;
+  }
+  /* Hide everything that follows the section-leading blockquote in TL;DR
+     mode. The next H2 reopens its own section's leading blockquote
+     because the selector is scoped by the blockquote's sibling chain. */
+  :global(.bento-card-body-rendered[data-mode="tldr"] h2 + blockquote ~ *) {
+    display: none;
+  }
+  /* Style the section-leading blockquote as an italic lede in Detailed
+     mode so it reads as the section's nut graph rather than a generic
+     quotation. */
+  :global(.bento-card-body-rendered[data-mode="detailed"] h2 + blockquote) {
+    border-left: 2px solid var(--ink-3);
+    padding: 2px 0 2px 14px;
+    margin: 0 0 14px;
+    font-style: italic;
+    color: var(--ink-dim);
+    font-size: 15px;
+    line-height: 1.55;
+  }
+  /* In TL;DR mode, the leading blockquote IS the content for the
+     section — drop the indent + bar styling so it reads as a normal
+     paragraph under the heading. */
+  :global(.bento-card-body-rendered[data-mode="tldr"] h2 + blockquote) {
+    border-left: none;
+    padding: 0;
+    margin: 0 0 14px;
+    font-style: normal;
+    color: var(--ink);
+    font-size: 15px;
+    line-height: 1.55;
+  }
+
+  /* ── Reading-mode pill toggle ─────────────────────────────────
+     Mounted by bento-expand.ts as a sibling preceding the rendered
+     wrap, only visible while a card is .is-expanded. Reuses the
+     existing pill aesthetic: translucent ink-toned background,
+     paper-toned active segment. */
+  :global(.cs-mode-toggle) {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    gap: 0;
+    /* Explicit top margin guarantees vertical separation from the
+       preceding flex sibling (the case-study title). */
+    margin: 24px auto 18px;
+    width: fit-content;
+    background: rgba(26, 26, 28, 0.06);
+    border-radius: 999px;
+    padding: 4px;
+  }
+  /* Sliding "thumb" behind the buttons. The active button's background
+     fill lives on this single element and translates between the two
+     segment positions on mode swap, producing an iOS-style slide
+     instead of the previous flick (where the fill was a property on
+     each button and snapped between them). The buttons themselves get
+     equal flex-basis so the thumb's translateX(100%) lands precisely
+     on the second segment. */
+  /* Outer thumb — owns the horizontal slide via translateX transition.
+     Background + shadow live on the inner element so the slide and
+     the squash-stretch animation can compose without fighting over
+     the same `transform` property. */
+  :global(.cs-mode-toggle__thumb) {
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    left: 4px;
+    width: calc(50% - 4px);
+    /* Faster than the previous soft-glass setting (which was ~3×
+       slower than the screeny.mov reference). 260ms with a small
+       cubic-bezier overshoot leaves the squash-stretch keyframe
+       room to sell the physics on its own track. */
+    transition: transform 260ms cubic-bezier(0.32, 1.25, 0.4, 1);
+    pointer-events: none;
+  }
+  :global(.cs-mode-toggle[data-active="detailed"] .cs-mode-toggle__thumb) {
+    transform: translateX(100%);
+  }
+  /* Inner thumb — carries the visible fill and the scaleX squash-
+     stretch animation. Stretches horizontally at peak velocity (mid-
+     flight) and returns to round at rest, mimicking a rubber band
+     under tension. JS toggles the .is-squashing class per swap so
+     the animation restarts cleanly on rapid toggles. */
+  :global(.cs-mode-toggle__thumb-inner) {
+    position: absolute;
+    inset: 0;
+    background: var(--paper);
+    border-radius: 999px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    transform-origin: center;
+    will-change: transform;
+  }
+  :global(.cs-mode-toggle__thumb-inner.is-squashing) {
+    animation: cs-thumb-squash 280ms cubic-bezier(0.45, 0, 0.55, 1);
+  }
+  @keyframes cs-thumb-squash {
+    0%   { transform: scaleX(1); }
+    40%  { transform: scaleX(1.18); }
+    100% { transform: scaleX(1); }
+  }
+  :global(.cs-mode-toggle button) {
+    position: relative;
+    z-index: 1;
+    flex: 1 1 0;
+    min-width: 88px;
+    text-align: center;
+    background: transparent;
+    border: 0;
+    color: var(--ink-dim);
+    font: 500 12.5px/1 var(--font-sans, -apple-system, system-ui, sans-serif);
+    padding: 7px 16px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: color 200ms ease;
+  }
+  :global(.cs-mode-toggle button:hover) {
+    color: var(--ink);
+  }
+  :global(.cs-mode-toggle button[aria-selected="true"]) {
+    color: var(--ink);
+  }
+  /* Fade the pill out alongside the body paragraphs during the close
+     morph. The toggle is a sibling of the rendered wrap (not a child),
+     so it doesn't inherit the .body-para.appended fade rule that
+     handles the rest of the content. Without this, the pill stays at
+     full opacity through the entire shrink and only disappears
+     abruptly at cleanup. Duration matches .is-collapsing .body-para. */
+  :global(.bento-card.is-collapsing .cs-mode-toggle) {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 180ms ease;
+  }
+
+  /* ── "For the nerds" footer ──────────────────────────────────────
+     Surfaces only in Detailed mode when frontmatter.deepwikiUrl is
+     set. Hidden in TL;DR mode by the existing
+     `[data-mode="tldr"] h2 + blockquote ~ *` rule (the footer is a
+     sibling that follows the last section's blockquote — so it
+     naturally hides). Explicit selector below also hides it in case
+     the footer ever lands before any blockquote (e.g. a case study
+     with no sections — defensive). */
+  :global(.bento-card-body-rendered .cs-nerds-footer) {
+    margin: 32px 0 0;
+    text-align: right;
+    font-size: 13px;
+    color: var(--ink-dim);
+  }
+  :global(.bento-card-body-rendered[data-mode="tldr"] .cs-nerds-footer) {
+    display: none;
+  }
+  :global(.bento-card-body-rendered .cs-nerds-footer a) {
+    color: var(--ink-dim);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-color: rgba(26, 26, 28, 0.25);
+    transition: color 200ms ease;
+  }
+  :global(.bento-card-body-rendered .cs-nerds-footer a:hover) {
+    color: var(--ink);
+  }
+
+  /* ── Close button ─────────────────────────────────────────────── */
+  :global(.cs-close) {
+    position: absolute;
+    top: 16px; right: 16px;
+    width: 40px; height: 40px;
+    border-radius: 999px;
+    /* White-tinted glass disc — backdrop blur frosts scrolling body
+       content underneath for legibility no matter what's behind, a
+       small drop shadow lifts the button off the modal, and a 1px
+       inset highlight gives the rim a glassy edge. Matches the
+       .cs-expand sibling on the resting card so the same affordance
+       reads the same in both states. */
+    background: rgba(255, 255, 255, 0.6);
+    -webkit-backdrop-filter: blur(12px) saturate(140%);
+    backdrop-filter: blur(12px) saturate(140%);
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.10),
+      0 2px 10px rgba(0, 0, 0, 0.10),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.32);
+    color: var(--ink);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    /* Above the .bento-card::before/::after progressive-blur strips
+       (z-index: 2) so the close button stays sharp at the top-right
+       corner even though it overlaps the top blur strip. */
+    z-index: 3;
+    border: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: background 200ms var(--ease), opacity 240ms ease;
+  }
+  :global(.bento-card.is-expanded .cs-close) {
+    opacity: 1;
+    pointer-events: auto;
+    transition-delay: 0ms, 280ms;
+  }
+  :global(.bento-card.is-collapsing .cs-close) {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 180ms ease, background 200ms ease;
+    transition-delay: 0ms;
+  }
+  :global(.cs-close:hover) { background: rgba(255, 255, 255, 0.82); }
+  :global(.cs-close svg) { width: 16px; height: 16px; }
+
+  /* ── Backdrop ─────────────────────────────────────────────────── */
+  .bento-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background: rgba(26, 26, 28, 0.4);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 320ms ease;
+    cursor: pointer;
+  }
+  .bento-backdrop.is-open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* ── Body scroll lock ─────────────────────────────────────────── */
+  :global(body.bento-open) {
+    overflow: hidden;
+  }
+</style>

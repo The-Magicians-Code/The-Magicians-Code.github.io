@@ -1,0 +1,134 @@
+---
+// Inline SVG of the Baltic region with a pinned city dot.
+// Why custom SVG: all CV cities cluster in northern Europe (Warsaw, Tallinn,
+// Nasva), the editorial aesthetic doesn't suit a Google/Apple iframe, and
+// inline SVG has zero runtime cost + prints cleanly as vectors.
+//
+// Coordinates use a simple linear projection over the visible viewBox:
+//   lon range 10°E–32°E  →  x 0–200
+//   lat range 50°N–62°N  →  y 160–0
+// Accurate enough for a 100px-wide inline graphic.
+
+interface Props {
+  city: string;
+  country?: string;
+  // Optional override of the lat/lon lookup
+  lat?: number;
+  lon?: number;
+}
+
+const cityCoords: Record<string, { lat: number; lon: number }> = {
+  Warsaw: { lat: 52.23, lon: 21.01 },
+  Tallinn: { lat: 59.44, lon: 24.75 },
+  Nasva: { lat: 58.35, lon: 22.20 },
+};
+
+const { city, country, lat, lon } = Astro.props;
+
+const coords = lat != null && lon != null
+  ? { lat, lon }
+  : cityCoords[city];
+
+// Linear projection
+const project = (la: number, lo: number) => ({
+  x: (lo - 10) * (200 / 22),
+  y: (62 - la) * (160 / 12),
+});
+
+const pin = coords ? project(coords.lat, coords.lon) : null;
+---
+
+<figure class="resume-map" aria-label={`${city}${country ? ', ' + country : ''} on the map`}>
+  <svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true">
+    <!-- Sea fill: the Baltic + surrounding waters -->
+    <rect width="200" height="160" fill="var(--map-sea)" />
+
+    <!-- Land masses — heavily simplified outlines of the Baltic region.
+         Drawn as filled paths rather than per-country borders to keep
+         the graphic editorial rather than cartographic. -->
+
+    <!-- Scandinavia (Norway + Sweden), left edge -->
+    <path
+      d="M 0 0 L 0 130 Q 12 128 22 120 Q 32 105 38 90 Q 44 78 52 65 Q 60 50 64 35 Q 68 22 72 10 Q 72 4 70 0 Z"
+      fill="var(--map-land)"
+    />
+
+    <!-- Finland, top-right -->
+    <path
+      d="M 110 0 Q 118 4 124 10 Q 130 22 132 35 Q 132 48 128 58 Q 122 65 114 66 Q 108 62 104 54 Q 102 42 105 28 Q 108 14 110 0 Z"
+      fill="var(--map-land)"
+    />
+
+    <!-- Estonia + Latvia + Lithuania -->
+    <path
+      d="M 100 56 Q 112 56 122 60 Q 132 66 134 76 Q 132 86 122 90 Q 110 90 100 86 Q 92 80 94 70 Q 96 62 100 56 Z"
+      fill="var(--map-land)"
+    />
+
+    <!-- Poland (south of the Baltic, the Polish coast) -->
+    <path
+      d="M 60 110 Q 80 108 100 110 Q 120 112 140 116 Q 150 122 148 134 Q 142 148 130 154 Q 110 158 90 156 Q 70 154 56 148 Q 48 138 50 124 Q 54 114 60 110 Z"
+      fill="var(--map-land)"
+    />
+
+    <!-- Russia / Belarus eastern edge -->
+    <path
+      d="M 152 60 Q 168 58 180 60 Q 192 66 200 78 L 200 160 L 160 160 Q 154 148 150 132 Q 148 110 150 90 Q 150 76 152 60 Z"
+      fill="var(--map-land)"
+    />
+
+    <!-- Faint graticule lines to suggest "map" without competing with the dot -->
+    <g stroke="var(--map-grid)" stroke-width="0.4" fill="none">
+      <line x1="0" y1="40" x2="200" y2="40" />
+      <line x1="0" y1="80" x2="200" y2="80" />
+      <line x1="0" y1="120" x2="200" y2="120" />
+      <line x1="50" y1="0" x2="50" y2="160" />
+      <line x1="100" y1="0" x2="100" y2="160" />
+      <line x1="150" y1="0" x2="150" y2="160" />
+    </g>
+
+    {pin && (
+      <g>
+        <circle cx={pin.x} cy={pin.y} r="9" fill="var(--accent)" opacity="0.18" />
+        <circle cx={pin.x} cy={pin.y} r="5" fill="var(--accent)" opacity="0.32" />
+        <circle cx={pin.x} cy={pin.y} r="2.4" fill="var(--accent)" />
+      </g>
+    )}
+  </svg>
+  <figcaption class="resume-map-caption">
+    {city}{country ? <>, {country}</> : null}
+  </figcaption>
+</figure>
+
+<style>
+  .resume-map {
+    --map-sea: color-mix(in oklab, var(--paper) 80%, var(--accent-soft));
+    --map-land: color-mix(in oklab, var(--paper) 60%, var(--ink) 6%);
+    --map-grid: color-mix(in oklab, var(--ink) 8%, transparent);
+
+    margin: 0;
+    display: inline-flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-start;
+  }
+  .resume-map svg {
+    width: 110px;
+    height: 88px;
+    border-radius: 8px;
+    border: 1px solid var(--rule);
+    display: block;
+    background: var(--map-sea);
+  }
+  .resume-map-caption {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--ink-3);
+    letter-spacing: 0.04em;
+  }
+  :global(html.dark) .resume-map {
+    --map-sea: color-mix(in oklab, var(--paper) 70%, var(--accent-soft));
+    --map-land: color-mix(in oklab, var(--paper) 40%, var(--ink) 14%);
+    --map-grid: color-mix(in oklab, var(--ink) 18%, transparent);
+  }
+</style>

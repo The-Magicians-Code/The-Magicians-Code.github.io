@@ -1,0 +1,49 @@
+---
+import { getCollection, render } from 'astro:content';
+import BentoGrid from './BentoGrid.astro';
+import BentoCard from './BentoCard.astro';
+
+const projects = (await getCollection('projects'))
+  .filter((p) => !p.data.draft)
+  .sort((a, b) => a.data.order - b.data.order);
+
+// Pre-resolve <Content /> per project. render() is a top-level function in
+// Astro 5 (from astro:content); it can't be called inside JSX .map(), so we
+// resolve up-front via Promise.all. Matches the pattern at
+// src/pages/projects/[slug].astro.
+const projectsWithContent = await Promise.all(
+  projects.map(async (project) => {
+    const { Content } = await render(project);
+    return { project, Content };
+  }),
+);
+---
+
+<section id="projects">
+  <h2 class="section-title">Projects <em>worth</em> showing.</h2>
+  <BentoGrid>
+    {projectsWithContent.map(({ project, Content }) => (
+      <BentoCard
+        title={project.data.title}
+        eyebrow="Case study"
+        slug={project.id}
+        bentoSpan={project.data.bentoSpan}
+        coverVariant={project.data.coverVariant}
+        deepwikiUrl={project.data.deepwikiUrl}
+      >
+        <Content />
+      </BentoCard>
+    ))}
+  </BentoGrid>
+</section>
+
+<style>
+  .section-title {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: clamp(1.75rem, 1.5vw + 1.25rem, 2.5rem);
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    margin-bottom: 24px;
+  }
+</style>

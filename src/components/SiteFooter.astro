@@ -2,11 +2,36 @@
 const year = new Date().getFullYear();
 ---
 
-<div class="max-w-4xl mx-auto p-6 md:p-10 space-y-12 md:space-y-16">
-  <footer
-    class="text-center text-gray-500 dark:text-neutral-400 text-sm pt-8 border-t border-gray-200 dark:border-neutral-700 section-fade-in px-6"
-    style="--delay: 0.5s"
-  >
-    &copy; {year} Tanel Treuberg. All rights reserved.
+<div class="footer-wrap">
+  <footer class="site-footer section-fade-in" style="--delay: 0.5s">
+    <span>&copy; {year} Tanel Treuberg.</span>
+    <span class="dot" aria-hidden="true">·</span>
+    <span>Built with Astro.</span>
   </footer>
 </div>
+
+<style>
+  .footer-wrap {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+  @media (min-width: 720px) {
+    .footer-wrap { padding: 0 40px; }
+  }
+  .site-footer {
+    margin-top: 64px;
+    padding: 28px 0 40px;
+    border-top: 1px solid var(--rule);
+    color: var(--ink-3);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.10em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .dot { color: var(--ink-3); opacity: 0.6; }
+</style>

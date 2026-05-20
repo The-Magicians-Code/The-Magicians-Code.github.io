@@ -10,6 +10,9 @@ const projects = defineCollection({
     repoUrl: z.url(),
     order: z.number().int(),
     draft: z.boolean().default(false),
+    bentoSpan: z.enum(['hero', 'wide', 'tall', 'normal']).default('normal'),
+    coverVariant: z.enum(['base', 'alt']).default('base'),
+    deepwikiUrl: z.url().optional(),
   }),
 });
 

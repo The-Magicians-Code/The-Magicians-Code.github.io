@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tech Stack — Tile Variants</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,400&family=Geist+Mono:wght@400;500&family=Geist:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --font-serif: 'Fraunces', Georgia, serif;
+    --font-sans: 'Geist', ui-sans-serif, system-ui, sans-serif;
+    --font-mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+    --bg: #f6f3ed;
+    --paper: #faf8f3;
+    --ink: #1a1a1c;
+    --ink-dim: #4d4d52;
+    --ink-3: #8e8a82;
+    --rule: rgba(26, 26, 28, 0.12);
+    --rule-soft: rgba(26, 26, 28, 0.06);
+    --accent: oklch(64% 0.18 28);
+
+    /* Dark bento (variant A) tokens */
+    --dark-bg: #16140f;
+    --dark-paper: #1f1c16;
+    --dark-ink: #f5f1e7;
+    --dark-ink-3: #8b8678;
+    --dark-rule: rgba(245, 241, 231, 0.10);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    padding: 48px 32px 96px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  /* Page header */
+  header.page {
+    margin-bottom: 40px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-3);
+    margin-bottom: 8px;
+  }
+  h1 {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: 36px;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+  }
+  h1 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+  .lede {
+    margin-top: 12px;
+    color: var(--ink-dim);
+    font-size: 15px;
+    max-width: 60ch;
+    line-height: 1.5;
+  }
+
+  /* Variant header */
+  .variant {
+    margin-top: 56px;
+  }
+  .variant-label {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .variant-tag {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .variant-title {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: 22px;
+    color: var(--ink);
+  }
+  .variant-note {
+    margin-bottom: 20px;
+    color: var(--ink-dim);
+    font-size: 14px;
+    max-width: 64ch;
+    line-height: 1.55;
+  }
+
+  /* ===== Bento card (shared) ===== */
+  .bento {
+    border-radius: 32px;
+    padding: 32px;
+    border: 1px solid var(--rule);
+    background: var(--paper);
+  }
+  .bento-head {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .bento-title {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: 24px;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  .bento-sub {
+    margin-top: 4px;
+    font-size: 13px;
+    color: var(--ink-3);
+  }
+
+  /* Tile grid */
+  .tile-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  @media (min-width: 720px) {
+    .tile-grid { grid-template-columns: repeat(4, 1fr); }
+  }
+
+  .tile {
+    aspect-ratio: 1 / 1;
+    border-radius: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .tile:hover { transform: translateY(-2px); }
+  .tile img {
+    width: 44%;
+    height: 44%;
+    object-fit: contain;
+  }
+  .tile-name {
+    position: absolute;
+    bottom: -22px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--ink-3);
+    letter-spacing: 0.04em;
+    opacity: 0;
+    transition: opacity 240ms ease;
+  }
+  .with-names .tile-name { opacity: 1; }
+  .with-names .tile-grid { row-gap: 32px; }
+
+  /* ===== Variant A: Dark bento, full-color iOS tiles ===== */
+  .bento.dark {
+    background: var(--dark-paper);
+    border-color: var(--dark-rule);
+    color: var(--dark-ink);
+  }
+  .bento.dark .bento-title { color: var(--dark-ink); }
+  .bento.dark .bento-sub { color: var(--dark-ink-3); }
+  .bento.dark .tile-name { color: var(--dark-ink-3); }
+  .tile.colored {
+    background: var(--bg-color, #333);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.12),
+      0 6px 16px -8px rgba(0, 0, 0, 0.4);
+  }
+
+  /* ===== Variant B: Editorial monochrome on paper ===== */
+  .tile.mono {
+    background: var(--bg);
+    border: 1px solid var(--rule);
+  }
+  .tile.mono img {
+    filter: brightness(0) saturate(100%);
+    opacity: 0.85;
+  }
+
+  /* ===== Variant C: Muted tint — brand hue at low chroma ===== */
+  .tile.tinted {
+    background: var(--bg-color, #eee);
+    border: 1px solid var(--rule);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  }
+  .tile.tinted img {
+    /* keep brand color but at reduced saturation */
+    filter: saturate(0.7);
+  }
+
+  /* Plate background for A so it reads as a deliberate dark moment */
+  .plate {
+    padding: 24px;
+    border-radius: 40px;
+    background: linear-gradient(180deg, var(--bg-2, var(--bg)) 0%, var(--bg) 100%);
+    --bg-2: #efeae0;
+  }
+</style>
+</head>
+<body>
+
+<header class="page">
+  <div class="eyebrow">Docs · Ideas · 2026-05-14</div>
+  <h1>Tech Stack — <em>tile variants</em></h1>
+  <p class="lede">
+    Three takes on the iOS-app-icon Tech Stack card. Same grid, same brand marks, different palette posture.
+    Goal: pick one (or kill all three) before touching <code>SkillsTools.astro</code>.
+  </p>
+</header>
+
+<!-- ===== Variant A: literal replication ===== -->
+<section class="variant">
+  <div class="variant-label">
+    <span class="variant-tag">A</span>
+    <span class="variant-title">Dark contrast bento</span>
+  </div>
+  <p class="variant-note">
+    Closest to the inspiration screenshot — dark card with full-saturation brand-color tiles.
+    Treats the Stack as a deliberate "lights-out moment" against the cream page. Highest visual impact,
+    biggest tonal break with the rest of the site.
+  </p>
+  <div class="plate">
+    <div class="bento dark with-names">
+      <div class="bento-head">
+        <div class="bento-title">Tech Stack</div>
+        <div class="bento-sub">Tools I enjoy using</div>
+      </div>
+      <div class="tile-grid" data-grid="colored"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Variant B: editorial monochrome ===== -->
+<section class="variant">
+  <div class="variant-label">
+    <span class="variant-tag">B</span>
+    <span class="variant-title">Editorial monochrome</span>
+  </div>
+  <p class="variant-note">
+    Same tile shape, palette stripped. Each mark rendered in ink on cream — sits cleanly inside the
+    existing Stack section's tone. Loses the "branded" pop; gains coherence with the rest of the page.
+  </p>
+  <div class="bento with-names">
+    <div class="bento-head">
+      <div class="bento-title">Tech Stack</div>
+      <div class="bento-sub">Tools I enjoy using</div>
+    </div>
+    <div class="tile-grid" data-grid="mono"></div>
+  </div>
+</section>
+
+<!-- ===== Variant C: muted tint ===== -->
+<section class="variant">
+  <div class="variant-label">
+    <span class="variant-tag">C</span>
+    <span class="variant-title">Muted tint — compromise</span>
+  </div>
+  <p class="variant-note">
+    Brand colors present but desaturated, sitting on a paper background. Keeps recognizability of the
+    brands without screaming. The "fits-but-still-fun" middle path.
+  </p>
+  <div class="bento with-names">
+    <div class="bento-head">
+      <div class="bento-title">Tech Stack</div>
+      <div class="bento-sub">Tools I enjoy using</div>
+    </div>
+    <div class="tile-grid" data-grid="tinted"></div>
+  </div>
+</section>
+
+<script>
+  // Stack list matches src/components/SkillsTools.astro tools
+  const TOOLS = [
+    { name: 'Python',      slug: 'python',           hex: '3776AB' },
+    { name: 'PyTorch',     slug: 'pytorch',          hex: 'EE4C2C' },
+    { name: 'TensorFlow',  slug: 'tensorflow',       hex: 'FF6F00' },
+    { name: 'Docker',      slug: 'docker',           hex: '2496ED' },
+    { name: 'Kubernetes',  slug: 'kubernetes',       hex: '326CE5' },
+    { name: 'PostgreSQL',  slug: 'postgresql',       hex: '4169E1' },
+    { name: 'NVIDIA',      slug: 'nvidia',           hex: '76B900' },
+    { name: 'Grafana',     slug: 'grafana',          hex: 'F46800' },
+    { name: 'Git',         slug: 'git',              hex: 'F05032' },
+    { name: 'Jenkins',     slug: 'jenkins',          hex: 'D24939' },
+    { name: 'Flask',       slug: 'flask',            hex: '000000' },
+    { name: 'AWS',         slug: 'amazonwebservices', hex: '232F3E' },
+  ];
+
+  function tile(tool, variant) {
+    const el = document.createElement('div');
+    el.className = `tile ${variant}`;
+    if (variant === 'colored') {
+      el.style.setProperty('--bg-color', `#${tool.hex}`);
+    } else if (variant === 'tinted') {
+      // soft tint of brand hue
+      el.style.setProperty('--bg-color', `#${tool.hex}1f`);
+    }
+    const img = document.createElement('img');
+    const color = variant === 'colored' ? 'white' : tool.hex;
+    img.src = `https://cdn.simpleicons.org/${tool.slug}/${color}`;
+    img.alt = tool.name;
+    img.loading = 'lazy';
+    const label = document.createElement('span');
+    label.className = 'tile-name';
+    label.textContent = tool.name;
+    el.appendChild(img);
+    el.appendChild(label);
+    return el;
+  }
+
+  document.querySelectorAll('[data-grid]').forEach((grid) => {
+    const variant = grid.getAttribute('data-grid');
+    TOOLS.forEach((t) => grid.appendChild(tile(t, variant)));
+  });
+</script>
+
+</body>
+</html>
