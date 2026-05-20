@@ -525,20 +525,18 @@
        above the wrap stay centered via the parent .card-body rule. */
     text-align: left;
   }
-  :global(.bento-card .body-para.appended) {
+  /* .body-para is a structural marker (margins between paragraphs and
+     list items). The fade is now driven by the wrap's existing
+     opacity transition + .is-swapping class — same pattern as the
+     TL;DR ↔ Detailed mode swap. No per-paragraph stagger. */
+  :global(.bento-card .body-para) {
     margin: 14px 0;
-    opacity: 0;
-    transition: opacity 280ms ease;
   }
-  :global(.bento-card .body-para.appended.in) {
-    opacity: 1;
-    transition-delay: calc(var(--stagger-idx, 0) * 80ms);
-  }
-  :global(.bento-card.is-collapsing .body-para.appended),
-  :global(.bento-card.is-collapsing .body-para.appended.in) {
+  /* Close: fade the wrap (parent) — child paragraphs go invisible via
+     parent opacity. Matches the close-fade timing for the body content. */
+  :global(.bento-card.is-collapsing .bento-card-body-rendered) {
     opacity: 0;
     transition: opacity 180ms ease;
-    transition-delay: 0ms;
   }
   /* Markdown body styling — rendered content may carry headings, lists, code, links. */
   :global(.bento-card .bento-card-body-rendered :is(h2, h3)) {
@@ -708,12 +706,11 @@
   :global(.cs-mode-toggle button[aria-selected="true"]) {
     color: var(--ink);
   }
-  /* Fade the pill out alongside the body paragraphs during the close
-     morph. The toggle is a sibling of the rendered wrap (not a child),
-     so it doesn't inherit the .body-para.appended fade rule that
-     handles the rest of the content. Without this, the pill stays at
-     full opacity through the entire shrink and only disappears
-     abruptly at cleanup. Duration matches .is-collapsing .body-para. */
+  /* Fade the pill out alongside the body wrap during the close morph.
+     The toggle is a sibling of the rendered wrap (not a child), so it
+     doesn't inherit the wrap-level opacity fade. Without this, the
+     pill stays at full opacity through the entire shrink and only
+     disappears abruptly at cleanup. Duration matches the wrap fade. */
   :global(.bento-card.is-collapsing .cs-mode-toggle) {
     opacity: 0;
     pointer-events: none;
