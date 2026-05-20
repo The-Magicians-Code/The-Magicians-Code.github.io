@@ -174,6 +174,58 @@ async function ensureCardClearOfNav(card: HTMLElement): Promise<void> {
   await new Promise<void>((r) => window.setTimeout(r, SCROLL_SETTLE_PAUSE));
 }
 
+// Walk a subtree and replace each text node's words with span.body-word
+// elements interspersed with their original whitespace. Inline elements
+// (em, a, strong, etc.) are recursed into so their inner text also gets
+// wrapped — the wrapping element stays in place. <code> is special-cased:
+// its entire text content is wrapped as a SINGLE body-word so inline
+// code stays visually contiguous and streams as one atomic unit (the
+// alternative — splitting `function name` into two animated words —
+// looks broken).
+//
+// Each word span gets --word-idx, a globally incremented index across
+// the whole subtree, so CSS can stagger animations in document order.
+// counter is passed by reference (object wrap) so recursion shares state.
+function wrapWordsInTree(root: HTMLElement, counter: { value: number }): void {
+  const children = Array.from(root.childNodes);
+  for (const child of children) {
+    if (child.nodeType === Node.TEXT_NODE) {
+      const text = child.textContent ?? '';
+      if (text.length === 0) continue;
+      const tokens = text.split(/(\s+)/);
+      const frag = document.createDocumentFragment();
+      for (const tok of tokens) {
+        if (tok === '') continue;
+        if (/^\s+$/.test(tok)) {
+          frag.appendChild(document.createTextNode(tok));
+        } else {
+          const span = document.createElement('span');
+          span.className = 'body-word';
+          span.style.setProperty('--word-idx', String(counter.value++));
+          span.textContent = tok;
+          frag.appendChild(span);
+        }
+      }
+      root.replaceChild(frag, child);
+    } else if (child.nodeType === Node.ELEMENT_NODE) {
+      const el = child as HTMLElement;
+      if (el.classList.contains('body-word')) continue;
+      if (el.tagName === 'CODE') {
+        const text = el.textContent ?? '';
+        if (text.length > 0) {
+          const span = document.createElement('span');
+          span.className = 'body-word';
+          span.style.setProperty('--word-idx', String(counter.value++));
+          span.textContent = text;
+          el.replaceChildren(span);
+        }
+        continue;
+      }
+      wrapWordsInTree(el, counter);
+    }
+  }
+}
+
 // ── Open ─────────────────────────────────────────────────────────────────
 let openInProgress = false;
 
@@ -336,14 +388,21 @@ function doOpen(card: HTMLElement): void {
       wrap.appendChild(footer);
     }
 
-    // Per-child stagger via inline custom property.
-    [...wrap.children].forEach((el, idx) => {
-      (el as HTMLElement).style.setProperty('--stagger-idx', String(idx));
-      (el as HTMLElement).classList.add('body-para', 'appended');
-    });
+    // Word-streaming animation: split each child's text into body-word
+    // spans with a globally-incremented --word-idx for sequenced CSS
+    // animations. Each child still gets .body-para for paragraph-level
+    // structural rules (margins, list-item formatting) but loses the
+    // .appended opacity stagger — word-level animation replaces it.
+    const wordCounter = { value: 0 };
+    for (const child of wrap.children) {
+      (child as HTMLElement).classList.add('body-para');
+      wrapWordsInTree(child as HTMLElement, wordCounter);
+    }
     void wrap.offsetHeight;
     requestAnimationFrame(() => {
-      [...wrap.children].forEach((el) => el.classList.add('in'));
+      [...wrap.querySelectorAll<HTMLElement>('.body-word')].forEach((el) =>
+        el.classList.add('in'),
+      );
     });
   }, MORPH_DUR);
 
