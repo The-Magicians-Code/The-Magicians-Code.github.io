@@ -196,21 +196,21 @@
   }
 
   /* ── Expand-on-click lifecycle ────────────────────────────────
-     bento-expand.ts pins the marquee to its rest viewport rect at open
-     (detach → body, position:fixed, z-index 199 below the card's 201),
-     reattaches at cleanup. The card covers the marquee's rest rect
-     throughout the morph, hiding it via stacking.
+     Hide the marquee entirely during the modal lifecycle (open morph,
+     modal-state, close morph). It's the most expensive paint-per-frame
+     element on the page: 48–72 tile divs with inset + outer box-shadows
+     under a linear-gradient mask, all repainted at every morph frame
+     because the marquee's position:absolute box resizes with the card.
+     opacity:0 doesn't skip paint — only compositing — so the GPU was
+     burning paint cost on a fully invisible element.
 
-     The opacity fade below is layered on top of the stacking hide so
-     the reveal at cleanup (and the hide at open) is animated rather
-     than a hard cut. Body class .bento-open is set during the entire
-     lifecycle by lockBodyScroll/unlockBodyScroll, so the rule covers
-     both the in-card (rest) and pinned-to-body (lifecycle) states. */
-  :global([data-bento-stack]) {
-    transition: opacity 220ms ease;
-  }
+     visibility: hidden skips paint (tile shadows + mask not drawn) but
+     keeps the layout box intact, so the element doesn't trigger CLS
+     shifts (which content-visibility: hidden would, by collapsing the
+     marquee's box). Card morph covers the marquee's rest rect via
+     stacking, so the user doesn't perceive the instant hide/show. */
   :global(body.bento-open [data-bento-stack]) {
-    opacity: 0;
+    visibility: hidden;
   }
 
   /* Paper-bg overrides for the cloned modal body (default rules in
