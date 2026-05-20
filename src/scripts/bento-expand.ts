@@ -299,8 +299,10 @@ function doOpen(card: HTMLElement): void {
   };
 
   // After the morph lands, clone the hidden body content into the visible
-  // card-body and fade it in with a per-paragraph stagger. Guard against
-  // close-during-open: if user esc'd before this fires, drop it.
+  // card-body and fade it in. Single wrap-level opacity transition (no
+  // per-paragraph stagger) — same pattern as the TL;DR ↔ Detailed mode
+  // swap (.is-swapping on the wrap → opacity 0 → 1 over 160ms). Guard
+  // against close-during-open: if user esc'd before this fires, drop it.
   window.setTimeout(() => {
     if (!openState || openState.closing) return;
     const body = card.querySelector<HTMLElement>('.card-body');
@@ -308,7 +310,7 @@ function doOpen(card: HTMLElement): void {
     if (!body || !source) return;
 
     const wrap = document.createElement('div');
-    wrap.className = 'bento-card-body-rendered';
+    wrap.className = 'bento-card-body-rendered is-swapping';
     const initialMode = readMode();
     applyMode(wrap, initialMode);
     // Clone children so the original hidden source stays intact for a
@@ -336,14 +338,15 @@ function doOpen(card: HTMLElement): void {
       wrap.appendChild(footer);
     }
 
-    // Per-child stagger via inline custom property.
-    [...wrap.children].forEach((el, idx) => {
-      (el as HTMLElement).style.setProperty('--stagger-idx', String(idx));
-      (el as HTMLElement).classList.add('body-para', 'appended');
-    });
+    // Children keep .body-para for paragraph-structural CSS (margins,
+    // list-item formatting). The fade is now driven by the wrap's
+    // .is-swapping class via the existing opacity transition rule.
+    for (const child of wrap.children) {
+      (child as HTMLElement).classList.add('body-para');
+    }
     void wrap.offsetHeight;
     requestAnimationFrame(() => {
-      [...wrap.children].forEach((el) => el.classList.add('in'));
+      wrap.classList.remove('is-swapping');
     });
   }, MORPH_DUR);
 
