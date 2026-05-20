@@ -25,6 +25,13 @@ interface OpenState {
   appendedBodyWrap: HTMLElement | null;
   pillToggle: HTMLElement | null;
   closing: boolean;
+  /* ms timestamp (performance.now()) when the open morph started. Used by
+     onResize to skip the in-place snap during the morph window — without
+     this, an address-bar collapse on iOS Safari (or any window.resize
+     fired between open click and morph end) would yank the card to the
+     new viewport-centered target with `transition: none`, reading as the
+     animation "skipping to the end". */
+  openedAt: number;
 }
 
 function makeBlurStrip(position: 'top' | 'bottom'): HTMLElement {
@@ -288,6 +295,7 @@ function doOpen(card: HTMLElement): void {
     appendedBodyWrap: null,
     pillToggle: null,
     closing: false,
+    openedAt: performance.now(),
   };
 
   // After the morph lands, clone the hidden body content into the visible
@@ -548,6 +556,13 @@ function onResize(): void {
     syncAllTitleRestY();
 
     if (!openState || openState.closing) return;
+    // Skip the snap if the open morph is still in flight. Otherwise an
+    // address-bar collapse on iOS Safari (or any window.resize fired
+    // between click and morph-end) would interrupt the transition by
+    // setting `transition: none` and yanking the card to the modal-
+    // centered target — reads as the animation "skipping to the end".
+    // After the morph completes, resizes continue to recenter normally.
+    if (performance.now() - openState.openedAt < MORPH_DUR) return;
     const { card } = openState;
 
     card.classList.add('is-resizing');
