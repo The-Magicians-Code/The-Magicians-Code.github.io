@@ -229,7 +229,10 @@
     color: var(--accent);
   }
 
-  /* Hover-revealed expand affordance + close button repainted for paper. */
+  /* Hover-revealed expand affordance + close button repainted for paper.
+     Dark-mode flips the ink-tint to a white tint so the disc stays
+     readable against dark paper (the dark-ink override would otherwise
+     blend into the card). */
   :global(.bento-card.stack-card .cs-expand) {
     background: rgba(26, 26, 28, 0.06);
     color: var(--ink);
@@ -244,5 +247,13 @@
   }
   :global(.bento-card.stack-card .cs-close:hover) {
     background: rgba(26, 26, 28, 0.12);
+  }
+  :global(html.dark .bento-card.stack-card .cs-expand),
+  :global(html.dark .bento-card.stack-card .cs-close) {
+    background: rgba(255, 255, 255, 0.08);
+  }
+  :global(html.dark .bento-card.stack-card .cs-expand:hover),
+  :global(html.dark .bento-card.stack-card .cs-close:hover) {
+    background: rgba(255, 255, 255, 0.16);
   }
 </style>
