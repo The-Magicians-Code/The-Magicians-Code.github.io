@@ -414,25 +414,38 @@
     inset: 0;
     pointer-events: none;
   }
-  :global(.card-blur-top) { top: 0; }
-  :global(.card-blur-bottom) { bottom: 0; }
-  /* Round each blur layer's corners to match the card's border-radius
-     (32px). Without this, backdrop-filter samples the area BEHIND the
-     layer's rectangular box — which extends into the dark .bento-
-     backdrop pixels visible outside the card's rounded shape. The blur
-     kernel mixes those dark pixels in, and the result bleeds into the
-     visible corner sliver after the card's overflow:hidden clip,
-     producing a thin dark rim hugging the inside of each rounded
-     corner. Clipping each layer to the card's rounded shape (via
-     border-radius on the blurred layer itself) forces backdrop-filter
-     to ignore the area outside the curve. */
-  :global(.card-blur-top > div) {
+  /* Clip the blur strips to the card's rounded corners. Without this,
+     backdrop-filter samples the area BEHIND the layer's rectangular
+     box — which extends into the dark .bento-backdrop pixels visible
+     outside the card's rounded shape. The blur kernel mixes those
+     dark pixels in, producing a thin dark rim hugging the inside of
+     each rounded corner.
+
+     Three-layer defense because backdrop-filter sampling honors
+     different clipping mechanisms on different engines:
+       1. border-radius on the strip itself — Chromium respects this
+          for backdrop-filter sampling.
+       2. overflow: hidden + isolation: isolate on the strip — forces
+          a stacking context whose descendants composite within the
+          rounded shape (Safari more reliably honors this).
+       3. clip-path: inset(0 round 32px) on the strip — strictest
+          form of corner clip; both engines respect it for descendant
+          sampling regions. */
+  :global(.card-blur-top) {
+    top: 0;
     border-top-left-radius: 32px;
     border-top-right-radius: 32px;
+    overflow: hidden;
+    isolation: isolate;
+    clip-path: inset(0 round 32px 32px 0 0);
   }
-  :global(.card-blur-bottom > div) {
+  :global(.card-blur-bottom) {
+    bottom: 0;
     border-bottom-left-radius: 32px;
     border-bottom-right-radius: 32px;
+    overflow: hidden;
+    isolation: isolate;
+    clip-path: inset(0 round 0 0 32px 32px);
   }
   /* .is-on is toggled by bento-expand.ts via a double-rAF after the
      strips are appended — this gives the browser time to rasterize
