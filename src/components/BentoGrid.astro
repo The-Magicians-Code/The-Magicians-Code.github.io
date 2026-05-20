@@ -282,6 +282,17 @@
     opacity: 1; transform: scale(1); pointer-events: auto;
   }
   :global(.cs-expand:hover) { background: rgba(255, 255, 255, 0.78); }
+  /* Dark-mode: a bright white disc on dark paper reads as a glaring
+     high-contrast spot. Swap to a low-alpha white tint so the disc
+     stays visible as a glassy lift without burning a hole in the card. */
+  :global(html.dark .cs-expand) {
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.20),
+      0 2px 8px rgba(0, 0, 0, 0.20),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  }
+  :global(html.dark .cs-expand:hover) { background: rgba(255, 255, 255, 0.16); }
   @media (prefers-reduced-motion: reduce) {
     :global(.cs-expand) { transform: none; transition: opacity 200ms ease; }
   }
@@ -790,6 +801,15 @@
   }
   :global(.cs-close:hover) { background: rgba(255, 255, 255, 0.82); }
   :global(.cs-close svg) { width: 16px; height: 16px; }
+  /* Dark-mode parity with .cs-expand — same rationale. */
+  :global(html.dark .cs-close) {
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.24),
+      0 2px 10px rgba(0, 0, 0, 0.24),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+  }
+  :global(html.dark .cs-close:hover) { background: rgba(255, 255, 255, 0.18); }
 
   /* ── Backdrop ─────────────────────────────────────────────────── */
   .bento-backdrop {
