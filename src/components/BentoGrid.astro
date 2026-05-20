@@ -73,9 +73,9 @@
   :global(.bento-card:focus-visible) {
     outline: none;
   }
-  /* Card-enter starting state scoped to interactive bento cards only.
-     The .all-projects CTA shares .bento-card but isn't [data-bento-card] —
-     scoping here keeps it visible at rest instead of stuck at opacity:0. */
+  /* Card-enter starting state scoped to interactive bento cards only
+     (those with [data-bento-card]). Other .bento-card-shaped elements
+     would otherwise be stuck at opacity:0 with no animation to clear it. */
   :global([data-bento-card]) {
     opacity: 0;
     transform: translateY(24px);
@@ -414,32 +414,8 @@
     inset: 0;
     pointer-events: none;
   }
-  /* Clip the blur strips to the card's rounded corners. Without this,
-     backdrop-filter samples the area BEHIND the layer's rectangular
-     box — which extends into the dark .bento-backdrop pixels visible
-     outside the card's rounded shape. The blur kernel mixes those
-     dark pixels in, producing a thin dark rim hugging the inside of
-     each rounded corner.
-
-     `isolation: isolate` would create a new stacking context, but
-     backdrop-filter explicitly does not blend across a stacking-
-     context boundary — applying it would kill the blur entirely.
-     Use only painted-area clips (border-radius, clip-path) plus
-     overflow:hidden as a visible-output safety net. */
-  :global(.card-blur-top) {
-    top: 0;
-    border-top-left-radius: 32px;
-    border-top-right-radius: 32px;
-    overflow: hidden;
-    clip-path: inset(0 round 32px 32px 0 0);
-  }
-  :global(.card-blur-bottom) {
-    bottom: 0;
-    border-bottom-left-radius: 32px;
-    border-bottom-right-radius: 32px;
-    overflow: hidden;
-    clip-path: inset(0 round 0 0 32px 32px);
-  }
+  :global(.card-blur-top) { top: 0; }
+  :global(.card-blur-bottom) { bottom: 0; }
   /* .is-on is toggled by bento-expand.ts via a double-rAF after the
      strips are appended — this gives the browser time to rasterize
      the backdrop-filter layers at opacity:0 (warming up the GPU
