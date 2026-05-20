@@ -112,81 +112,10 @@ function makeCloseIcon(): SVGSVGElement {
   return svg;
 }
 
-// ── Pre-open scroll: clear the card out from under the nav ──────────────
-// The fixed nav (z:40) overlaps any card the user clicks on while scrolled
-// near the top of the section. Lifting the card to z:201 instantly would
-// produce a visible layer-pop (card escapes from behind the nav-pill blur).
-// Instead, smoothly scroll so the card sits below the nav band before the
-// open animation starts.
-//
-// Native window.scrollBy({behavior:'smooth'}) is too fast and uses a fixed
-// browser easing curve. Polynomial easings (easeInOutQuint etc.) stutter
-// at the start because their first ~30% of duration covers <1% of distance.
-//
-// Lerp-based smooth scroll — same pattern as Lenis and mchiu.co.uk's
-// custom scroll. Each frame: current += (target - current) * factor.
-// Distance remaining shrinks exponentially, which naturally produces
-// "fast start, smooth decelerating tail" — the physics of a critically-
-// damped spring approaching equilibrium. No fixed duration; ends when
-// the gap is sub-pixel.
-const SCROLL_LERP = 0.12;          // higher = snappier; 0.08-0.18 is the useful band
-const SCROLL_EPSILON = 0.5;        // px gap at which we snap to target and finish
-const SCROLL_SETTLE_PAUSE = 180;   // ms to wait after scroll lands before the morph
-                                   // begins, so the user's eye registers the scroll
-                                   // completion before the next motion starts.
-
-function smoothScrollTo(targetY: number): Promise<void> {
-  return new Promise((resolve) => {
-    const startGap = targetY - window.scrollY;
-    if (Math.abs(startGap) < 1) {
-      resolve();
-      return;
-    }
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      window.scrollTo(0, targetY);
-      resolve();
-      return;
-    }
-    let current = window.scrollY;
-    const step = (): void => {
-      current += (targetY - current) * SCROLL_LERP;
-      if (Math.abs(targetY - current) < SCROLL_EPSILON) {
-        window.scrollTo(0, targetY);
-        resolve();
-        return;
-      }
-      window.scrollTo(0, current);
-      requestAnimationFrame(step);
-    };
-    requestAnimationFrame(step);
-  });
-}
-
-async function ensureCardClearOfNav(card: HTMLElement): Promise<void> {
-  const nav = document.getElementById('site-nav');
-  if (!nav) return;
-  const navBottom = nav.getBoundingClientRect().bottom;
-  const cardTop = card.getBoundingClientRect().top;
-  const margin = 16;
-  const safeTop = navBottom + margin;
-  if (cardTop >= safeTop) return;
-  await smoothScrollTo(window.scrollY + (cardTop - safeTop));
-  await new Promise<void>((r) => window.setTimeout(r, SCROLL_SETTLE_PAUSE));
-}
-
 // ── Open ─────────────────────────────────────────────────────────────────
-let openInProgress = false;
-
 function openCaseStudy(card: HTMLElement): void {
-  if (openState || openInProgress) return;
-  openInProgress = true;
-  ensureCardClearOfNav(card)
-    .then(() => {
-      if (!openState) doOpen(card);
-    })
-    .finally(() => {
-      openInProgress = false;
-    });
+  if (openState) return;
+  doOpen(card);
 }
 
 function doOpen(card: HTMLElement): void {
