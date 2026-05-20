@@ -416,6 +416,24 @@
   }
   :global(.card-blur-top) { top: 0; }
   :global(.card-blur-bottom) { bottom: 0; }
+  /* Round each blur layer's corners to match the card's border-radius
+     (32px). Without this, backdrop-filter samples the area BEHIND the
+     layer's rectangular box — which extends into the dark .bento-
+     backdrop pixels visible outside the card's rounded shape. The blur
+     kernel mixes those dark pixels in, and the result bleeds into the
+     visible corner sliver after the card's overflow:hidden clip,
+     producing a thin dark rim hugging the inside of each rounded
+     corner. Clipping each layer to the card's rounded shape (via
+     border-radius on the blurred layer itself) forces backdrop-filter
+     to ignore the area outside the curve. */
+  :global(.card-blur-top > div) {
+    border-top-left-radius: 32px;
+    border-top-right-radius: 32px;
+  }
+  :global(.card-blur-bottom > div) {
+    border-bottom-left-radius: 32px;
+    border-bottom-right-radius: 32px;
+  }
   /* .is-on is toggled by bento-expand.ts via a double-rAF after the
      strips are appended — this gives the browser time to rasterize
      the backdrop-filter layers at opacity:0 (warming up the GPU
