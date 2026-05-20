@@ -325,6 +325,19 @@
        no locked/fixed header. */
     overflow-y: auto;
   }
+  /* Preserve the scroll context through the close morph. Without this,
+     dropping .is-expanded reverts overflow-y to `visible`, which kills
+     the card-body's scroll context — scrollTop snaps to 0, and the
+     visible content jumps to the top of the body just as the title
+     starts transitioning back. Reads as the pill + content below
+     shifting up. Only triggers when the user has scrolled away from
+     the top (which only happens in Detailed mode; TL;DR fits without
+     scrolling). Keeping overflow-y:auto during is-collapsing lets the
+     scroll position survive the close, so the fade-out of body
+     content happens in place. */
+  :global(.bento-card.is-collapsing .card-body) {
+    overflow-y: auto;
+  }
   /* iOS Safari's flex-column algorithm shrinks "auto-sized" children
      when a sibling grows (e.g. TL;DR → Detailed swap makes the
      rendered wrap several × taller). The title and pill then briefly
