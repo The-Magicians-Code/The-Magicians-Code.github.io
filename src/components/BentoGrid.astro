@@ -421,22 +421,16 @@
      dark pixels in, producing a thin dark rim hugging the inside of
      each rounded corner.
 
-     Three-layer defense because backdrop-filter sampling honors
-     different clipping mechanisms on different engines:
-       1. border-radius on the strip itself — Chromium respects this
-          for backdrop-filter sampling.
-       2. overflow: hidden + isolation: isolate on the strip — forces
-          a stacking context whose descendants composite within the
-          rounded shape (Safari more reliably honors this).
-       3. clip-path: inset(0 round 32px) on the strip — strictest
-          form of corner clip; both engines respect it for descendant
-          sampling regions. */
+     `isolation: isolate` would create a new stacking context, but
+     backdrop-filter explicitly does not blend across a stacking-
+     context boundary — applying it would kill the blur entirely.
+     Use only painted-area clips (border-radius, clip-path) plus
+     overflow:hidden as a visible-output safety net. */
   :global(.card-blur-top) {
     top: 0;
     border-top-left-radius: 32px;
     border-top-right-radius: 32px;
     overflow: hidden;
-    isolation: isolate;
     clip-path: inset(0 round 32px 32px 0 0);
   }
   :global(.card-blur-bottom) {
@@ -444,7 +438,6 @@
     border-bottom-left-radius: 32px;
     border-bottom-right-radius: 32px;
     overflow: hidden;
-    isolation: isolate;
     clip-path: inset(0 round 0 0 32px 32px);
   }
   /* .is-on is toggled by bento-expand.ts via a double-rAF after the
