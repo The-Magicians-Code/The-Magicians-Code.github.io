@@ -35,7 +35,15 @@
 - https://designdotmd.directory
 - https://polpus.studio
 - https://flighty.com/
-
+- https://www.typeui.sh
+- https://designmd.cc
+- https://staromlynski.com
+- https://www.kevdu.co
+- https://polpus.studio
+- https://liquid-dom-showcase.vercel.app/
+- https://developers.openai.com/blog/designing-delightful-frontends-with-gpt-5-4
+- https://appstacks.club/mobile-apps
+- https://www.landing.love/categories/portfolio/
 
 ### Glass
 - https://themagicianscode.dev/prototypes/liquid-glass-pill/
