@@ -1,5 +1,6 @@
 // src/scripts/pretext.ts
-// Per-word title morph animation for .cs-card case-study cards.
+// Per-word title morph animation for .cs-card case-study cards and the
+// .stack-card tech stack card.
 // Replaces the title's text with absolutely-positioned word spans
 // pre-computed at TWO widths (card rest + modal expanded). Each span
 // carries data-sx/sy/mx/my so the open / close lifecycle hooks can
@@ -39,7 +40,6 @@ interface LayoutResult {
   lineWidths: number[];
 }
 
-const TITLE_FONT_SIZE = 24;
 const TITLE_LINE_HEIGHT_RATIO = 1.15;
 const MIRROR_ID = 'pretext-mirror';
 
@@ -57,7 +57,6 @@ function getMirror(): HTMLSpanElement {
     'pointer-events: none',
     'white-space: nowrap',
     "font-family: var(--font-serif)",
-    `font-size: ${TITLE_FONT_SIZE}px`,
     'font-weight: 400',
     `line-height: ${TITLE_LINE_HEIGHT_RATIO}`,
     'letter-spacing: -0.01em',
@@ -99,8 +98,9 @@ function pretextOriginalWords(titleEl: HTMLElement): WordWithEm[] {
   return words;
 }
 
-function pretextMeasureWords(words: WordWithEm[]): WordMetric[] {
+function pretextMeasureWords(words: WordWithEm[], fontSize: number): WordMetric[] {
   const mirror = getMirror();
+  mirror.style.fontSize = `${fontSize}px`;
   mirror.style.fontStyle = 'normal';
   // Space-width via subtraction. A span containing only ' ' renders at
   // zero width because CSS layout collapses leading/trailing whitespace.
@@ -163,15 +163,18 @@ export interface ViewportRect {
   width: number;
 }
 
-// Render a single .cs-card's title with word spans + source-modal transforms.
-// getViewportRect returns the modal's target rect (provided by bento-expand.ts).
+// Render a single .cs-card or .stack-card title with word spans + source-modal
+// transforms. getViewportRect returns the modal's target rect (provided by
+// bento-expand.ts). Project cards center their modal title; stack card keeps
+// natural-flow (left-aligned) modal positions.
 export function pretextRenderCard(card: HTMLElement, getViewportRect: () => ViewportRect): void {
   if (!PRETEXT_ENABLED) return;
-  if (!card.classList.contains('cs-card')) return;
+  if (!card.classList.contains('cs-card') && !card.classList.contains('stack-card')) return;
   const titleEl = card.querySelector<HTMLElement>('.card-title');
   if (!titleEl) return;
   const words = pretextOriginalWords(titleEl);
   if (words.length === 0) return;
+  const fontSize = parseFloat(getComputedStyle(titleEl).fontSize) || 24;
 
   const body = card.querySelector<HTMLElement>('.card-body');
   if (!body) return;
@@ -186,21 +189,23 @@ export function pretextRenderCard(card: HTMLElement, getViewportRect: () => View
 
   if (sourceWidth <= 0 || modalWidth <= 0) return;
 
-  const metrics = pretextMeasureWords(words);
+  const metrics = pretextMeasureWords(words, fontSize);
   if (metrics.length === 0) return;
 
-  const lineHeight = TITLE_FONT_SIZE * TITLE_LINE_HEIGHT_RATIO;
+  const lineHeight = fontSize * TITLE_LINE_HEIGHT_RATIO;
   const sourceLayout = pretextLayout(metrics, sourceWidth, lineHeight);
   const modalLayout = pretextLayout(metrics, modalWidth, lineHeight);
 
   // Source positions are NOT centered — natural-flow left-aligned positions
   // preserve the resting visual (cards look identical to today at rest).
   const sourcePositions = sourceLayout.positions;
-  const modalPositions = pretextCenterPositions(
-    modalLayout.positions,
-    modalLayout.lineWidths,
-    modalWidth,
-  );
+  const modalPositions = card.classList.contains('cs-card')
+    ? pretextCenterPositions(
+        modalLayout.positions,
+        modalLayout.lineWidths,
+        modalWidth,
+      )
+    : modalLayout.positions;
 
   titleEl.replaceChildren();
   for (let i = 0; i < sourcePositions.length; i++) {
@@ -243,13 +248,13 @@ export function pretextAnimateCard(card: HTMLElement, toModal: boolean): void {
   });
 }
 
-// Re-measure every idle .cs-card. Skip cards mid-lifecycle (their geometry
-// reflects the modal, not the rest position).
+// Re-measure every idle .cs-card / .stack-card. Skip cards mid-lifecycle
+// (their geometry reflects the modal, not the rest position).
 export function pretextRenderAll(
   getViewportRect: () => ViewportRect,
   skipCard?: HTMLElement | null,
 ): void {
-  document.querySelectorAll<HTMLElement>('.cs-card[data-bento-card]').forEach((card) => {
+  document.querySelectorAll<HTMLElement>(':is(.cs-card, .stack-card)[data-bento-card]').forEach((card) => {
     if (card === skipCard) return;
     if (
       card.classList.contains('is-expanding') ||
