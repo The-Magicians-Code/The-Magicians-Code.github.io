@@ -240,22 +240,30 @@ function doOpen(card: HTMLElement): void {
   // multi-layer stacked blur — mounted dynamically so resting cards pay
   // zero GPU cost. See BentoGrid.astro .card-blur rules for the per-
   // layer blur radii and mask gradients.
+  //
+  // Mount is deferred until the morph completes. backdrop-filter computes
+  // on every frame the element exists, regardless of opacity — so mounting
+  // these 10 layers (5 per strip) before the morph would burn GPU on
+  // invisible blurs for 520ms. After the card has settled at modal size,
+  // the strips mount and fade in via their CSS opacity transition.
   const blurTop = makeBlurStrip('top');
   const blurBottom = makeBlurStrip('bottom');
-  card.appendChild(blurTop);
-  card.appendChild(blurBottom);
-
-  // Double-rAF before flipping .is-on so the browser fully paints the
-  // backdrop-filter layers at opacity:0 first. Without the warm-up
-  // frame, the GPU rasterizes the filter as the opacity transition
-  // starts and the blur visibly "pops" instead of fading.
-  requestAnimationFrame(() => {
+  window.setTimeout(() => {
+    if (!openState || openState.closing) return;
+    card.appendChild(blurTop);
+    card.appendChild(blurBottom);
+    // Double-rAF before flipping .is-on so the browser fully paints the
+    // backdrop-filter layers at opacity:0 first. Without the warm-up
+    // frame, the GPU rasterizes the filter as the opacity transition
+    // starts and the blur visibly "pops" instead of fading.
     requestAnimationFrame(() => {
-      if (!openState || openState.closing) return;
-      blurTop.classList.add('is-on');
-      blurBottom.classList.add('is-on');
+      requestAnimationFrame(() => {
+        if (!openState || openState.closing) return;
+        blurTop.classList.add('is-on');
+        blurBottom.classList.add('is-on');
+      });
     });
-  });
+  }, MORPH_DUR);
 
   card.classList.add('is-expanding');
   card.setAttribute('aria-expanded', 'true');
