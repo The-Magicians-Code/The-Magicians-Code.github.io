@@ -361,12 +361,6 @@ function closeCaseStudy(): void {
   // Blur BEFORE the morph so the UA focus outline doesn't trace the shrink.
   card.blur();
 
-  // Fade out appended body content (CSS handles the 180ms tail via the
-  // .is-collapsing rule that immediately follows).
-  if (appendedBodyWrap) {
-    [...appendedBodyWrap.children].forEach((el) => el.classList.remove('in'));
-  }
-
   // Reverse pretext word transforms back to source positions. .is-expanding
   // is still on the card, so the transition rule animates the change.
   if (card.classList.contains('pretext-title')) {
@@ -375,14 +369,20 @@ function closeCaseStudy(): void {
 
   // Clear is-resizing in case a resize snap was mid-flight; otherwise the
   // close transition would inherit `transition: none !important`.
+  // .is-collapsing also drives the body-para fade-out via CSS (see
+  // .bento-card.is-collapsing .body-para.appended rule) — no per-child
+  // class loop needed.
   card.classList.remove('is-expanded', 'is-resizing');
   card.classList.add('is-collapsing');
 
-  // Drop the .is-on class to trigger the blur fade-out; the
-  // .bento-card.is-collapsing .card-blur rule swaps in the quicker
-  // close-side transition timing.
-  blurTop.classList.remove('is-on');
-  blurBottom.classList.remove('is-on');
+  // Unmount blur strips immediately. Previously they faded out via opacity
+  // over 220ms, but backdrop-filter computes regardless of opacity — so the
+  // strips were eating GPU through the entire close morph. Removing them
+  // from the DOM kills backdrop-filter instantly; the card is also shrinking
+  // visibly in the same frame, so the blur disappearance reads as part of
+  // the close, not a discrete pop. doCleanup's .remove() becomes a no-op.
+  blurTop.remove();
+  blurBottom.remove();
   card.setAttribute('aria-expanded', 'false');
 
   // Re-measure the placeholder; resize may have moved it.

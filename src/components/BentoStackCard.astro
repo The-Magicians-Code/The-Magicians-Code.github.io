@@ -183,6 +183,16 @@
       animation: none;
     }
   }
+  /* Pause the marquee animation through the entire expand-modal-collapse
+     lifecycle. The marquee already goes opacity:0 during this window
+     (see the body.bento-open rule below) — but the CSS animation keeps
+     interpolating translateX on each frame, which forces the modal's
+     backdrop-filter layers to re-blur a moving backdrop every frame.
+     Pausing the animation freezes the backdrop pixels and lets the
+     compositor cache the blurred result. Major Safari paint cost. */
+  :global(body.bento-open [data-bento-stack] .marquee-track) {
+    animation-play-state: paused;
+  }
 
   /* ── Expand-on-click lifecycle ────────────────────────────────
      bento-expand.ts pins the marquee to its rest viewport rect at open
