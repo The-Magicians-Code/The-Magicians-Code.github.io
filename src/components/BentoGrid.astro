@@ -346,10 +346,19 @@
      algorithm doesn't do this. Locking flex-shrink to 0 on the
      header siblings keeps their height at their measured/intrinsic
      box and forces the column to scroll instead of relaying out
-     other children. */
+     other children.
+
+     Must also apply during .is-collapsing: dropping .is-expanded mid-
+     close releases flex-shrink, the title's box collapses to its
+     min-content, and the pill+content below shift up by the lost
+     height. Only triggers in Detailed mode because TL;DR doesn't
+     overflow the flex container (so flex-shrink never engages). */
   :global(.bento-card.is-expanded .card-eyebrow),
+  :global(.bento-card.is-collapsing .card-eyebrow),
   :global(.bento-card.is-expanded .card-title),
-  :global(.bento-card.is-expanded .cs-mode-toggle) {
+  :global(.bento-card.is-collapsing .card-title),
+  :global(.bento-card.is-expanded .cs-mode-toggle),
+  :global(.bento-card.is-collapsing .cs-mode-toggle) {
     flex-shrink: 0;
   }
   /* Centered editorial layout — eyebrow + body prose centered while the
