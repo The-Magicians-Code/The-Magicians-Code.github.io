@@ -525,20 +525,55 @@
        above the wrap stay centered via the parent .card-body rule. */
     text-align: left;
   }
-  :global(.bento-card .body-para.appended) {
+  /* .body-para is now a structural marker (margins, list spacing) —
+     no opacity transition. Animation moved to .body-word. */
+  :global(.bento-card .body-para) {
     margin: 14px 0;
+  }
+  /* Per-word streaming reveal. Each word span carries --word-idx (a
+     global counter across the wrap), so CSS can stagger animations
+     in document order. Cap the delay at 1.2s so long bodies don't
+     have words appearing seconds after the user starts reading —
+     words past the cap all share the cap delay. The visible
+     above-the-fold portion streams; below-the-fold settles before
+     the user scrolls to it. */
+  :global(.bento-card .body-word) {
+    display: inline-block;
     opacity: 0;
-    transition: opacity 280ms ease;
+    filter: blur(8px);
+    /* No will-change: adding it to hundreds of inline elements is
+       counterproductive (layer pressure outweighs the compositing
+       hint). The animation runs cleanly without it on both engines. */
   }
-  :global(.bento-card .body-para.appended.in) {
-    opacity: 1;
-    transition-delay: calc(var(--stagger-idx, 0) * 80ms);
+  :global(.bento-card .body-word.in) {
+    /* CSS animation (not transition) so the final keyframe
+       `filter: none` sticks via `forwards` — leaves the element off
+       the GPU filter render path after the reveal, dropping the
+       paint cost to zero on WebKit. A transition between blur(8px)
+       and `none` doesn't interpolate (`none` isn't a length); the
+       animation/keyframe path does. */
+    animation: body-word-reveal 280ms ease forwards;
+    animation-delay: min(calc(var(--word-idx, 0) * 25ms), 1200ms);
   }
-  :global(.bento-card.is-collapsing .body-para.appended),
-  :global(.bento-card.is-collapsing .body-para.appended.in) {
+  @keyframes body-word-reveal {
+    from { opacity: 0; filter: blur(8px); }
+    to   { opacity: 1; filter: none; }
+  }
+  /* Reduced motion: skip the stream + blur, render at final state. */
+  @media (prefers-reduced-motion: reduce) {
+    :global(.bento-card .body-word) {
+      opacity: 1;
+      filter: none;
+    }
+    :global(.bento-card .body-word.in) {
+      animation: none;
+    }
+  }
+  /* On close: fade the wrap (parent) — child words go invisible via
+     parent opacity. No per-word teardown needed. */
+  :global(.bento-card.is-collapsing .bento-card-body-rendered) {
     opacity: 0;
     transition: opacity 180ms ease;
-    transition-delay: 0ms;
   }
   /* Markdown body styling — rendered content may carry headings, lists, code, links. */
   :global(.bento-card .bento-card-body-rendered :is(h2, h3)) {
