@@ -7,7 +7,6 @@
 export type CaseStudyMode = 'tldr' | 'detailed';
 
 const SS_KEY = 'cs-mode';
-const SWAP_OUT_MS = 160; // matches BentoGrid.astro .is-swapping opacity transition
 
 export function readMode(): CaseStudyMode {
   try {
@@ -84,11 +83,129 @@ export function buildPillToggle(wrap: HTMLElement, initialMode: CaseStudyMode): 
   // readers announce the active mode when entering the panel.
   wrap.setAttribute('aria-labelledby', (initialMode === 'tldr' ? tldrBtn : detailBtn).id);
 
+  // Tracks the in-flight transition cleanup so a rapid re-toggle can
+  // cancel the prior call's animationend listener + fallback timeout
+  // instead of letting it linger and eat the next animationend event.
+  let pendingCancel: (() => void) | null = null;
+
+  // Tracks the in-flight FLIP cleanup independently — a rapid re-toggle
+  // must cancel the prior FLIP's transitionend listener + fallback timer
+  // before a new one arms, otherwise the stale cleanup strips the new
+  // FLIP's inline transforms mid-animation.
+  let pendingFlipCancel: (() => void) | null = null;
+
+  // Tracks the latest user-requested target, regardless of whether the
+  // wrap's data-mode has caught up yet. During reverse direction
+  // data-mode stays "detailed" until the leave cleanup runs, so a
+  // wrap.dataset.mode === next guard would silently ignore a user's
+  // retoggle back to Detailed mid-fade — last click would lose.
+  let currentTarget: CaseStudyMode = initialMode;
+
+  // FLIP-animate the case-study spine (h2s + section-leading blockquotes)
+  // so they slide smoothly to their new positions instead of snapping when
+  // `applySwap` flips data-mode and triggers a layout change.
+  //
+  // Continuity on rapid re-toggle: measure CURRENT visual positions (which
+  // may include an in-flight transform from a prior FLIP) BEFORE clearing
+  // inline styles. The new FLIP picks up wherever the prior one was, so
+  // the spine never visually jumps when the user toggles mid-animation.
+  //
+  // prefers-reduced-motion is honored at the top — inline `style.transition`
+  // would otherwise bypass the CSS @media block on the keyframe selectors.
+  const flipSpine = (
+    applySwap: () => void,
+    durationMs: number,
+    easing: string,
+  ): void => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      applySwap();
+      return;
+    }
+    const spine = Array.from(
+      wrap.querySelectorAll<HTMLElement>('h2, h2 + blockquote'),
+    );
+    if (spine.length === 0) {
+      applySwap();
+      return;
+    }
+    // First — measure CURRENT visual positions (may include in-flight
+    // transforms from a prior FLIP — that's what gives us continuity).
+    const oldTops = spine.map((el) => el.getBoundingClientRect().top);
+    // Clear prior FLIP state so post-swap measurement reflects true layout
+    // positions and the inverse transforms below aren't compounded.
+    for (const el of spine) {
+      el.style.transition = '';
+      el.style.transform = '';
+      el.style.willChange = '';
+    }
+    pendingFlipCancel?.();
+    // Last
+    applySwap();
+    // Compute deltas. If nothing moved, skip the inverse + animation.
+    const deltas = spine.map(
+      (el, i) => oldTops[i] - el.getBoundingClientRect().top,
+    );
+    if (deltas.every((d) => d === 0)) return;
+    // Invert
+    for (let i = 0; i < spine.length; i++) {
+      if (deltas[i] === 0) continue;
+      spine[i].style.willChange = 'transform';
+      spine[i].style.transition = 'none';
+      spine[i].style.transform = `translateY(${deltas[i]}px)`;
+    }
+    // Force reflow so the inverse transform paints before the transition
+    // declaration arms in the next frame.
+    void wrap.offsetHeight;
+    // Play
+    requestAnimationFrame(() => {
+      for (const el of spine) {
+        el.style.transition = `transform ${durationMs}ms ${easing}`;
+        el.style.transform = '';
+      }
+      // Cleanup: prefer transitionend (filtered to `transform` on a spine
+      // element). Fallback timer is armed AFTER the rAF so it can't fire
+      // before the transition is actually attached.
+      let cleaned = false;
+      const cleanup = (): void => {
+        if (cleaned) return;
+        cleaned = true;
+        window.clearTimeout(timerId);
+        wrap.removeEventListener('transitionend', onEnd);
+        pendingFlipCancel = null;
+        if (!wrap.isConnected) return;
+        for (const el of spine) {
+          el.style.transition = '';
+          el.style.transform = '';
+          el.style.willChange = '';
+        }
+      };
+      const onEnd = (e: TransitionEvent): void => {
+        if (e.propertyName !== 'transform') return;
+        if (!(e.target instanceof HTMLElement) || !spine.includes(e.target)) return;
+        cleanup();
+      };
+      wrap.addEventListener('transitionend', onEnd);
+      const timerId = window.setTimeout(cleanup, durationMs + 80);
+      pendingFlipCancel = () => {
+        window.clearTimeout(timerId);
+        wrap.removeEventListener('transitionend', onEnd);
+        // Don't clear inline transforms here — the next FLIP measures
+        // them as "current visual state" for continuity.
+        pendingFlipCancel = null;
+      };
+    });
+  };
+
   const setActive = (next: CaseStudyMode): void => {
-    if (wrap.dataset.mode === next) return;
+    // Compare against the latest requested target, not data-mode — under
+    // reverse direction data-mode lags until cleanup runs, so a
+    // data-mode-based guard would swallow a "go back" click mid-fade.
+    if (currentTarget === next) return;
+    currentTarget = next;
     // Move the pill IMMEDIATELY on click — the thumb should respond to
-    // the input the instant it lands, not 160ms later. The body
-    // content's fade-out/swap still runs on its own schedule below.
+    // the input the instant it lands, not after the body animation
+    // completes. The body content's animation runs on its own schedule
+    // below.
     root.dataset.active = next;
     [tldrBtn, detailBtn].forEach((b) => {
       const isActive = b.dataset.mode === next;
@@ -96,33 +213,115 @@ export function buildPillToggle(wrap: HTMLElement, initialMode: CaseStudyMode): 
       b.tabIndex = isActive ? 0 : -1;
     });
     wrap.setAttribute('aria-labelledby', (next === 'tldr' ? tldrBtn : detailBtn).id);
-    // Trigger the squash-stretch keyframe animation on the thumb's
-    // inner element. Remove then force a reflow then re-add so the
-    // animation restarts cleanly on rapid toggles.
+    // Trigger the squash-stretch keyframe on the thumb. Remove → reflow
+    // → re-add so the animation restarts cleanly on rapid toggles.
     thumbInner.classList.remove('is-squashing');
     void thumbInner.offsetWidth;
     thumbInner.classList.add('is-squashing');
     writeMode(next);
-    // Body content swap runs after the fade-out window.
-    wrap.classList.add('is-swapping');
-    window.setTimeout(() => {
-      // If the modal closed mid-swap (user hit Escape during the fade),
-      // the wrap is no longer in the DOM. Bail out before touching it —
-      // no-op'ing harmlessly today, but defensive against future code
-      // inside this callback that might read mutated state.
-      if (!wrap.isConnected) return;
-      // Reset the modal's scroll position to top before the layout
-      // change lands. Going Detailed → TL;DR shrinks the wrap
-      // dramatically; without this, the browser snaps the scroll
-      // offset to fit the shorter content and the swap reads as a
-      // jarring "jump". Resetting inside the opacity-0 window means
-      // the user never sees the scroll change happen.
-      wrap.parentElement?.scrollTo({ top: 0 });
-      applyMode(wrap, next);
-      // Trigger fade-in on the next frame so the browser commits the
-      // data-mode swap before the opacity transition kicks back in.
-      requestAnimationFrame(() => wrap.classList.remove('is-swapping'));
-    }, SWAP_OUT_MS);
+
+    // Defensive: clear any leftover transient class from an
+    // in-flight transition in the opposite direction. Either class
+    // being stale would corrupt the keyframe selector match.
+    wrap.classList.remove('cs-mode-entering', 'cs-mode-leaving');
+
+    // Retoggle-cancel: data-mode is already at the requested target
+    // (only possible when reversing the *reverse* direction mid-fade —
+    // cs-mode-leaving was the only thing in flight). Just abort the
+    // pending cleanup; the layout is already correct. Detail content
+    // snaps back to its default (opacity:1) once cs-mode-leaving is
+    // gone, which is what the user wants.
+    if (wrap.dataset.mode === next) {
+      pendingCancel?.();
+      pendingFlipCancel?.();
+      return;
+    }
+
+    // animationend bubbles to the wrap; one-shot listener + fallback
+    // timeout cover the case where no detail element exists (e.g. a
+    // section with only h2 + blockquote and no prose) or reduced-motion
+    // is active (animation suppressed → no animationend fires). Buffers
+    // (260ms / 220ms below) sit ~40ms above the CSS durations so a
+    // slightly-slow Safari run doesn't have the timeout fire before
+    // animationend; if the event fires first, the timeout is cleared.
+    const armCleanup = (cleanup: () => void, fallbackMs: number) => {
+      // A rapid re-toggle invalidates any in-flight cleanup — explicit
+      // teardown here prevents listener pile-up and stale handlers from
+      // stealing animationend events meant for the new direction.
+      pendingCancel?.();
+
+      let ran = false;
+      const run = (e?: AnimationEvent): void => {
+        // Only react to our own keyframes — descendant animations
+        // (future code-block fades, progress bars, etc.) would
+        // otherwise trip this listener early via event bubbling.
+        if (e && !e.animationName.startsWith('cs-detail-')) return;
+        if (ran) return;
+        ran = true;
+        window.clearTimeout(timerId);
+        wrap.removeEventListener('animationend', run);
+        pendingCancel = null;
+        if (!wrap.isConnected) return;
+        cleanup();
+      };
+      wrap.addEventListener('animationend', run);
+      const timerId = window.setTimeout(run, fallbackMs);
+      pendingCancel = () => {
+        wrap.removeEventListener('animationend', run);
+        window.clearTimeout(timerId);
+        pendingCancel = null;
+      };
+    };
+
+    if (next === 'detailed') {
+      // Forward: add the entering class BEFORE flipping data-mode so the
+      // browser sees the combined state on first composite — keyframe
+      // starts at frame 0 with opacity:0 + translateY(-4px). Both
+      // mutations land in the same synchronous tick (no paint between).
+      // FLIP wraps both so the spine slides smoothly to its new layout
+      // position instead of snapping when the detail elements push it
+      // apart.
+      flipSpine(
+        () => {
+          wrap.classList.add('cs-mode-entering');
+          applyMode(wrap, next);
+        },
+        240,
+        'ease-out',
+      );
+      armCleanup(() => {
+        wrap.classList.remove('cs-mode-entering');
+      }, 260);
+    } else {
+      // Reverse: under reduced-motion, CSS suppresses cs-detail-leave so
+      // no animationend ever fires — waiting for armCleanup's 220ms
+      // fallback would impose a perceptible delay before the swap lands.
+      // Apply synchronously instead. flipSpine has its own reduced-motion
+      // early-exit so the swap still runs but no spine transform animates.
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        wrap.parentElement?.scrollTo({ top: 0 });
+        flipSpine(() => applyMode(wrap, next), 240, 'ease-out');
+        return;
+      }
+      // Reverse with motion: add leaving class while data-mode is still
+      // "detailed" so the leave keyframe runs on visible elements. After
+      // the fade (or fallback), scroll-reset to top (kept outside FLIP so
+      // the spine doesn't animate through the scroll delta) then FLIP-flip
+      // data-mode + remove leaving class so the spine slides smoothly to
+      // its compacted TL;DR position.
+      wrap.classList.add('cs-mode-leaving');
+      armCleanup(() => {
+        wrap.parentElement?.scrollTo({ top: 0 });
+        flipSpine(
+          () => {
+            applyMode(wrap, next);
+            wrap.classList.remove('cs-mode-leaving');
+          },
+          240,
+          'ease-out',
+        );
+      }, 220);
+    }
   };
 
   tldrBtn.addEventListener('click', () => setActive('tldr'));
