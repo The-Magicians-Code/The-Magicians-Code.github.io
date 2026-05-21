@@ -7,7 +7,6 @@
 export type CaseStudyMode = 'tldr' | 'detailed';
 
 const SS_KEY = 'cs-mode';
-const SWAP_OUT_MS = 160; // matches BentoGrid.astro .is-swapping opacity transition
 
 export function readMode(): CaseStudyMode {
   try {
@@ -87,8 +86,9 @@ export function buildPillToggle(wrap: HTMLElement, initialMode: CaseStudyMode): 
   const setActive = (next: CaseStudyMode): void => {
     if (wrap.dataset.mode === next) return;
     // Move the pill IMMEDIATELY on click — the thumb should respond to
-    // the input the instant it lands, not 160ms later. The body
-    // content's fade-out/swap still runs on its own schedule below.
+    // the input the instant it lands, not after the body animation
+    // completes. The body content's animation runs on its own schedule
+    // below.
     root.dataset.active = next;
     [tldrBtn, detailBtn].forEach((b) => {
       const isActive = b.dataset.mode === next;
@@ -96,33 +96,59 @@ export function buildPillToggle(wrap: HTMLElement, initialMode: CaseStudyMode): 
       b.tabIndex = isActive ? 0 : -1;
     });
     wrap.setAttribute('aria-labelledby', (next === 'tldr' ? tldrBtn : detailBtn).id);
-    // Trigger the squash-stretch keyframe animation on the thumb's
-    // inner element. Remove then force a reflow then re-add so the
-    // animation restarts cleanly on rapid toggles.
+    // Trigger the squash-stretch keyframe on the thumb. Remove → reflow
+    // → re-add so the animation restarts cleanly on rapid toggles.
     thumbInner.classList.remove('is-squashing');
     void thumbInner.offsetWidth;
     thumbInner.classList.add('is-squashing');
     writeMode(next);
-    // Body content swap runs after the fade-out window.
-    wrap.classList.add('is-swapping');
-    window.setTimeout(() => {
-      // If the modal closed mid-swap (user hit Escape during the fade),
-      // the wrap is no longer in the DOM. Bail out before touching it —
-      // no-op'ing harmlessly today, but defensive against future code
-      // inside this callback that might read mutated state.
-      if (!wrap.isConnected) return;
-      // Reset the modal's scroll position to top before the layout
-      // change lands. Going Detailed → TL;DR shrinks the wrap
-      // dramatically; without this, the browser snaps the scroll
-      // offset to fit the shorter content and the swap reads as a
-      // jarring "jump". Resetting inside the opacity-0 window means
-      // the user never sees the scroll change happen.
-      wrap.parentElement?.scrollTo({ top: 0 });
+
+    // Defensive: clear any leftover transient class from an
+    // in-flight transition in the opposite direction. Either class
+    // being stale would corrupt the keyframe selector match.
+    wrap.classList.remove('cs-mode-entering', 'cs-mode-leaving');
+
+    // animationend bubbles to the wrap; one-shot listener + fallback
+    // timeout cover the case where no detail element exists (e.g. a
+    // section with only h2 + blockquote and no prose) or reduced-motion
+    // is active (animation suppressed → no animationend fires).
+    const armCleanup = (cleanup: () => void, fallbackMs: number) => {
+      let ran = false;
+      const run = (): void => {
+        if (ran) return;
+        ran = true;
+        window.clearTimeout(timerId);
+        wrap.removeEventListener('animationend', run);
+        if (!wrap.isConnected) return;
+        cleanup();
+      };
+      wrap.addEventListener('animationend', run, { once: true });
+      const timerId = window.setTimeout(run, fallbackMs);
+    };
+
+    if (next === 'detailed') {
+      // Forward: add the entering class BEFORE flipping data-mode so the
+      // browser sees the combined state on first composite — keyframe
+      // starts at frame 0 with opacity:0 + translateY(-4px). Both
+      // mutations land in the same synchronous tick (no paint between).
+      wrap.classList.add('cs-mode-entering');
       applyMode(wrap, next);
-      // Trigger fade-in on the next frame so the browser commits the
-      // data-mode swap before the opacity transition kicks back in.
-      requestAnimationFrame(() => wrap.classList.remove('is-swapping'));
-    }, SWAP_OUT_MS);
+      armCleanup(() => {
+        wrap.classList.remove('cs-mode-entering');
+      }, 260);
+    } else {
+      // Reverse: add leaving class while data-mode is still "detailed"
+      // so the leave keyframe runs on visible elements. After the fade
+      // (or fallback), scroll-reset inside the invisible window and
+      // flip data-mode to "tldr" — display:none kicks in then, so the
+      // spine reflow happens with nothing visibly moving.
+      wrap.classList.add('cs-mode-leaving');
+      armCleanup(() => {
+        wrap.parentElement?.scrollTo({ top: 0 });
+        applyMode(wrap, next);
+        wrap.classList.remove('cs-mode-leaving');
+      }, 220);
+    }
   };
 
   tldrBtn.addEventListener('click', () => setActive('tldr'));
