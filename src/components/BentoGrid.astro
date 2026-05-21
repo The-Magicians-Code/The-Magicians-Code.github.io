@@ -598,6 +598,33 @@
   :global(.bento-card-body-rendered.is-swapping) {
     opacity: 0;
   }
+  /* ── Anchored-spine mode transition ─────────────────────────────
+     Detail-only elements (everything after each `h2 + blockquote`
+     pair that is not itself an h2 or blockquote) fade + slide in or
+     out while the spine stays untouched. Forward and reverse use
+     different durations / curves; classes are toggled by
+     case-study-mode.ts. See docs/superpowers/specs/2026-05-21-
+     anchored-spine-mode-transition-design.md. */
+  @keyframes cs-detail-enter {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: none; }
+  }
+  @keyframes cs-detail-leave {
+    from { opacity: 1; transform: none; }
+    to   { opacity: 0; transform: translateY(-4px); }
+  }
+  :global(.bento-card-body-rendered.cs-mode-entering[data-mode="detailed"] h2 + blockquote ~ *:not(h2):not(blockquote)) {
+    animation: cs-detail-enter 220ms ease-out both;
+  }
+  :global(.bento-card-body-rendered.cs-mode-leaving[data-mode="detailed"] h2 + blockquote ~ *:not(h2):not(blockquote)) {
+    animation: cs-detail-leave 180ms ease-in forwards;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :global(.bento-card-body-rendered.cs-mode-entering[data-mode="detailed"] h2 + blockquote ~ *:not(h2):not(blockquote)),
+    :global(.bento-card-body-rendered.cs-mode-leaving[data-mode="detailed"] h2 + blockquote ~ *:not(h2):not(blockquote)) {
+      animation: none;
+    }
+  }
   /* Authoring contract in TL;DR mode: H2s + blockquotes are always
      visible (the scannable spine of the case study). Blockquotes are
      TL;DR bullets (one or more per section); every other sibling
