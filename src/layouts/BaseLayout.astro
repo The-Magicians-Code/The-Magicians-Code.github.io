@@ -117,6 +117,15 @@ const personSchema = {
     <script>
       import '../scripts/liquid-glass';
     </script>
+
+    <script>
+      // Dev-only element picker. The `import.meta.env.DEV` guard is a Vite
+      // build-time constant, so the dynamic import is dead-code-eliminated in
+      // production and `pick-mode` never enters the prod bundle graph.
+      if (import.meta.env.DEV) {
+        import('../scripts/pick-mode');
+      }
+    </script>
   </head>
   <body class="pt-28">
     <Nav />
