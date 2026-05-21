@@ -185,6 +185,8 @@ function install() {
   }
 
   function buildSelector(el: Element): string {
+    if (el === document.body) return 'body';
+    if (el === document.documentElement) return 'html';
     if (el.id) {
       const sel = `#${CSS.escape(el.id)}`;
       try {
