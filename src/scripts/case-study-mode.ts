@@ -94,6 +94,13 @@ export function buildPillToggle(wrap: HTMLElement, initialMode: CaseStudyMode): 
   // FLIP's inline transforms mid-animation.
   let pendingFlipCancel: (() => void) | null = null;
 
+  // Tracks the latest user-requested target, regardless of whether the
+  // wrap's data-mode has caught up yet. During reverse direction
+  // data-mode stays "detailed" until the leave cleanup runs, so a
+  // wrap.dataset.mode === next guard would silently ignore a user's
+  // retoggle back to Detailed mid-fade — last click would lose.
+  let currentTarget: CaseStudyMode = initialMode;
+
   // FLIP-animate the case-study spine (h2s + section-leading blockquotes)
   // so they slide smoothly to their new positions instead of snapping when
   // `applySwap` flips data-mode and triggers a layout change.
@@ -190,7 +197,11 @@ export function buildPillToggle(wrap: HTMLElement, initialMode: CaseStudyMode): 
   };
 
   const setActive = (next: CaseStudyMode): void => {
-    if (wrap.dataset.mode === next) return;
+    // Compare against the latest requested target, not data-mode — under
+    // reverse direction data-mode lags until cleanup runs, so a
+    // data-mode-based guard would swallow a "go back" click mid-fade.
+    if (currentTarget === next) return;
+    currentTarget = next;
     // Move the pill IMMEDIATELY on click — the thumb should respond to
     // the input the instant it lands, not after the body animation
     // completes. The body content's animation runs on its own schedule
@@ -213,6 +224,18 @@ export function buildPillToggle(wrap: HTMLElement, initialMode: CaseStudyMode): 
     // in-flight transition in the opposite direction. Either class
     // being stale would corrupt the keyframe selector match.
     wrap.classList.remove('cs-mode-entering', 'cs-mode-leaving');
+
+    // Retoggle-cancel: data-mode is already at the requested target
+    // (only possible when reversing the *reverse* direction mid-fade —
+    // cs-mode-leaving was the only thing in flight). Just abort the
+    // pending cleanup; the layout is already correct. Detail content
+    // snaps back to its default (opacity:1) once cs-mode-leaving is
+    // gone, which is what the user wants.
+    if (wrap.dataset.mode === next) {
+      pendingCancel?.();
+      pendingFlipCancel?.();
+      return;
+    }
 
     // animationend bubbles to the wrap; one-shot listener + fallback
     // timeout cover the case where no detail element exists (e.g. a
