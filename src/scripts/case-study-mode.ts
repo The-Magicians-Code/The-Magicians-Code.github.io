@@ -83,6 +83,11 @@ export function buildPillToggle(wrap: HTMLElement, initialMode: CaseStudyMode): 
   // readers announce the active mode when entering the panel.
   wrap.setAttribute('aria-labelledby', (initialMode === 'tldr' ? tldrBtn : detailBtn).id);
 
+  // Tracks the in-flight transition cleanup so a rapid re-toggle can
+  // cancel the prior call's animationend listener + fallback timeout
+  // instead of letting it linger and eat the next animationend event.
+  let pendingCancel: (() => void) | null = null;
+
   const setActive = (next: CaseStudyMode): void => {
     if (wrap.dataset.mode === next) return;
     // Move the pill IMMEDIATELY on click — the thumb should respond to
@@ -111,19 +116,37 @@ export function buildPillToggle(wrap: HTMLElement, initialMode: CaseStudyMode): 
     // animationend bubbles to the wrap; one-shot listener + fallback
     // timeout cover the case where no detail element exists (e.g. a
     // section with only h2 + blockquote and no prose) or reduced-motion
-    // is active (animation suppressed → no animationend fires).
+    // is active (animation suppressed → no animationend fires). Buffers
+    // (260ms / 220ms below) sit ~40ms above the CSS durations so a
+    // slightly-slow Safari run doesn't have the timeout fire before
+    // animationend; if the event fires first, the timeout is cleared.
     const armCleanup = (cleanup: () => void, fallbackMs: number) => {
+      // A rapid re-toggle invalidates any in-flight cleanup — explicit
+      // teardown here prevents listener pile-up and stale handlers from
+      // stealing animationend events meant for the new direction.
+      pendingCancel?.();
+
       let ran = false;
-      const run = (): void => {
+      const run = (e?: AnimationEvent): void => {
+        // Only react to our own keyframes — descendant animations
+        // (future code-block fades, progress bars, etc.) would
+        // otherwise trip this listener early via event bubbling.
+        if (e && !e.animationName.startsWith('cs-detail-')) return;
         if (ran) return;
         ran = true;
         window.clearTimeout(timerId);
         wrap.removeEventListener('animationend', run);
+        pendingCancel = null;
         if (!wrap.isConnected) return;
         cleanup();
       };
-      wrap.addEventListener('animationend', run, { once: true });
+      wrap.addEventListener('animationend', run);
       const timerId = window.setTimeout(run, fallbackMs);
+      pendingCancel = () => {
+        wrap.removeEventListener('animationend', run);
+        window.clearTimeout(timerId);
+        pendingCancel = null;
+      };
     };
 
     if (next === 'detailed') {
