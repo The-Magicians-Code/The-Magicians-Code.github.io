@@ -614,6 +614,11 @@
     to   { opacity: 0; transform: translateY(-4px); }
   }
   :global(.bento-card-body-rendered.cs-mode-entering[data-mode="detailed"] h2 + blockquote ~ *:not(h2):not(blockquote)) {
+    /* `both` pre-fills opacity:0 at frame 0 so detail content can't
+       flash fully-visible between the data-mode flip and the
+       animation's first paint. The leave keyframe uses `forwards`
+       instead because the element is already at opacity:1 when the
+       leaving class lands — no pre-fill needed. */
     animation: cs-detail-enter 220ms ease-out both;
   }
   :global(.bento-card-body-rendered.cs-mode-leaving[data-mode="detailed"] h2 + blockquote ~ *:not(h2):not(blockquote)) {
