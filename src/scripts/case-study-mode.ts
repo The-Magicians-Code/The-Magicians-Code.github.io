@@ -270,12 +270,22 @@ export function buildPillToggle(wrap: HTMLElement, initialMode: CaseStudyMode): 
         wrap.classList.remove('cs-mode-entering');
       }, 260);
     } else {
-      // Reverse: add leaving class while data-mode is still "detailed"
-      // so the leave keyframe runs on visible elements. After the fade
-      // (or fallback), scroll-reset to top (kept outside FLIP so the
-      // spine doesn't animate through the scroll delta) then FLIP-flip
-      // data-mode + remove leaving class so the spine slides smoothly
-      // to its compacted TL;DR position.
+      // Reverse: under reduced-motion, CSS suppresses cs-detail-leave so
+      // no animationend ever fires — waiting for armCleanup's 220ms
+      // fallback would impose a perceptible delay before the swap lands.
+      // Apply synchronously instead. flipSpine has its own reduced-motion
+      // early-exit so the swap still runs but no spine transform animates.
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        wrap.parentElement?.scrollTo({ top: 0 });
+        flipSpine(() => applyMode(wrap, next), 240, 'ease-out');
+        return;
+      }
+      // Reverse with motion: add leaving class while data-mode is still
+      // "detailed" so the leave keyframe runs on visible elements. After
+      // the fade (or fallback), scroll-reset to top (kept outside FLIP so
+      // the spine doesn't animate through the scroll delta) then FLIP-flip
+      // data-mode + remove leaving class so the spine slides smoothly to
+      // its compacted TL;DR position.
       wrap.classList.add('cs-mode-leaving');
       armCleanup(() => {
         wrap.parentElement?.scrollTo({ top: 0 });
