@@ -58,18 +58,24 @@ a fixed three-element pattern per section:
    Problem → Approach → Results) but the heading text is freely worded
    ("The problem", "The rebuild", "What changed", etc.).
 2. **A plain blockquote (`>`)** as the first child of each section. This is
-   the section's TL;DR — 1–2 sentences, ~25–40 words.
+   the section's leading TL;DR — 1–2 sentences, ~25–40 words. **Additional
+   blockquotes anywhere inside the section** are treated the same way —
+   each becomes another TL;DR bullet visible in TL;DR mode. Use them when
+   a section's skim deserves more than one beat.
 3. **Everything else under the heading** is the Detail prose — paragraphs,
-   lists, code, links, all standard Markdown.
+   lists, code, links, all standard Markdown. None of it shows in TL;DR.
 
 Example skeleton:
 
 ```markdown
 ## The problem
 
-> One- or two-sentence summary with a number in it.
+> One- or two-sentence leading summary with a number in it.
 
 Detailed paragraph or two of the why, the what-broke, the symptoms.
+
+> An optional second TL;DR bullet that captures a separate beat —
+> e.g. the secondary failure mode, or the constraint that made it hard.
 
 Another paragraph with more depth.
 ```
@@ -124,10 +130,16 @@ of the section's content follows as sibling elements. We use CSS sibling
 combinators to gate visibility based on the body's `data-mode`:
 
 ```css
-/* In TL;DR mode: keep the H2 and its first blockquote visible; hide
-   every sibling that follows the blockquote until the next H2. */
+/* In TL;DR mode: hide every sibling that follows the section-leading
+   blockquote — including subsequent H2s, which the broad `~ *` also
+   catches — then unhide H2s and blockquotes so the scannable spine
+   (heading + 1+ bullets per section) renders. */
 .bento-card-body-rendered[data-mode="tldr"] h2 + blockquote ~ * {
   display: none;
+}
+.bento-card-body-rendered[data-mode="tldr"] h2 + blockquote ~ h2,
+.bento-card-body-rendered[data-mode="tldr"] h2 + blockquote ~ blockquote {
+  display: block;
 }
 /* In Detailed mode: render the first blockquote styled as a lede. */
 .bento-card-body-rendered[data-mode="detailed"] h2 + blockquote {
@@ -139,10 +151,12 @@ combinators to gate visibility based on the body's `data-mode`:
 }
 ```
 
-The CSS uses `h2 + blockquote ~ *` to hide everything that follows the
-section-leading blockquote in TL;DR mode. H2s themselves stay visible in both
-modes (they're scannable structure). The next H2 inside the same wrap remains
-visible because it's matched by its own `h2 + blockquote` rule.
+The CSS uses `h2 + blockquote ~ *` as a broad hide that sweeps every
+sibling following the leading blockquote of the first section. That
+includes subsequent H2s and blockquotes, so two follow-up rules
+reinstate them. The net visibility in TL;DR mode: H2s + blockquotes
+render (section heading + one or more bullets); everything else is
+hidden until the reader switches to Detailed.
 
 **Edge case:** if a section is missing the leading blockquote, the
 `h2 + blockquote` selector doesn't match and that section's content stays

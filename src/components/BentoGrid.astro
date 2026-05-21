@@ -598,11 +598,21 @@
   :global(.bento-card-body-rendered.is-swapping) {
     opacity: 0;
   }
-  /* Hide everything that follows the section-leading blockquote in TL;DR
-     mode. The next H2 reopens its own section's leading blockquote
-     because the selector is scoped by the blockquote's sibling chain. */
+  /* Authoring contract in TL;DR mode: H2s + blockquotes are always
+     visible (the scannable spine of the case study). Blockquotes are
+     TL;DR bullets (one or more per section); every other sibling
+     between H2s is Detailed-only elaboration.
+
+     The broad `~ *` hide sweeps non-quote prose AND subsequent H2s
+     (the selector matches every sibling after the first
+     `h2 + blockquote` pair, regardless of tag). Two unhide rules
+     reinstate the spine: H2s and blockquotes both stay rendered. */
   :global(.bento-card-body-rendered[data-mode="tldr"] h2 + blockquote ~ *) {
     display: none;
+  }
+  :global(.bento-card-body-rendered[data-mode="tldr"] h2 + blockquote ~ h2),
+  :global(.bento-card-body-rendered[data-mode="tldr"] h2 + blockquote ~ blockquote) {
+    display: block;
   }
   /* Style the section-leading blockquote as an italic lede in Detailed
      mode so it reads as the section's nut graph rather than a generic
@@ -616,10 +626,10 @@
     font-size: 15px;
     line-height: 1.55;
   }
-  /* In TL;DR mode, the leading blockquote IS the content for the
-     section — drop the indent + bar styling so it reads as a normal
-     paragraph under the heading. */
-  :global(.bento-card-body-rendered[data-mode="tldr"] h2 + blockquote) {
+  /* In TL;DR mode every blockquote is a TL;DR point — drop the indent +
+     bar styling so all of them read as normal paragraphs under the
+     heading, not browser-default italic-indented quotation blocks. */
+  :global(.bento-card-body-rendered[data-mode="tldr"] blockquote) {
     border-left: none;
     padding: 0;
     margin: 0 0 14px;
