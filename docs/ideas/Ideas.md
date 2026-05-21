@@ -44,6 +44,7 @@
 - https://developers.openai.com/blog/designing-delightful-frontends-with-gpt-5-4
 - https://appstacks.club/mobile-apps
 - https://www.landing.love/categories/portfolio/
+- https://performance.dev
 
 ### Glass
 - https://themagicianscode.dev/prototypes/liquid-glass-pill/
