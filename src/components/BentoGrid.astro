@@ -646,22 +646,12 @@
   :global(.bento-card-body-rendered[data-mode="tldr"] h2 + blockquote ~ blockquote) {
     display: block;
   }
-  /* Style the section-leading blockquote as an italic lede in Detailed
-     mode so it reads as the section's nut graph rather than a generic
-     quotation. */
-  :global(.bento-card-body-rendered[data-mode="detailed"] h2 + blockquote) {
-    border-left: 2px solid var(--ink-3);
-    padding: 2px 0 2px 14px;
-    margin: 0 0 14px;
-    font-style: italic;
-    color: var(--ink-dim);
-    font-size: 15px;
-    line-height: 1.55;
-  }
-  /* In TL;DR mode every blockquote is a TL;DR point — drop the indent +
-     bar styling so all of them read as normal paragraphs under the
-     heading, not browser-default italic-indented quotation blocks. */
-  :global(.bento-card-body-rendered[data-mode="tldr"] blockquote) {
+  /* Blockquotes render as plain paragraphs in both modes. The earlier
+     design styled the section-leading blockquote as an italic lede in
+     Detailed mode, but the resulting style snap on every mode toggle
+     undermined the anchored-spine transition. Uniform styling keeps
+     the spine visually solid across the swap. */
+  :global(.bento-card-body-rendered blockquote) {
     border-left: none;
     padding: 0;
     margin: 0 0 14px;
