@@ -128,3 +128,28 @@ Rewrite the body of `setActive(next)` (current implementation at [src/scripts/ca
 ## Open questions
 
 None at design time. Timing values (220ms / 180ms) and translate distance (4px) are starting points and can be tuned post-implementation by editing two constants; structure doesn't change.
+
+---
+
+## Addendum (2026-05-21): Smooth spine motion via FLIP
+
+The original spec listed "spine motion is not animated" as a non-goal and noted FLIP as a follow-up. After shipping the snap-spine version, the H2 + blockquote "jump" at the layout-change moment in each direction was perceptible enough to revisit. This addendum supersedes that non-goal and the related acceptance line.
+
+**Behavior change:** Spine elements (every `h2` plus the immediately-following `blockquote`) slide smoothly to their new layout positions on every mode swap, in parallel with the detail-element fade. Implemented via FLIP: measure positions before swap, apply swap, measure after, invert the delta as an inline `transform: translateY(...)`, then animate transform back to zero over 240ms with `ease-out`.
+
+**Implementation:** A `flipSpine(applySwap, durationMs, easing)` helper closed over `wrap` and a `pendingFlipCancel` handle inside `buildPillToggle`. Both `setActive` branches wrap their layout-mutating ops in `flipSpine`. The reverse branch keeps the `scrollTo({top: 0})` call **outside** `flipSpine` so the FLIP delta reflects layout-only motion, not the scroll distance.
+
+**Notable details:**
+
+- **Reduced-motion early-exit.** Inline `style.transition` would otherwise bypass the existing CSS `prefers-reduced-motion` block. `flipSpine` checks `matchMedia('(prefers-reduced-motion: reduce)').matches` at entry and short-circuits to a synchronous `applySwap()` with no inline styles applied.
+- **Continuity on rapid re-toggle.** The current visual position (which may include an in-flight inverted transform from a prior FLIP) is measured *before* clearing inline styles. The next FLIP picks up from wherever the prior one was; the spine never visually jumps when the user toggles mid-animation.
+- **`pendingFlipCancel` handle.** Same shape as the existing `pendingCancel` for detail-content cleanup — cancels the prior FLIP's `transitionend` listener and fallback timer before arming a new one, so a stale cleanup can't strip the new FLIP's inline styles mid-animation. The cancel explicitly does *not* clear inline transforms (continuity, above).
+- **`transitionend` + fallback timer.** Cleanup prefers the `transitionend` event (filtered to `propertyName === 'transform'` on a spine element); the fallback timer is armed *inside* the rAF so it can't fire before the transition is attached.
+- **Spine selector.** `h2, h2 + blockquote` — section-leading blockquotes only. The CSS contract allows multiple blockquotes per section, but only the section-leading ones are FLIP-tracked. Later blockquotes (if any) snap with the surrounding prose; this is acceptable because the perceived "spine" in the existing markup is the H2 + immediate-lede pair.
+
+**Updated acceptance:**
+
+- Spine elements visibly slide (not snap) to their new positions on every mode swap. No flicker on the spine; only `transform` and `transition` are touched.
+- Rapid double-toggle preserves continuity: the spine never visually jumps when interrupted mid-FLIP.
+- `prefers-reduced-motion: reduce` produces an instant layout swap with no inline FLIP styles applied; `applySwap` still runs.
+- All prior acceptance items (no Safari-only artifacts, modal close mid-transition is safe via `isConnected`, `npm run check` + `npm run build` clean) remain in force.

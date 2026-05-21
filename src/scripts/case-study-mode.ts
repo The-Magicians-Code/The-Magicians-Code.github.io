@@ -88,6 +88,107 @@ export function buildPillToggle(wrap: HTMLElement, initialMode: CaseStudyMode): 
   // instead of letting it linger and eat the next animationend event.
   let pendingCancel: (() => void) | null = null;
 
+  // Tracks the in-flight FLIP cleanup independently — a rapid re-toggle
+  // must cancel the prior FLIP's transitionend listener + fallback timer
+  // before a new one arms, otherwise the stale cleanup strips the new
+  // FLIP's inline transforms mid-animation.
+  let pendingFlipCancel: (() => void) | null = null;
+
+  // FLIP-animate the case-study spine (h2s + section-leading blockquotes)
+  // so they slide smoothly to their new positions instead of snapping when
+  // `applySwap` flips data-mode and triggers a layout change.
+  //
+  // Continuity on rapid re-toggle: measure CURRENT visual positions (which
+  // may include an in-flight transform from a prior FLIP) BEFORE clearing
+  // inline styles. The new FLIP picks up wherever the prior one was, so
+  // the spine never visually jumps when the user toggles mid-animation.
+  //
+  // prefers-reduced-motion is honored at the top — inline `style.transition`
+  // would otherwise bypass the CSS @media block on the keyframe selectors.
+  const flipSpine = (
+    applySwap: () => void,
+    durationMs: number,
+    easing: string,
+  ): void => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      applySwap();
+      return;
+    }
+    const spine = Array.from(
+      wrap.querySelectorAll<HTMLElement>('h2, h2 + blockquote'),
+    );
+    if (spine.length === 0) {
+      applySwap();
+      return;
+    }
+    // First — measure CURRENT visual positions (may include in-flight
+    // transforms from a prior FLIP — that's what gives us continuity).
+    const oldTops = spine.map((el) => el.getBoundingClientRect().top);
+    // Clear prior FLIP state so post-swap measurement reflects true layout
+    // positions and the inverse transforms below aren't compounded.
+    for (const el of spine) {
+      el.style.transition = '';
+      el.style.transform = '';
+      el.style.willChange = '';
+    }
+    pendingFlipCancel?.();
+    // Last
+    applySwap();
+    // Compute deltas. If nothing moved, skip the inverse + animation.
+    const deltas = spine.map(
+      (el, i) => oldTops[i] - el.getBoundingClientRect().top,
+    );
+    if (deltas.every((d) => d === 0)) return;
+    // Invert
+    for (let i = 0; i < spine.length; i++) {
+      if (deltas[i] === 0) continue;
+      spine[i].style.willChange = 'transform';
+      spine[i].style.transition = 'none';
+      spine[i].style.transform = `translateY(${deltas[i]}px)`;
+    }
+    // Force reflow so the inverse transform paints before the transition
+    // declaration arms in the next frame.
+    void wrap.offsetHeight;
+    // Play
+    requestAnimationFrame(() => {
+      for (const el of spine) {
+        el.style.transition = `transform ${durationMs}ms ${easing}`;
+        el.style.transform = '';
+      }
+      // Cleanup: prefer transitionend (filtered to `transform` on a spine
+      // element). Fallback timer is armed AFTER the rAF so it can't fire
+      // before the transition is actually attached.
+      let cleaned = false;
+      const cleanup = (): void => {
+        if (cleaned) return;
+        cleaned = true;
+        window.clearTimeout(timerId);
+        wrap.removeEventListener('transitionend', onEnd);
+        pendingFlipCancel = null;
+        if (!wrap.isConnected) return;
+        for (const el of spine) {
+          el.style.transition = '';
+          el.style.transform = '';
+          el.style.willChange = '';
+        }
+      };
+      const onEnd = (e: TransitionEvent): void => {
+        if (e.propertyName !== 'transform') return;
+        if (!(e.target instanceof HTMLElement) || !spine.includes(e.target)) return;
+        cleanup();
+      };
+      wrap.addEventListener('transitionend', onEnd);
+      const timerId = window.setTimeout(cleanup, durationMs + 80);
+      pendingFlipCancel = () => {
+        window.clearTimeout(timerId);
+        wrap.removeEventListener('transitionend', onEnd);
+        // Don't clear inline transforms here — the next FLIP measures
+        // them as "current visual state" for continuity.
+        pendingFlipCancel = null;
+      };
+    });
+  };
+
   const setActive = (next: CaseStudyMode): void => {
     if (wrap.dataset.mode === next) return;
     // Move the pill IMMEDIATELY on click — the thumb should respond to
@@ -154,22 +255,38 @@ export function buildPillToggle(wrap: HTMLElement, initialMode: CaseStudyMode): 
       // browser sees the combined state on first composite — keyframe
       // starts at frame 0 with opacity:0 + translateY(-4px). Both
       // mutations land in the same synchronous tick (no paint between).
-      wrap.classList.add('cs-mode-entering');
-      applyMode(wrap, next);
+      // FLIP wraps both so the spine slides smoothly to its new layout
+      // position instead of snapping when the detail elements push it
+      // apart.
+      flipSpine(
+        () => {
+          wrap.classList.add('cs-mode-entering');
+          applyMode(wrap, next);
+        },
+        240,
+        'ease-out',
+      );
       armCleanup(() => {
         wrap.classList.remove('cs-mode-entering');
       }, 260);
     } else {
       // Reverse: add leaving class while data-mode is still "detailed"
       // so the leave keyframe runs on visible elements. After the fade
-      // (or fallback), scroll-reset inside the invisible window and
-      // flip data-mode to "tldr" — display:none kicks in then, so the
-      // spine reflow happens with nothing visibly moving.
+      // (or fallback), scroll-reset to top (kept outside FLIP so the
+      // spine doesn't animate through the scroll delta) then FLIP-flip
+      // data-mode + remove leaving class so the spine slides smoothly
+      // to its compacted TL;DR position.
       wrap.classList.add('cs-mode-leaving');
       armCleanup(() => {
         wrap.parentElement?.scrollTo({ top: 0 });
-        applyMode(wrap, next);
-        wrap.classList.remove('cs-mode-leaving');
+        flipSpine(
+          () => {
+            applyMode(wrap, next);
+            wrap.classList.remove('cs-mode-leaving');
+          },
+          240,
+          'ease-out',
+        );
       }, 220);
     }
   };
