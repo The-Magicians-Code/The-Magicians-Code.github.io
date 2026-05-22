@@ -58,3 +58,8 @@
 - [Weekly survival guide](https://www.reddit.com/r/ClaudeAI/wiki/survivalguideweekly/)
 - Edge-blur / mask-fade on case-study titles (desktop only?) — alternative to text wrapping where the title stays on one line and the right edge fades to transparent via `mask-image: linear-gradient(...)`. Container width changes during open/close simply reveal more of the same text (no reflow, no word-flip, no Pretext needed). Trade-off: mobile users lose information at the tile level since there's less screen real estate to begin with, so this likely needs to be desktop-only or disabled under a viewport-width media query. Could pair with `backdrop-filter: blur(...)` on a right-edge pseudo-element for an actual progressive blur instead of just opacity fade.
 - In each project box extended content: "For all the nerds out there, this one's for you", with the detailed or "extravagant" button with deepwiki links
+
+### Performance
+- WebGPU or WebGL
+- Web Animaions API
+- https://performance.dev/how-is-linear-so-fast-a-technical-breakdown
