@@ -211,21 +211,22 @@
   }
   .stack-marquee-track {
     display: flex;
-    gap: 10px;
+    gap: 14px;
     /* Trailing padding completes the gap pattern after the last item.
        Flex `gap` is between items only (17 internal gaps for 18 items);
-       this one extra 10px makes the track partition into 3 equal blocks
-       of (sum_unique + 6*gap) each, so translateX(-33.3333%) lands
-       exactly on the next-copy start position. */
-    padding-right: 10px;
+       this one extra gap-width makes the track partition into 3 equal
+       blocks of (sum_unique + 6*gap) each, so translateX(-33.3333%)
+       lands exactly on the next-copy start position. Keep in sync
+       with the flex `gap` value above. */
+    padding-right: 14px;
     width: max-content;
     animation: stack-marquee 36s linear infinite;
   }
   .stack-marquee-pill {
     flex-shrink: 0;
     font-family: var(--font-mono);
-    font-size: 12px;
-    padding: 6px 14px;
+    font-size: 15px;
+    padding: 14px 24px;
     border-radius: 999px;
     background: rgba(26, 26, 28, 0.06);
     color: var(--ink);
