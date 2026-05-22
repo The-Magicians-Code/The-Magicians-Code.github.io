@@ -1,52 +1,53 @@
 ---
-// Tech-stack section. Single paper bento card with the title centered
-// at rest (via the shared --title-rest-y JS-measured translateY pattern
-// from bento-expand.ts), and the per-word pretext morph wiring the
-// title's words to their modal positions during expand.
+// Tech-stack section. Header ("Tools I *actually* reach for") sits as a
+// separator above two independent bento cards, mirroring the structure
+// of BentoProjectsSection.astro. Each sub-card has its own pretext
+// title, its own expand-to-modal lifecycle, and its own categorized
+// chip rows in the modal body.
 //
-// Rest state shows only the title — same content shape as project
-// case-study cards (BentoCard.astro), so the pretext + title-rest-y
-// contract holds. The full categorized stack lives inside the hidden
-// .bento-card-body, cloned into a two-column split on expand.
+// Cards:
+//   • "Languages I think in" — Languages + ML / AI chip rows
+//   • "Tools I reach for"    — Infra & DevOps + Frameworks & Tools
 //
-// `data-no-mode-toggle` opts out of the TL;DR ↔ Detailed pill that
-// project case-studies use — this card has only one content mode.
+// `data-no-mode-toggle` on each card skips the TL;DR ↔ Detailed pill
+// (single content mode). The `id="skills-tools"` anchor lives only on
+// the outer section; duplicating it on the sub-cards would silently
+// break the nav anchor (Nav.astro:21, MobileMenu.astro:8).
 //
-// Preserves the #skills-tools anchor for Nav.astro / MobileMenu.astro.
+// Behavior caveat (codex-flagged): bento-expand's openState is a
+// page-level singleton. Two stack cards cannot be open simultaneously.
+// Clicking card B while card A is open: the backdrop click dismisses
+// A; a second click on B opens it. Auto-swap is intentionally out of
+// scope for this change.
 ---
 
-<article
-  id="skills-tools"
-  class="bento-card stack-card"
-  data-bento-card
-  data-slug="stack"
-  data-no-mode-toggle
-  role="button"
-  tabindex="0"
-  aria-haspopup="dialog"
-  aria-expanded="false"
-  aria-label="Tools I actually reach for"
->
-  <span class="cs-expand" aria-hidden="true">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-      <polyline points="15 3 21 3 21 9" />
-      <polyline points="9 21 3 21 3 15" />
-      <line x1="21" y1="3" x2="14" y2="10" />
-      <line x1="3" y1="21" x2="10" y2="14" />
-    </svg>
-  </span>
+<section id="skills-tools" class="stack-section">
+  <h2 class="section-title">Tools I <em>actually</em> reach for</h2>
 
-  <div class="card-body">
-    <div class="card-title">Tools I <em>actually</em> reach for</div>
-  </div>
-
-  <!-- Cloned into a visible .bento-card-body-rendered on expand. Two
-       sub-cards inside — one for the languages, one for the tools. -->
-  <div class="bento-card-body" hidden>
-    <div class="stack-split">
-      <article class="stack-split-card">
-        <h3 class="stack-split-title">Languages I <em>think in</em></h3>
-
+  <div class="stack-sub-grid">
+    <article
+      class="bento-card stack-card"
+      data-bento-card
+      data-slug="stack-languages"
+      data-no-mode-toggle
+      role="button"
+      tabindex="0"
+      aria-haspopup="dialog"
+      aria-expanded="false"
+      aria-label="Languages I think in"
+    >
+      <span class="cs-expand" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 3 21 3 21 9" />
+          <polyline points="9 21 3 21 3 15" />
+          <line x1="21" y1="3" x2="14" y2="10" />
+          <line x1="3" y1="21" x2="10" y2="14" />
+        </svg>
+      </span>
+      <div class="card-body">
+        <div class="card-title">Languages I <em>think in</em></div>
+      </div>
+      <div class="bento-card-body" hidden>
         <h4>Languages</h4>
         <ul class="stack-chip-row">
           <li class="stack-chip"><em>Python</em></li>
@@ -56,7 +57,6 @@
           <li class="stack-chip">Bash</li>
           <li class="stack-chip">Swift</li>
         </ul>
-
         <h4>ML / AI</h4>
         <ul class="stack-chip-row">
           <li class="stack-chip"><em>PyTorch</em></li>
@@ -67,11 +67,32 @@
           <li class="stack-chip">GStreamer</li>
           <li class="stack-chip">Nvidia Jetson</li>
         </ul>
-      </article>
+      </div>
+    </article>
 
-      <article class="stack-split-card">
-        <h3 class="stack-split-title">Tools I <em>reach for</em></h3>
-
+    <article
+      class="bento-card stack-card"
+      data-bento-card
+      data-slug="stack-tools"
+      data-no-mode-toggle
+      role="button"
+      tabindex="0"
+      aria-haspopup="dialog"
+      aria-expanded="false"
+      aria-label="Tools I reach for"
+    >
+      <span class="cs-expand" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 3 21 3 21 9" />
+          <polyline points="9 21 3 21 3 15" />
+          <line x1="21" y1="3" x2="14" y2="10" />
+          <line x1="3" y1="21" x2="10" y2="14" />
+        </svg>
+      </span>
+      <div class="card-body">
+        <div class="card-title">Tools I <em>reach for</em></div>
+      </div>
+      <div class="bento-card-body" hidden>
         <h4>Infra &amp; DevOps</h4>
         <ul class="stack-chip-row">
           <li class="stack-chip"><em>Docker</em></li>
@@ -82,7 +103,6 @@
           <li class="stack-chip">ELK</li>
           <li class="stack-chip">Kubernetes</li>
         </ul>
-
         <h4>Frameworks &amp; Tools</h4>
         <ul class="stack-chip-row">
           <li class="stack-chip"><em>Flask</em></li>
@@ -93,25 +113,52 @@
           <li class="stack-chip">Postman</li>
           <li class="stack-chip">Git</li>
         </ul>
-      </article>
-    </div>
+      </div>
+    </article>
   </div>
-</article>
+</section>
+
+<script>
+  // Two sub-cards on the page need the bento-expand machinery wired up.
+  // BentoGrid.astro imports it for the projects section; importing here
+  // too is safe (the script self-guards against double-init).
+  import '../scripts/bento-expand.ts';
+</script>
 
 <style>
-  /* Paper background, custom aspect. The .bento-card base from
-     BentoGrid.astro sets aspect-ratio: 4/1; override to 3/1 for a
-     slightly taller rest box. */
+  /* Header styled to match BentoProjectsSection.astro section-title. */
+  .section-title {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: clamp(1.75rem, 1.5vw + 1.25rem, 2.5rem);
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    margin: 0 0 24px;
+  }
+
+  .stack-sub-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+  @media (max-width: 640px) {
+    .stack-sub-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Paper background, square-ish aspect for the 2-col layout.
+     Overrides BentoGrid.astro's 4:1 base aspect-ratio. */
   :global(.bento-card.stack-card),
   :global(.bento-card.stack-card:hover) {
     background-color: var(--paper);
     cursor: pointer;
-    aspect-ratio: 3 / 1;
+    aspect-ratio: 5 / 4;
   }
-  @media (max-width: 540px) {
+  @media (max-width: 640px) {
     :global(.bento-card.stack-card),
     :global(.bento-card.stack-card:hover) {
-      aspect-ratio: 1 / 1;
+      aspect-ratio: 5 / 3;
     }
   }
 
@@ -120,36 +167,7 @@
      vertical center via --title-rest-y (computed in bento-expand.ts
      syncTitleRestY) — same machinery as project cards. */
 
-  /* em inside the title inherits the global italic+accent rule and
-     is rendered via pretext as <em class="word"> word spans (see
-     BentoGrid.astro .pretext-title rules). */
-
-  /* Expanded modal body — two sub-cards side by side. */
-  :global(.bento-card.stack-card .bento-card-body-rendered .stack-split) {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-  }
-  @media (max-width: 640px) {
-    :global(.bento-card.stack-card .bento-card-body-rendered .stack-split) {
-      grid-template-columns: 1fr;
-    }
-  }
-  :global(.bento-card.stack-card .bento-card-body-rendered .stack-split-card) {
-    background: rgba(26, 26, 28, 0.04);
-    border-radius: var(--radius-card, 14px);
-    padding: 20px 22px;
-  }
-  :global(html.dark .bento-card.stack-card .bento-card-body-rendered .stack-split-card) {
-    background: rgba(255, 255, 255, 0.05);
-  }
-  :global(.bento-card.stack-card .bento-card-body-rendered .stack-split-title) {
-    font-family: var(--font-serif);
-    font-size: 1.25rem;
-    font-weight: 400;
-    margin: 0 0 14px;
-    color: var(--ink);
-  }
+  /* Expanded modal body — chip rows under category subheadings. */
   :global(.bento-card.stack-card .bento-card-body-rendered h4) {
     font-family: var(--font-mono);
     font-size: 10.5px;
@@ -157,7 +175,7 @@
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--ink-dim);
-    margin: 16px 0 8px;
+    margin: 18px 0 10px;
   }
   :global(.bento-card.stack-card .bento-card-body-rendered h4:first-of-type) {
     margin-top: 0;
@@ -181,13 +199,12 @@
   :global(html.dark .bento-card.stack-card .bento-card-body-rendered .stack-chip) {
     background: rgba(255, 255, 255, 0.08);
   }
-  /* Anchor chips inside the modal — accent-tinted lift. */
+  /* Anchor chips — accent-tinted lift. */
   :global(.bento-card.stack-card .bento-card-body-rendered .stack-chip:has(em)) {
     background: var(--accent-soft);
   }
 
-  /* Paper-bg overrides for the cloned modal body (default rules in
-     BentoGrid.astro assume the dark project-card cover). */
+  /* Paper-bg overrides for the cloned modal body. */
   :global(.bento-card.stack-card .bento-card-body-rendered) {
     color: var(--ink-dim);
   }
