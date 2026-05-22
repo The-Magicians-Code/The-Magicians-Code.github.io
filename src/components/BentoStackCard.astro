@@ -1,129 +1,203 @@
 ---
-// Tech-stack section. Two adjacent paper cards — one for the languages I
-// think in, one for the tools I reach for. Everything visible at rest:
-// no marquee, no expand-on-click, no shared bento-card hover lift. The
-// `#skills-tools` anchor is preserved on the wrapper so existing nav
-// links (Nav.astro, MobileMenu.astro) keep resolving.
+// Tech-stack section. Single paper bento card at rest; expands into a
+// modal that reveals the two-section split (Languages I think in /
+// Tools I reach for). Uses the shared bento-card expand machinery
+// (BentoCard.astro pattern) so the morph + backdrop blur behave
+// exactly like project cards.
 //
-// Anchor styling — the first item in each row is wrapped in <em>, which
-// inherits the editorial italic+accent treatment from global.css. This
-// honors the "tools I *actually* reach for" framing without needing a
-// dedicated chip variant.
+// Rest state shows a row of four "anchor" chips (the tools I'd grab
+// first per category) as a visual peek — no marquee, no animation,
+// no Safari backdrop re-blur cost. The full categorized split lives
+// inside the hidden .bento-card-body, cloned into the modal on expand.
 //
-// Intentionally avoids the .bento-card / .bento class names: both are
-// globally styled with hover lift, pointer cursor, and aspect-ratio
-// rules in BentoGrid.astro + global.css. These cards are static.
+// `data-no-mode-toggle` opts out of the TL;DR ↔ Detailed pill that
+// project case-studies use — this card has only one content mode.
+//
+// Preserves the #skills-tools anchor for Nav.astro / MobileMenu.astro
+// links.
 ---
 
-<section id="skills-tools" class="stack-split" aria-label="Technical stack">
-  <article class="stack-split-card">
-    <h2 class="stack-split-title">Languages I <em>think in</em></h2>
-    <p class="stack-split-sub">Code + the ML stack on top.</p>
+<article
+  id="skills-tools"
+  class="bento-card stack-card"
+  data-bento-card
+  data-slug="stack"
+  data-no-mode-toggle
+  role="button"
+  tabindex="0"
+  aria-haspopup="dialog"
+  aria-expanded="false"
+  aria-label="Tools I actually reach for"
+>
+  <span class="cs-expand" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="15 3 21 3 21 9" />
+      <polyline points="9 21 3 21 3 15" />
+      <line x1="21" y1="3" x2="14" y2="10" />
+      <line x1="3" y1="21" x2="10" y2="14" />
+    </svg>
+  </span>
 
-    <h3>Languages</h3>
-    <ul class="stack-chip-row">
-      <li class="stack-chip"><em>Python</em></li>
-      <li class="stack-chip">C++</li>
-      <li class="stack-chip">JavaScript</li>
-      <li class="stack-chip">SQL</li>
-      <li class="stack-chip">Bash</li>
-      <li class="stack-chip">Swift</li>
+  <div class="card-body">
+    <div class="card-title">Tools I <em>actually</em> reach for</div>
+    <p class="card-text">Tap for the full stack.</p>
+    <ul class="stack-anchors" aria-label="Anchor tools">
+      <li><em>Python</em></li>
+      <li><em>PyTorch</em></li>
+      <li><em>Docker</em></li>
+      <li><em>Flask</em></li>
     </ul>
+  </div>
 
-    <h3>ML / AI</h3>
-    <ul class="stack-chip-row">
-      <li class="stack-chip"><em>PyTorch</em></li>
-      <li class="stack-chip">TensorFlow</li>
-      <li class="stack-chip">TensorRT</li>
-      <li class="stack-chip">ONNX</li>
-      <li class="stack-chip">OpenCV</li>
-      <li class="stack-chip">GStreamer</li>
-      <li class="stack-chip">Nvidia Jetson</li>
-    </ul>
-  </article>
+  <!-- Cloned into a visible .bento-card-body-rendered on expand. Two
+       sub-cards inside — one for the languages, one for the tools. -->
+  <div class="bento-card-body" hidden>
+    <div class="stack-split">
+      <article class="stack-split-card">
+        <h3 class="stack-split-title">Languages I <em>think in</em></h3>
 
-  <article class="stack-split-card">
-    <h2 class="stack-split-title">Tools I <em>reach for</em></h2>
-    <p class="stack-split-sub">How code becomes a running service.</p>
+        <h4>Languages</h4>
+        <ul class="stack-chip-row">
+          <li class="stack-chip"><em>Python</em></li>
+          <li class="stack-chip">C++</li>
+          <li class="stack-chip">JavaScript</li>
+          <li class="stack-chip">SQL</li>
+          <li class="stack-chip">Bash</li>
+          <li class="stack-chip">Swift</li>
+        </ul>
 
-    <h3>Infra &amp; DevOps</h3>
-    <ul class="stack-chip-row">
-      <li class="stack-chip"><em>Docker</em></li>
-      <li class="stack-chip">Jenkins</li>
-      <li class="stack-chip">GitLab CI/CD</li>
-      <li class="stack-chip">AWS S3</li>
-      <li class="stack-chip">Grafana</li>
-      <li class="stack-chip">ELK</li>
-      <li class="stack-chip">Kubernetes</li>
-    </ul>
+        <h4>ML / AI</h4>
+        <ul class="stack-chip-row">
+          <li class="stack-chip"><em>PyTorch</em></li>
+          <li class="stack-chip">TensorFlow</li>
+          <li class="stack-chip">TensorRT</li>
+          <li class="stack-chip">ONNX</li>
+          <li class="stack-chip">OpenCV</li>
+          <li class="stack-chip">GStreamer</li>
+          <li class="stack-chip">Nvidia Jetson</li>
+        </ul>
+      </article>
 
-    <h3>Frameworks &amp; Tools</h3>
-    <ul class="stack-chip-row">
-      <li class="stack-chip"><em>Flask</em></li>
-      <li class="stack-chip">REST APIs</li>
-      <li class="stack-chip">PostgreSQL</li>
-      <li class="stack-chip">Selenium</li>
-      <li class="stack-chip">Scrapy</li>
-      <li class="stack-chip">Postman</li>
-      <li class="stack-chip">Git</li>
-    </ul>
-  </article>
-</section>
+      <article class="stack-split-card">
+        <h3 class="stack-split-title">Tools I <em>reach for</em></h3>
+
+        <h4>Infra &amp; DevOps</h4>
+        <ul class="stack-chip-row">
+          <li class="stack-chip"><em>Docker</em></li>
+          <li class="stack-chip">Jenkins</li>
+          <li class="stack-chip">GitLab CI/CD</li>
+          <li class="stack-chip">AWS S3</li>
+          <li class="stack-chip">Grafana</li>
+          <li class="stack-chip">ELK</li>
+          <li class="stack-chip">Kubernetes</li>
+        </ul>
+
+        <h4>Frameworks &amp; Tools</h4>
+        <ul class="stack-chip-row">
+          <li class="stack-chip"><em>Flask</em></li>
+          <li class="stack-chip">REST APIs</li>
+          <li class="stack-chip">PostgreSQL</li>
+          <li class="stack-chip">Selenium</li>
+          <li class="stack-chip">Scrapy</li>
+          <li class="stack-chip">Postman</li>
+          <li class="stack-chip">Git</li>
+        </ul>
+      </article>
+    </div>
+  </div>
+</article>
 
 <style>
-  .stack-split {
+  /* Paper background, custom aspect. The .bento-card base from
+     BentoGrid.astro sets aspect-ratio: 4/1; override to 3/1 for a
+     slightly taller rest box that fits the anchor chip row. */
+  :global(.bento-card.stack-card),
+  :global(.bento-card.stack-card:hover) {
+    background-color: var(--paper);
+    cursor: pointer;
+    aspect-ratio: 3 / 1;
+  }
+  @media (max-width: 540px) {
+    :global(.bento-card.stack-card),
+    :global(.bento-card.stack-card:hover) {
+      aspect-ratio: 1 / 1;
+    }
+  }
+
+  :global(.bento-card.stack-card .card-body) {
+    text-align: left;
+    padding-bottom: 0;
+  }
+  :global(.bento-card.stack-card .card-title) {
+    color: var(--ink);
+    font-size: clamp(1.5rem, 1vw + 1rem, 1.75rem);
+    transform: none;
+  }
+  /* em inside the title inherits the global italic+accent rule. */
+  :global(.bento-card.stack-card .card-text) {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--ink-dim);
+    margin-top: 6px;
+  }
+
+  /* Rest-state anchor chip row — peek of the four tools I'd grab
+     first. Replaces the old marquee. No animation, no perf cost. */
+  :global(.bento-card.stack-card .stack-anchors) {
+    list-style: none;
+    padding: 0;
+    margin: 14px 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  :global(.bento-card.stack-card .stack-anchors li) {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--accent-soft);
+  }
+
+  /* Expanded modal body — two sub-cards side by side. */
+  :global(.bento-card.stack-card .bento-card-body-rendered .stack-split) {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 16px;
   }
-  /* Single column below the site's mobile nav breakpoint. Two cards
-     side-by-side at 540-640px would be cramped given the 880px page
-     max-width and inner padding. */
   @media (max-width: 640px) {
-    .stack-split {
+    :global(.bento-card.stack-card .bento-card-body-rendered .stack-split) {
       grid-template-columns: 1fr;
     }
   }
-
-  .stack-split-card {
-    background: var(--paper);
+  :global(.bento-card.stack-card .bento-card-body-rendered .stack-split-card) {
+    background: rgba(26, 26, 28, 0.04);
     border-radius: var(--radius-card, 14px);
-    padding: 24px 26px;
-    color: var(--ink);
-    /* No hover lift, no cursor change — these cards aren't interactive. */
+    padding: 20px 22px;
   }
-
-  .stack-split-title {
+  :global(html.dark .bento-card.stack-card .bento-card-body-rendered .stack-split-card) {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  :global(.bento-card.stack-card .bento-card-body-rendered .stack-split-title) {
     font-family: var(--font-serif);
-    font-size: clamp(1.5rem, 1vw + 1rem, 1.75rem);
+    font-size: 1.25rem;
     font-weight: 400;
-    line-height: 1.15;
-    margin: 0;
+    margin: 0 0 14px;
     color: var(--ink);
   }
-  /* em inside the title inherits italic+accent from the global em rule. */
-
-  .stack-split-sub {
-    font-family: var(--font-mono);
-    font-size: 11.5px;
-    color: var(--ink-dim);
-    margin: 6px 0 18px;
-  }
-
-  .stack-split-card h3 {
+  :global(.bento-card.stack-card .bento-card-body-rendered h4) {
     font-family: var(--font-mono);
     font-size: 10.5px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--ink-dim);
-    margin: 18px 0 8px;
+    margin: 16px 0 8px;
   }
-  .stack-split-card h3:first-of-type {
-    margin-top: 8px;
+  :global(.bento-card.stack-card .bento-card-body-rendered h4:first-of-type) {
+    margin-top: 0;
   }
-
-  .stack-chip-row {
+  :global(.bento-card.stack-card .bento-card-body-rendered .stack-chip-row) {
     list-style: none;
     padding: 0;
     margin: 0;
@@ -131,7 +205,7 @@
     flex-wrap: wrap;
     gap: 6px;
   }
-  .stack-chip {
+  :global(.bento-card.stack-card .bento-card-body-rendered .stack-chip) {
     font-family: var(--font-mono);
     font-size: 12px;
     padding: 4px 10px;
@@ -139,12 +213,47 @@
     background: rgba(26, 26, 28, 0.06);
     color: var(--ink);
   }
-  html.dark .stack-chip {
+  :global(html.dark .bento-card.stack-card .bento-card-body-rendered .stack-chip) {
     background: rgba(255, 255, 255, 0.08);
   }
-  /* Anchor item — uses <em> for the italic+accent treatment, with a
-     soft accent-tinted chip bg to lift it off the row. */
-  .stack-chip:has(em) {
+  /* Anchor chips inside the modal — accent-tinted lift. */
+  :global(.bento-card.stack-card .bento-card-body-rendered .stack-chip:has(em)) {
     background: var(--accent-soft);
+  }
+
+  /* Paper-bg overrides for the cloned modal body (default rules in
+     BentoGrid.astro assume the dark project-card cover). */
+  :global(.bento-card.stack-card .bento-card-body-rendered) {
+    color: var(--ink-dim);
+  }
+  :global(.bento-card.stack-card .bento-card-body-rendered :is(h2, h3, h4)) {
+    color: var(--ink);
+  }
+
+  /* Hover-revealed expand affordance + close button repainted for paper.
+     Dark-mode flips the ink-tint to a white tint so the disc stays
+     readable against dark paper. */
+  :global(.bento-card.stack-card .cs-expand) {
+    background: rgba(26, 26, 28, 0.06);
+    color: var(--ink);
+    box-shadow: 0 2px 40px rgba(0, 0, 0, 0.10);
+  }
+  :global(.bento-card.stack-card .cs-expand:hover) {
+    background: rgba(26, 26, 28, 0.12);
+  }
+  :global(.bento-card.stack-card .cs-close) {
+    background: rgba(26, 26, 28, 0.06);
+    color: var(--ink);
+  }
+  :global(.bento-card.stack-card .cs-close:hover) {
+    background: rgba(26, 26, 28, 0.12);
+  }
+  :global(html.dark .bento-card.stack-card .cs-expand),
+  :global(html.dark .bento-card.stack-card .cs-close) {
+    background: rgba(255, 255, 255, 0.08);
+  }
+  :global(html.dark .bento-card.stack-card .cs-expand:hover),
+  :global(html.dark .bento-card.stack-card .cs-close:hover) {
+    background: rgba(255, 255, 255, 0.16);
   }
 </style>

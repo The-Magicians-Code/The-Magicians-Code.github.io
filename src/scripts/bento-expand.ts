@@ -248,8 +248,13 @@ function doOpen(card: HTMLElement): void {
       const cloned = child.cloneNode(true) as HTMLElement;
       wrap.appendChild(cloned);
     }
-    const pillToggle = buildPillToggle(wrap, initialMode);
-    body.appendChild(pillToggle);
+    // Cards can opt out of the TL;DR ↔ Detailed pill via
+    // data-no-mode-toggle (e.g. the stack card, which has a single
+    // content mode — rendering the pill would be a no-op control).
+    const pillToggle = card.hasAttribute('data-no-mode-toggle')
+      ? null
+      : buildPillToggle(wrap, initialMode);
+    if (pillToggle) body.appendChild(pillToggle);
     body.appendChild(wrap);
     openState.appendedBodyWrap = wrap;
     openState.pillToggle = pillToggle;
