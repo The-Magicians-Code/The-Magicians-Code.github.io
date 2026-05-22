@@ -44,7 +44,8 @@
 - https://developers.openai.com/blog/designing-delightful-frontends-with-gpt-5-4
 - https://appstacks.club/mobile-apps
 - https://www.landing.love/categories/portfolio/
-- https://performance.dev
+- https://www.stainless.com
+- https://www.interfacecraft.dev
 
 ### Glass
 - https://themagicianscode.dev/prototypes/liquid-glass-pill/
@@ -63,3 +64,5 @@
 - WebGPU or WebGL
 - Web Animaions API
 - https://performance.dev/how-is-linear-so-fast-a-technical-breakdown
+- https://www.npmjs.com/package/html-in-canvas-polyfill
+- https://performance.dev
