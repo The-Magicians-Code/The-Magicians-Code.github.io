@@ -124,9 +124,16 @@
     }
   }
 
+  /* Center the rest-state block (title + sub + anchor chips) vertically
+     inside the card body, mirroring the project bento cards' visual
+     anchor point for their title. text-align: left already comes from
+     the BentoGrid base rule. The .is-expanded card-body rule in
+     BentoGrid.astro flips back to justify-content: flex-start when the
+     modal opens — content rearranges to top, then the cloned body
+     fades in. The brief snap happens behind the 160ms swap fade and
+     reads as part of the modal settling. */
   :global(.bento-card.stack-card .card-body) {
-    text-align: left;
-    padding-bottom: 0;
+    justify-content: center;
   }
   :global(.bento-card.stack-card .card-title) {
     color: var(--ink);
