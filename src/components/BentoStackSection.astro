@@ -43,6 +43,15 @@
     </div>
 
     <div class="stack-marquee" aria-hidden="true">
+      <!-- Three identical copies (not two) — the seamless-loop point at
+           translateX(-33.333%) requires the next copy to be already
+           visible on the right as the previous one scrolls off the left.
+           Two copies sufficed when each unique set was wider than the
+           card viewport (old brand-tile marquee, ~26 tiles × 54px ≈
+           1400px > card width). With six short text pills the unique
+           set is ~600px and the card is ~800px wide, so two copies
+           leave a visible gap on the right at the loop. Three copies
+           give viewport headroom up to ~2 × unique_set_width. -->
       <div class="stack-marquee-track">
         <span class="stack-marquee-pill">Languages</span>
         <span class="stack-marquee-pill">AI / ML</span>
@@ -50,7 +59,12 @@
         <span class="stack-marquee-pill">Databases</span>
         <span class="stack-marquee-pill">DevOps</span>
         <span class="stack-marquee-pill">Tools</span>
-        <!-- Duplicate set for seamless -50% loop. Keep in sync. -->
+        <span class="stack-marquee-pill">Languages</span>
+        <span class="stack-marquee-pill">AI / ML</span>
+        <span class="stack-marquee-pill">Back end</span>
+        <span class="stack-marquee-pill">Databases</span>
+        <span class="stack-marquee-pill">DevOps</span>
+        <span class="stack-marquee-pill">Tools</span>
         <span class="stack-marquee-pill">Languages</span>
         <span class="stack-marquee-pill">AI / ML</span>
         <span class="stack-marquee-pill">Back end</span>
@@ -198,8 +212,11 @@
   .stack-marquee-track {
     display: flex;
     gap: 10px;
-    /* Trailing padding mirrors the gap so translateX(-50%) lands on
-       the seamless loop point — without it the cycle blanks for 1 gap. */
+    /* Trailing padding completes the gap pattern after the last item.
+       Flex `gap` is between items only (17 internal gaps for 18 items);
+       this one extra 10px makes the track partition into 3 equal blocks
+       of (sum_unique + 6*gap) each, so translateX(-33.3333%) lands
+       exactly on the next-copy start position. */
     padding-right: 10px;
     width: max-content;
     animation: stack-marquee 36s linear infinite;
@@ -219,7 +236,7 @@
   }
   @keyframes stack-marquee {
     from { transform: translateX(0); }
-    to   { transform: translateX(-50%); }
+    to   { transform: translateX(-33.3333%); }
   }
   @media (prefers-reduced-motion: reduce) {
     .stack-marquee-track { animation: none; }
