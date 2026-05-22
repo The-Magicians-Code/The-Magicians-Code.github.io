@@ -412,10 +412,11 @@ function closeCaseStudy(): void {
 // the 4:1 aspect ratio), so it has to be measured per card at init and
 // re-measured on resize / after each close.
 function syncTitleRestY(card: HTMLElement): void {
-  // Scoped to project case-study cards. Other bento cards (e.g. the
-  // stack card) keep their natural-flow title position via a CSS
-  // `transform: none` override.
-  if (!card.classList.contains('cs-card')) return;
+  // Scoped to cards that participate in the title-rest-y translate
+  // pattern: project case-study cards (.cs-card) and the tech-stack
+  // card (.stack-card). Both also opt into pretext word-positioning,
+  // so the title element is the single morph target inside card-body.
+  if (!card.classList.contains('cs-card') && !card.classList.contains('stack-card')) return;
   // Skip cards mid-lifecycle — their geometry isn't the resting geometry.
   if (
     card.classList.contains('is-expanding') ||

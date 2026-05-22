@@ -1,20 +1,18 @@
 ---
-// Tech-stack section. Single paper bento card at rest; expands into a
-// modal that reveals the two-section split (Languages I think in /
-// Tools I reach for). Uses the shared bento-card expand machinery
-// (BentoCard.astro pattern) so the morph + backdrop blur behave
-// exactly like project cards.
+// Tech-stack section. Single paper bento card with the title centered
+// at rest (via the shared --title-rest-y JS-measured translateY pattern
+// from bento-expand.ts), and the per-word pretext morph wiring the
+// title's words to their modal positions during expand.
 //
-// Rest state shows a row of four "anchor" chips (the tools I'd grab
-// first per category) as a visual peek — no marquee, no animation,
-// no Safari backdrop re-blur cost. The full categorized split lives
-// inside the hidden .bento-card-body, cloned into the modal on expand.
+// Rest state shows only the title — same content shape as project
+// case-study cards (BentoCard.astro), so the pretext + title-rest-y
+// contract holds. The full categorized stack lives inside the hidden
+// .bento-card-body, cloned into a two-column split on expand.
 //
 // `data-no-mode-toggle` opts out of the TL;DR ↔ Detailed pill that
 // project case-studies use — this card has only one content mode.
 //
-// Preserves the #skills-tools anchor for Nav.astro / MobileMenu.astro
-// links.
+// Preserves the #skills-tools anchor for Nav.astro / MobileMenu.astro.
 ---
 
 <article
@@ -40,13 +38,6 @@
 
   <div class="card-body">
     <div class="card-title">Tools I <em>actually</em> reach for</div>
-    <p class="card-text">Tap for the full stack.</p>
-    <ul class="stack-anchors" aria-label="Anchor tools">
-      <li><em>Python</em></li>
-      <li><em>PyTorch</em></li>
-      <li><em>Docker</em></li>
-      <li><em>Flask</em></li>
-    </ul>
   </div>
 
   <!-- Cloned into a visible .bento-card-body-rendered on expand. Two
@@ -110,7 +101,7 @@
 <style>
   /* Paper background, custom aspect. The .bento-card base from
      BentoGrid.astro sets aspect-ratio: 4/1; override to 3/1 for a
-     slightly taller rest box that fits the anchor chip row. */
+     slightly taller rest box. */
   :global(.bento-card.stack-card),
   :global(.bento-card.stack-card:hover) {
     background-color: var(--paper);
@@ -124,47 +115,14 @@
     }
   }
 
-  /* Center the rest-state block (title + sub + anchor chips) vertically
-     inside the card body, mirroring the project bento cards' visual
-     anchor point for their title. text-align: left already comes from
-     the BentoGrid base rule. The .is-expanded card-body rule in
-     BentoGrid.astro flips back to justify-content: flex-start when the
-     modal opens — content rearranges to top, then the cloned body
-     fades in. The brief snap happens behind the 160ms swap fade and
-     reads as part of the modal settling. */
-  :global(.bento-card.stack-card .card-body) {
-    justify-content: center;
-  }
-  :global(.bento-card.stack-card .card-title) {
-    color: var(--ink);
-    font-size: clamp(1.5rem, 1vw + 1rem, 1.75rem);
-    transform: none;
-  }
-  /* em inside the title inherits the global italic+accent rule. */
-  :global(.bento-card.stack-card .card-text) {
-    font-family: var(--font-mono);
-    font-size: 11.5px;
-    color: var(--ink-dim);
-    margin-top: 6px;
-  }
+  /* card-body inherits BentoGrid's flex column + justify-content:
+     flex-start. The title is then visually pushed to the body's
+     vertical center via --title-rest-y (computed in bento-expand.ts
+     syncTitleRestY) — same machinery as project cards. */
 
-  /* Rest-state anchor chip row — peek of the four tools I'd grab
-     first. Replaces the old marquee. No animation, no perf cost. */
-  :global(.bento-card.stack-card .stack-anchors) {
-    list-style: none;
-    padding: 0;
-    margin: 14px 0 0;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-  :global(.bento-card.stack-card .stack-anchors li) {
-    font-family: var(--font-mono);
-    font-size: 12px;
-    padding: 4px 10px;
-    border-radius: 999px;
-    background: var(--accent-soft);
-  }
+  /* em inside the title inherits the global italic+accent rule and
+     is rendered via pretext as <em class="word"> word spans (see
+     BentoGrid.astro .pretext-title rules). */
 
   /* Expanded modal body — two sub-cards side by side. */
   :global(.bento-card.stack-card .bento-card-body-rendered .stack-split) {
@@ -237,9 +195,7 @@
     color: var(--ink);
   }
 
-  /* Hover-revealed expand affordance + close button repainted for paper.
-     Dark-mode flips the ink-tint to a white tint so the disc stays
-     readable against dark paper. */
+  /* Hover-revealed expand affordance + close button repainted for paper. */
   :global(.bento-card.stack-card .cs-expand) {
     background: rgba(26, 26, 28, 0.06);
     color: var(--ink);
