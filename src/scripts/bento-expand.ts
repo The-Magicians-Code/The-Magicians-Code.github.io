@@ -412,11 +412,11 @@ function closeCaseStudy(): void {
 // the 4:1 aspect ratio), so it has to be measured per card at init and
 // re-measured on resize / after each close.
 function syncTitleRestY(card: HTMLElement): void {
-  // Scoped to cards that participate in the title-rest-y translate
-  // pattern: project case-study cards (.cs-card) and the tech-stack
-  // card (.stack-card). Both also opt into pretext word-positioning,
-  // so the title element is the single morph target inside card-body.
-  if (!card.classList.contains('cs-card') && !card.classList.contains('stack-card')) return;
+  // Scoped to project case-study cards only. The stack card's title
+  // sits top-left at rest (so it doesn't overlap the marquee strip
+  // anchored to the card's bottom) — leaving --title-rest-y at 0
+  // keeps it in its natural-flow position.
+  if (!card.classList.contains('cs-card')) return;
   // Skip cards mid-lifecycle — their geometry isn't the resting geometry.
   if (
     card.classList.contains('is-expanding') ||

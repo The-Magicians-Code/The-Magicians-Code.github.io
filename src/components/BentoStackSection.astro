@@ -1,173 +1,223 @@
 ---
-// Tech-stack section. Header ("Tools I *actually* reach for") sits as a
-// separator above two independent bento cards, mirroring the structure
-// of BentoProjectsSection.astro. Each sub-card has its own pretext
-// title, its own expand-to-modal lifecycle, and its own categorized
-// chip rows in the modal body.
+// Tech-stack section. Single paper bento card that communicates breadth
+// at rest via a marquee of category labels (Languages · AI / ML · Back
+// end · Databases · DevOps · Tools), and the full tool list per category
+// on expand. The marquee items are text-only pills — no brand logos,
+// no per-tool tiles — so a glance reads as a list of disciplines, not
+// a logo wall.
 //
-// Cards:
-//   • "Languages I think in" — Languages + ML / AI chip rows
-//   • "Tools I reach for"    — Infra & DevOps + Frameworks & Tools
+// `data-no-mode-toggle` skips the TL;DR ↔ Detailed pill (single content
+// mode). Preserves `#skills-tools` for Nav.astro / MobileMenu.astro.
 //
-// `data-no-mode-toggle` on each card skips the TL;DR ↔ Detailed pill
-// (single content mode). The `id="skills-tools"` anchor lives only on
-// the outer section; duplicating it on the sub-cards would silently
-// break the nav anchor (Nav.astro:21, MobileMenu.astro:8).
-//
-// Behavior caveat (codex-flagged): bento-expand's openState is a
-// page-level singleton. Two stack cards cannot be open simultaneously.
-// Clicking card B while card A is open: the backdrop click dismisses
-// A; a second click on B opens it. Auto-swap is intentionally out of
-// scope for this change.
+// Marquee is CSS-only — hardcoded duplicated track + @keyframes
+// translateX 0 → -50% — so no runtime script is needed for the rest
+// state. The .bento-open visibility/animation-pause workarounds
+// remain because moving content under a backdrop-filter element
+// (the expand modal) forces Safari to re-blur every frame.
 ---
 
 <section id="skills-tools" class="stack-section">
-  <h2 class="section-title">Tools I <em>actually</em> reach for</h2>
+  <article
+    class="bento-card stack-card"
+    data-bento-card
+    data-slug="stack"
+    data-no-mode-toggle
+    role="button"
+    tabindex="0"
+    aria-haspopup="dialog"
+    aria-expanded="false"
+    aria-label="Tools I actually reach for"
+  >
+    <span class="cs-expand" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 3 21 3 21 9" />
+        <polyline points="9 21 3 21 3 15" />
+        <line x1="21" y1="3" x2="14" y2="10" />
+        <line x1="3" y1="21" x2="10" y2="14" />
+      </svg>
+    </span>
 
-  <div class="stack-sub-grid">
-    <article
-      class="bento-card stack-card"
-      data-bento-card
-      data-slug="stack-languages"
-      data-no-mode-toggle
-      role="button"
-      tabindex="0"
-      aria-haspopup="dialog"
-      aria-expanded="false"
-      aria-label="Languages I think in"
-    >
-      <span class="cs-expand" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="15 3 21 3 21 9" />
-          <polyline points="9 21 3 21 3 15" />
-          <line x1="21" y1="3" x2="14" y2="10" />
-          <line x1="3" y1="21" x2="10" y2="14" />
-        </svg>
-      </span>
-      <div class="card-body">
-        <div class="card-title">Languages I <em>think in</em></div>
-      </div>
-      <div class="bento-card-body" hidden>
-        <h4>Languages</h4>
-        <ul class="stack-chip-row">
-          <li class="stack-chip"><em>Python</em></li>
-          <li class="stack-chip">C++</li>
-          <li class="stack-chip">JavaScript</li>
-          <li class="stack-chip">SQL</li>
-          <li class="stack-chip">Bash</li>
-          <li class="stack-chip">Swift</li>
-        </ul>
-        <h4>ML / AI</h4>
-        <ul class="stack-chip-row">
-          <li class="stack-chip"><em>PyTorch</em></li>
-          <li class="stack-chip">TensorFlow</li>
-          <li class="stack-chip">TensorRT</li>
-          <li class="stack-chip">ONNX</li>
-          <li class="stack-chip">OpenCV</li>
-          <li class="stack-chip">GStreamer</li>
-          <li class="stack-chip">Nvidia Jetson</li>
-        </ul>
-      </div>
-    </article>
+    <div class="card-body">
+      <div class="card-title">Tools I <em>actually</em> reach for</div>
+      <p class="card-text">Languages, frameworks, infra — the full kit.</p>
+    </div>
 
-    <article
-      class="bento-card stack-card"
-      data-bento-card
-      data-slug="stack-tools"
-      data-no-mode-toggle
-      role="button"
-      tabindex="0"
-      aria-haspopup="dialog"
-      aria-expanded="false"
-      aria-label="Tools I reach for"
-    >
-      <span class="cs-expand" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="15 3 21 3 21 9" />
-          <polyline points="9 21 3 21 3 15" />
-          <line x1="21" y1="3" x2="14" y2="10" />
-          <line x1="3" y1="21" x2="10" y2="14" />
-        </svg>
-      </span>
-      <div class="card-body">
-        <div class="card-title">Tools I <em>reach for</em></div>
+    <div class="stack-marquee" aria-hidden="true">
+      <div class="stack-marquee-track">
+        <span class="stack-marquee-pill">Languages</span>
+        <span class="stack-marquee-pill">AI / ML</span>
+        <span class="stack-marquee-pill">Back end</span>
+        <span class="stack-marquee-pill">Databases</span>
+        <span class="stack-marquee-pill">DevOps</span>
+        <span class="stack-marquee-pill">Tools</span>
+        <!-- Duplicate set for seamless -50% loop. Keep in sync. -->
+        <span class="stack-marquee-pill">Languages</span>
+        <span class="stack-marquee-pill">AI / ML</span>
+        <span class="stack-marquee-pill">Back end</span>
+        <span class="stack-marquee-pill">Databases</span>
+        <span class="stack-marquee-pill">DevOps</span>
+        <span class="stack-marquee-pill">Tools</span>
       </div>
-      <div class="bento-card-body" hidden>
-        <h4>Infra &amp; DevOps</h4>
-        <ul class="stack-chip-row">
-          <li class="stack-chip"><em>Docker</em></li>
-          <li class="stack-chip">Jenkins</li>
-          <li class="stack-chip">GitLab CI/CD</li>
-          <li class="stack-chip">AWS S3</li>
-          <li class="stack-chip">Grafana</li>
-          <li class="stack-chip">ELK</li>
-          <li class="stack-chip">Kubernetes</li>
-        </ul>
-        <h4>Frameworks &amp; Tools</h4>
-        <ul class="stack-chip-row">
-          <li class="stack-chip"><em>Flask</em></li>
-          <li class="stack-chip">REST APIs</li>
-          <li class="stack-chip">PostgreSQL</li>
-          <li class="stack-chip">Selenium</li>
-          <li class="stack-chip">Scrapy</li>
-          <li class="stack-chip">Postman</li>
-          <li class="stack-chip">Git</li>
-        </ul>
-      </div>
-    </article>
-  </div>
+    </div>
+
+    <!-- Cloned into a visible .bento-card-body-rendered on expand.
+         One <section> per marquee category: h4 label + chip row of
+         the actual tools. Anchor tool per category is wrapped in
+         <em> for italic + accent-soft chip background. -->
+    <div class="bento-card-body" hidden>
+      <h4>Languages</h4>
+      <ul class="stack-chip-row">
+        <li class="stack-chip"><em>Python</em></li>
+        <li class="stack-chip">C++</li>
+        <li class="stack-chip">JavaScript</li>
+        <li class="stack-chip">SQL</li>
+        <li class="stack-chip">Bash</li>
+        <li class="stack-chip">Swift</li>
+      </ul>
+
+      <h4>AI / ML</h4>
+      <ul class="stack-chip-row">
+        <li class="stack-chip"><em>PyTorch</em></li>
+        <li class="stack-chip">TensorFlow</li>
+        <li class="stack-chip">TensorRT</li>
+        <li class="stack-chip">ONNX</li>
+        <li class="stack-chip">OpenCV</li>
+        <li class="stack-chip">GStreamer</li>
+        <li class="stack-chip">Nvidia Jetson</li>
+      </ul>
+
+      <h4>Back end</h4>
+      <ul class="stack-chip-row">
+        <li class="stack-chip"><em>Flask</em></li>
+        <li class="stack-chip">REST APIs</li>
+      </ul>
+
+      <h4>Databases</h4>
+      <ul class="stack-chip-row">
+        <li class="stack-chip"><em>PostgreSQL</em></li>
+      </ul>
+
+      <h4>DevOps</h4>
+      <ul class="stack-chip-row">
+        <li class="stack-chip"><em>Docker</em></li>
+        <li class="stack-chip">Jenkins</li>
+        <li class="stack-chip">GitLab CI/CD</li>
+        <li class="stack-chip">Kubernetes</li>
+        <li class="stack-chip">Grafana</li>
+        <li class="stack-chip">ELK</li>
+        <li class="stack-chip">AWS S3</li>
+      </ul>
+
+      <h4>Tools</h4>
+      <ul class="stack-chip-row">
+        <li class="stack-chip"><em>Git</em></li>
+        <li class="stack-chip">Postman</li>
+        <li class="stack-chip">Selenium</li>
+        <li class="stack-chip">Scrapy</li>
+      </ul>
+    </div>
+  </article>
 </section>
 
 <script>
-  // Two sub-cards on the page need the bento-expand machinery wired up.
-  // BentoGrid.astro imports it for the projects section; importing here
-  // too is safe (the script self-guards against double-init).
+  // No marquee runtime needed (CSS-only). Importing bento-expand is
+  // safe — it self-guards against double init when BentoGrid is also
+  // on the page.
   import '../scripts/bento-expand.ts';
 </script>
 
 <style>
-  /* Header styled to match BentoProjectsSection.astro section-title. */
-  .section-title {
-    font-family: var(--font-serif);
-    font-weight: 400;
-    font-size: clamp(1.75rem, 1.5vw + 1.25rem, 2.5rem);
-    line-height: 1.15;
-    letter-spacing: -0.01em;
-    margin: 0 0 24px;
-  }
-
-  .stack-sub-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 18px;
-  }
-  @media (max-width: 640px) {
-    .stack-sub-grid {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  /* Paper background, square-ish aspect for the 2-col layout.
-     Overrides BentoGrid.astro's 4:1 base aspect-ratio. */
+  /* ── Card shell ─────────────────────────────────────────────── */
   :global(.bento-card.stack-card),
   :global(.bento-card.stack-card:hover) {
     background-color: var(--paper);
     cursor: pointer;
-    aspect-ratio: 5 / 4;
+    aspect-ratio: 3 / 1;
   }
-  @media (max-width: 640px) {
+  @media (max-width: 540px) {
     :global(.bento-card.stack-card),
     :global(.bento-card.stack-card:hover) {
-      aspect-ratio: 5 / 3;
+      aspect-ratio: 1 / 1;
     }
   }
 
-  /* card-body inherits BentoGrid's flex column + justify-content:
-     flex-start. The title is then visually pushed to the body's
-     vertical center via --title-rest-y (computed in bento-expand.ts
-     syncTitleRestY) — same machinery as project cards. */
+  /* Header sits top-left so it doesn't fight the marquee anchored to
+     the card's bottom edge. Override BentoGrid's flex column gap so
+     the title and subtitle stay tight. */
+  :global(.bento-card.stack-card .card-body) {
+    text-align: left;
+    padding-bottom: 0;
+    gap: 6px;
+  }
+  :global(.bento-card.stack-card .card-title) {
+    color: var(--ink);
+    font-size: clamp(1.5rem, 1vw + 1rem, 1.75rem);
+    /* No --title-rest-y translate: stack card's title stays top-left
+       (syncTitleRestY is gated to .cs-card only). */
+    transform: none;
+  }
+  :global(.bento-card.stack-card .card-text) {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--ink-dim);
+    margin: 0;
+  }
 
-  /* Expanded modal body — chip rows under category subheadings. */
+  /* ── Marquee (text-only category pills) ─────────────────────── */
+  .stack-marquee {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 24px;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+            mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  }
+  .stack-marquee-track {
+    display: flex;
+    gap: 10px;
+    /* Trailing padding mirrors the gap so translateX(-50%) lands on
+       the seamless loop point — without it the cycle blanks for 1 gap. */
+    padding-right: 10px;
+    width: max-content;
+    animation: stack-marquee 36s linear infinite;
+  }
+  .stack-marquee-pill {
+    flex-shrink: 0;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: rgba(26, 26, 28, 0.06);
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  :global(html.dark) .stack-marquee-pill {
+    background: rgba(255, 255, 255, 0.08);
+  }
+  @keyframes stack-marquee {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .stack-marquee-track { animation: none; }
+  }
+
+  /* Marquee perf during the expand morph lifecycle:
+     visibility: hidden skips paint (mask + pill rasters not drawn)
+     but keeps the layout box intact so the card morph target stays
+     consistent. animation-play-state: paused freezes the translateX
+     so the modal's backdrop-filter doesn't re-blur a moving backdrop
+     every frame (major Safari paint cost). Same pattern the old
+     brand-tile marquee used. */
+  :global(body.bento-open) .stack-marquee {
+    visibility: hidden;
+  }
+  :global(body.bento-open) .stack-marquee-track {
+    animation-play-state: paused;
+  }
+
+  /* ── Expanded modal body — flat list of category sections ───── */
   :global(.bento-card.stack-card .bento-card-body-rendered h4) {
     font-family: var(--font-mono);
     font-size: 10.5px;
@@ -175,7 +225,7 @@
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--ink-dim);
-    margin: 18px 0 10px;
+    margin: 22px 0 10px;
   }
   :global(.bento-card.stack-card .bento-card-body-rendered h4:first-of-type) {
     margin-top: 0;
@@ -199,7 +249,7 @@
   :global(html.dark .bento-card.stack-card .bento-card-body-rendered .stack-chip) {
     background: rgba(255, 255, 255, 0.08);
   }
-  /* Anchor chips — accent-tinted lift. */
+  /* Anchor chip — accent-tinted via :has(em). */
   :global(.bento-card.stack-card .bento-card-body-rendered .stack-chip:has(em)) {
     background: var(--accent-soft);
   }
