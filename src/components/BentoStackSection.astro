@@ -169,14 +169,18 @@
     transform: translateX(0);
   }
   /* Subtitle slides horizontally to the modal-centered position in
-     lockstep with the title's pretext word-morph. Fires on .is-expanding
-     so the motion starts at the morph's start; transition rule covers
-     both directions so the reverse close-morph is smooth too. */
+     lockstep with the title's pretext word-morph. Transition rule
+     covers both .is-expanding (open) and .is-collapsing (close).
+     The transform-rule gates on .is-expanded ONLY — that class is
+     added at the start of the open morph and removed at the start of
+     close (bento-expand.ts:320). Gating on .is-expanding too would
+     hold the centered transform through the entire close lifecycle
+     and snap-revert at cleanup, because .is-expanding stays on the
+     card from open until final cleanup (line 379). */
   :global(.bento-card.stack-card.is-expanding .card-text),
   :global(.bento-card.stack-card.is-collapsing .card-text) {
     transition: transform var(--morph-dur) var(--ease-snappy);
   }
-  :global(.bento-card.stack-card.is-expanding .card-text),
   :global(.bento-card.stack-card.is-expanded .card-text) {
     transform: translateX(var(--subtitle-center-x, 0));
   }
