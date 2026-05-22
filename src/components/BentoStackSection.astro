@@ -161,6 +161,24 @@
     font-size: 11.5px;
     color: var(--ink-dim);
     margin: 0;
+    /* width: fit-content so the subtitle's bounding box reflects its
+       text width — required for the JS-measured --subtitle-center-x
+       offset (in bento-expand.ts syncStackSubtitleX) to land it
+       centered inside the expanded modal body. */
+    width: fit-content;
+    transform: translateX(0);
+  }
+  /* Subtitle slides horizontally to the modal-centered position in
+     lockstep with the title's pretext word-morph. Fires on .is-expanding
+     so the motion starts at the morph's start; transition rule covers
+     both directions so the reverse close-morph is smooth too. */
+  :global(.bento-card.stack-card.is-expanding .card-text),
+  :global(.bento-card.stack-card.is-collapsing .card-text) {
+    transition: transform var(--morph-dur) var(--ease-snappy);
+  }
+  :global(.bento-card.stack-card.is-expanding .card-text),
+  :global(.bento-card.stack-card.is-expanded .card-text) {
+    transform: translateX(var(--subtitle-center-x, 0));
   }
 
   /* ── Marquee (text-only category pills) ─────────────────────── */
