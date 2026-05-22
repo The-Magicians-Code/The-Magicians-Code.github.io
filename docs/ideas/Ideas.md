@@ -48,6 +48,8 @@
 - https://www.interfacecraft.dev
 - https://interfaces.dev
 - https://cofounder.co
+- https://www.hover.dev
+- https://gridportfolio.sites.blink.new
 
 ### Glass
 - https://themagicianscode.dev/prototypes/liquid-glass-pill/
