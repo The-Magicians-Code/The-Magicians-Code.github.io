@@ -1,259 +1,150 @@
 ---
-// Tech-stack marquee card. Static (non-clickable) sibling of BentoCard,
-// inheriting the .bento-card base layout from BentoGrid.astro (must be on
-// the same page) and overriding for paper background, custom aspect, and
-// the marquee container. The runtime at src/scripts/bento-stack.ts
-// populates N rows of brand-icon tiles based on available vertical space.
+// Tech-stack section. Two adjacent paper cards — one for the languages I
+// think in, one for the tools I reach for. Everything visible at rest:
+// no marquee, no expand-on-click, no shared bento-card hover lift. The
+// `#skills-tools` anchor is preserved on the wrapper so existing nav
+// links (Nav.astro, MobileMenu.astro) keep resolving.
 //
-// Preserves the #skills-tools anchor (linked from Nav.astro) so existing
-// in-page links still resolve after replacing SkillsTools.astro.
+// Anchor styling — the first item in each row is wrapped in <em>, which
+// inherits the editorial italic+accent treatment from global.css. This
+// honors the "tools I *actually* reach for" framing without needing a
+// dedicated chip variant.
+//
+// Intentionally avoids the .bento-card / .bento class names: both are
+// globally styled with hover lift, pointer cursor, and aspect-ratio
+// rules in BentoGrid.astro + global.css. These cards are static.
 ---
 
-<article
-  id="skills-tools"
-  class="bento-card stack-card"
-  data-bento-card
-  data-slug="stack"
-  role="button"
-  tabindex="0"
-  aria-haspopup="dialog"
-  aria-expanded="false"
-  aria-label="Tools I actually reach for"
->
-  <div class="card-body">
-    <div class="card-title">Tools I <em>actually</em> reach for</div>
-    <p class="card-text">Languages, ML frameworks, infra.</p>
-  </div>
-  <div class="marquee" aria-hidden="true" data-bento-stack></div>
-  <!-- Cloned into a visible .bento-card-body-rendered on expand. The four
-       categorized lists port the content from the removed SkillsTools
-       component; first item in each list is emphasized via <em>. -->
-  <div class="bento-card-body" hidden>
-    <h3>Languages</h3>
-    <ul>
-      <li><em>Python</em></li>
-      <li>C++</li>
-      <li>JavaScript</li>
-      <li>SQL</li>
-      <li>Bash</li>
-      <li>Swift</li>
-    </ul>
-    <h3>ML / AI</h3>
-    <ul>
-      <li><em>PyTorch</em></li>
-      <li>TensorFlow</li>
-      <li>TensorRT</li>
-      <li>ONNX</li>
-      <li>OpenCV</li>
-      <li>GStreamer</li>
-      <li>Nvidia Jetson</li>
-    </ul>
-    <h3>Infra &amp; DevOps</h3>
-    <ul>
-      <li><em>Docker</em></li>
-      <li>Jenkins</li>
-      <li>GitLab CI/CD</li>
-      <li>AWS S3</li>
-      <li>Grafana</li>
-      <li>ELK</li>
-      <li>Kubernetes</li>
-    </ul>
-    <h3>Frameworks &amp; Tools</h3>
-    <ul>
-      <li><em>Flask</em></li>
-      <li>REST APIs</li>
-      <li>PostgreSQL</li>
-      <li>Selenium</li>
-      <li>Scrapy</li>
-      <li>Postman</li>
-      <li>Git</li>
-    </ul>
-  </div>
-</article>
+<section id="skills-tools" class="stack-split" aria-label="Technical stack">
+  <article class="stack-split-card">
+    <h2 class="stack-split-title">Languages I <em>think in</em></h2>
+    <p class="stack-split-sub">Code + the ML stack on top.</p>
 
-<script>
-  import '../scripts/bento-stack.ts';
-</script>
+    <h3>Languages</h3>
+    <ul class="stack-chip-row">
+      <li class="stack-chip"><em>Python</em></li>
+      <li class="stack-chip">C++</li>
+      <li class="stack-chip">JavaScript</li>
+      <li class="stack-chip">SQL</li>
+      <li class="stack-chip">Bash</li>
+      <li class="stack-chip">Swift</li>
+    </ul>
+
+    <h3>ML / AI</h3>
+    <ul class="stack-chip-row">
+      <li class="stack-chip"><em>PyTorch</em></li>
+      <li class="stack-chip">TensorFlow</li>
+      <li class="stack-chip">TensorRT</li>
+      <li class="stack-chip">ONNX</li>
+      <li class="stack-chip">OpenCV</li>
+      <li class="stack-chip">GStreamer</li>
+      <li class="stack-chip">Nvidia Jetson</li>
+    </ul>
+  </article>
+
+  <article class="stack-split-card">
+    <h2 class="stack-split-title">Tools I <em>reach for</em></h2>
+    <p class="stack-split-sub">How code becomes a running service.</p>
+
+    <h3>Infra &amp; DevOps</h3>
+    <ul class="stack-chip-row">
+      <li class="stack-chip"><em>Docker</em></li>
+      <li class="stack-chip">Jenkins</li>
+      <li class="stack-chip">GitLab CI/CD</li>
+      <li class="stack-chip">AWS S3</li>
+      <li class="stack-chip">Grafana</li>
+      <li class="stack-chip">ELK</li>
+      <li class="stack-chip">Kubernetes</li>
+    </ul>
+
+    <h3>Frameworks &amp; Tools</h3>
+    <ul class="stack-chip-row">
+      <li class="stack-chip"><em>Flask</em></li>
+      <li class="stack-chip">REST APIs</li>
+      <li class="stack-chip">PostgreSQL</li>
+      <li class="stack-chip">Selenium</li>
+      <li class="stack-chip">Scrapy</li>
+      <li class="stack-chip">Postman</li>
+      <li class="stack-chip">Git</li>
+    </ul>
+  </article>
+</section>
 
 <style>
-  /* Paper bg, default cursor, custom aspect. The .bento-card base sets
-     aspect-ratio: 4/1 (banner); we override to 3/1 for a slightly taller
-     box that fits 2-3 marquee rows comfortably. */
-  :global(.bento-card.stack-card),
-  :global(.bento-card.stack-card:hover) {
-    background-color: var(--paper);
-    cursor: pointer;
-    aspect-ratio: 3 / 1;
+  .stack-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
   }
-  @media (max-width: 540px) {
-    :global(.bento-card.stack-card),
-    :global(.bento-card.stack-card:hover) {
-      aspect-ratio: 1 / 1;
+  /* Single column below the site's mobile nav breakpoint. Two cards
+     side-by-side at 540-640px would be cramped given the 880px page
+     max-width and inner padding. */
+  @media (max-width: 640px) {
+    .stack-split {
+      grid-template-columns: 1fr;
     }
   }
 
-  /* Body content pinned top-left. Marquee fills the bottom area absolutely. */
-  :global(.bento-card.stack-card .card-body) {
-    text-align: left;
-    padding-bottom: 0;
-  }
-  /* Title sits at its natural position — no rest-y translate (the stack
-     card doesn't expand, so the translate machinery doesn't apply). */
-  :global(.bento-card.stack-card .card-title) {
+  .stack-split-card {
+    background: var(--paper);
+    border-radius: var(--radius-card, 14px);
+    padding: 24px 26px;
     color: var(--ink);
+    /* No hover lift, no cursor change — these cards aren't interactive. */
+  }
+
+  .stack-split-title {
+    font-family: var(--font-serif);
     font-size: clamp(1.5rem, 1vw + 1rem, 1.75rem);
-    transform: none;
+    font-weight: 400;
+    line-height: 1.15;
+    margin: 0;
+    color: var(--ink);
   }
-  :global(.bento-card.stack-card .card-title em) {
-    font-style: italic;
-    color: var(--accent);
-  }
-  :global(.bento-card.stack-card .card-text) {
+  /* em inside the title inherits italic+accent from the global em rule. */
+
+  .stack-split-sub {
     font-family: var(--font-mono);
     font-size: 11.5px;
     color: var(--ink-dim);
-    margin-top: 6px;
+    margin: 6px 0 18px;
   }
 
-  /* Marquee container — anchored to card bottom; horizontal edge fade
-     via mask so tiles slide in/out gracefully. */
-  :global([data-bento-stack]) {
-    /* Tile size as a CSS var so the JS row-count calc and the per-tile
-       width/height stay in sync via a single source of truth. Bumped on
-       mobile (≤540px) where the card aspect goes to 1:1 — three rows of
-       larger tiles read better than three rows of small ones. */
-    --tile-size: 44px;
-    --tile-gap: 10px;
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 24px;
-    display: flex;
-    flex-direction: column;
-    gap: var(--tile-gap);
-    -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
-            mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
-  }
-  @media (max-width: 540px) {
-    :global([data-bento-stack]) {
-      --tile-size: 64px;
-    }
-  }
-  :global([data-bento-stack] .marquee-row) {
-    overflow: hidden;
-  }
-  :global([data-bento-stack] .marquee-track) {
-    display: flex;
-    gap: var(--tile-gap);
-    /* flex gap only applies between items, not after the last one. Without
-       a trailing gap, translateX(-50%) lands 1 gap short of the seamless
-       loop point — visible as a brief blank when the animation cycles. */
-    padding-right: var(--tile-gap);
-    width: max-content;
-    animation: bento-stack-marquee 38s linear infinite;
-  }
-  /* Alternate-direction rows: every other row scrolls the opposite way. */
-  :global([data-bento-stack] .marquee-row.reverse .marquee-track) {
-    animation-direction: reverse;
-  }
-  @keyframes bento-stack-marquee {
-    from { transform: translateX(0); }
-    to   { transform: translateX(-50%); }
-  }
-
-  :global([data-bento-stack] .stack-tile) {
-    flex-shrink: 0;
-    width: var(--tile-size);
-    height: var(--tile-size);
-    border-radius: 25%;
-    background: var(--bg-color, #333);
-    display: grid;
-    place-items: center;
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.18),
-      0 4px 10px -6px rgba(0, 0, 0, 0.4);
-  }
-  :global([data-bento-stack] .stack-tile img) {
-    width: 56%;
-    height: 56%;
-    object-fit: contain;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    :global([data-bento-stack] .marquee-track) {
-      animation: none;
-    }
-  }
-  /* Pause the marquee animation through the entire expand-modal-collapse
-     lifecycle. The marquee already goes opacity:0 during this window
-     (see the body.bento-open rule below) — but the CSS animation keeps
-     interpolating translateX on each frame, which forces the modal's
-     backdrop-filter layers to re-blur a moving backdrop every frame.
-     Pausing the animation freezes the backdrop pixels and lets the
-     compositor cache the blurred result. Major Safari paint cost. */
-  :global(body.bento-open [data-bento-stack] .marquee-track) {
-    animation-play-state: paused;
-  }
-
-  /* ── Expand-on-click lifecycle ────────────────────────────────
-     Hide the marquee entirely during the modal lifecycle (open morph,
-     modal-state, close morph). It's the most expensive paint-per-frame
-     element on the page: 48–72 tile divs with inset + outer box-shadows
-     under a linear-gradient mask, all repainted at every morph frame
-     because the marquee's position:absolute box resizes with the card.
-     opacity:0 doesn't skip paint — only compositing — so the GPU was
-     burning paint cost on a fully invisible element.
-
-     visibility: hidden skips paint (tile shadows + mask not drawn) but
-     keeps the layout box intact, so the element doesn't trigger CLS
-     shifts (which content-visibility: hidden would, by collapsing the
-     marquee's box). Card morph covers the marquee's rest rect via
-     stacking, so the user doesn't perceive the instant hide/show. */
-  :global(body.bento-open [data-bento-stack]) {
-    visibility: hidden;
-  }
-
-  /* Paper-bg overrides for the cloned modal body (default rules in
-     BentoGrid.astro assume the dark project-card cover, with cream text). */
-  :global(.bento-card.stack-card .bento-card-body-rendered) {
+  .stack-split-card h3 {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
     color: var(--ink-dim);
+    margin: 18px 0 8px;
   }
-  :global(.bento-card.stack-card .bento-card-body-rendered :is(h2, h3)) {
-    color: var(--ink);
-  }
-  :global(.bento-card.stack-card .bento-card-body-rendered code) {
-    background: rgba(26, 26, 28, 0.06);
-  }
-  :global(.bento-card.stack-card .bento-card-body-rendered em) {
-    font-style: italic;
-    color: var(--accent);
+  .stack-split-card h3:first-of-type {
+    margin-top: 8px;
   }
 
-  /* Hover-revealed expand affordance + close button repainted for paper.
-     Dark-mode flips the ink-tint to a white tint so the disc stays
-     readable against dark paper (the dark-ink override would otherwise
-     blend into the card). */
-  :global(.bento-card.stack-card .cs-expand) {
+  .stack-chip-row {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .stack-chip {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 999px;
     background: rgba(26, 26, 28, 0.06);
     color: var(--ink);
-    box-shadow: 0 2px 40px rgba(0, 0, 0, 0.10);
   }
-  :global(.bento-card.stack-card .cs-expand:hover) {
-    background: rgba(26, 26, 28, 0.12);
-  }
-  :global(.bento-card.stack-card .cs-close) {
-    background: rgba(26, 26, 28, 0.06);
-    color: var(--ink);
-  }
-  :global(.bento-card.stack-card .cs-close:hover) {
-    background: rgba(26, 26, 28, 0.12);
-  }
-  :global(html.dark .bento-card.stack-card .cs-expand),
-  :global(html.dark .bento-card.stack-card .cs-close) {
+  html.dark .stack-chip {
     background: rgba(255, 255, 255, 0.08);
   }
-  :global(html.dark .bento-card.stack-card .cs-expand:hover),
-  :global(html.dark .bento-card.stack-card .cs-close:hover) {
-    background: rgba(255, 255, 255, 0.16);
+  /* Anchor item — uses <em> for the italic+accent treatment, with a
+     soft accent-tinted chip bg to lift it off the row. */
+  .stack-chip:has(em) {
+    background: var(--accent-soft);
   }
 </style>
