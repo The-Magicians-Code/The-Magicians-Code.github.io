@@ -46,18 +46,12 @@ export function buildPillToggle(wrap: HTMLElement, initialMode: CaseStudyMode): 
   root.className = 'cs-mode-toggle';
   root.setAttribute('role', 'tablist');
   root.setAttribute('aria-label', 'Reading mode');
-  // Sliding thumb behind the buttons. Two-element structure so the
-  // translateX slide (on the outer) and the scaleX squash-stretch
-  // keyframe animation (on the inner) live on separate transform
-  // contexts and don't fight each other. The active button still gets
-  // its text-color change via aria-selected; the background fill +
-  // shadow live on the inner element.
+  // Sliding thumb behind the buttons. Single element whose translateX
+  // transition (with a strong overshoot bezier) carries the entire
+  // feel. Active button's text colour swaps via aria-selected.
   const thumb = document.createElement('span');
   thumb.className = 'cs-mode-toggle__thumb';
   thumb.setAttribute('aria-hidden', 'true');
-  const thumbInner = document.createElement('span');
-  thumbInner.className = 'cs-mode-toggle__thumb-inner';
-  thumb.appendChild(thumbInner);
   root.appendChild(thumb);
   root.dataset.active = initialMode;
 
@@ -213,11 +207,6 @@ export function buildPillToggle(wrap: HTMLElement, initialMode: CaseStudyMode): 
       b.tabIndex = isActive ? 0 : -1;
     });
     wrap.setAttribute('aria-labelledby', (next === 'tldr' ? tldrBtn : detailBtn).id);
-    // Trigger the squash-stretch keyframe on the thumb. Remove → reflow
-    // → re-add so the animation restarts cleanly on rapid toggles.
-    thumbInner.classList.remove('is-squashing');
-    void thumbInner.offsetWidth;
-    thumbInner.classList.add('is-squashing');
     writeMode(next);
 
     // Defensive: clear any leftover transient class from an
