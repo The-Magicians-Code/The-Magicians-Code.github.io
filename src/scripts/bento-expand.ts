@@ -248,8 +248,13 @@ function doOpen(card: HTMLElement): void {
       const cloned = child.cloneNode(true) as HTMLElement;
       wrap.appendChild(cloned);
     }
-    const pillToggle = buildPillToggle(wrap, initialMode);
-    body.appendChild(pillToggle);
+    // Cards can opt out of the TL;DR ↔ Detailed pill via
+    // data-no-mode-toggle (e.g. the stack card, which has a single
+    // content mode — rendering the pill would be a no-op control).
+    const pillToggle = card.hasAttribute('data-no-mode-toggle')
+      ? null
+      : buildPillToggle(wrap, initialMode);
+    if (pillToggle) body.appendChild(pillToggle);
     body.appendChild(wrap);
     openState.appendedBodyWrap = wrap;
     openState.pillToggle = pillToggle;
@@ -407,9 +412,10 @@ function closeCaseStudy(): void {
 // the 4:1 aspect ratio), so it has to be measured per card at init and
 // re-measured on resize / after each close.
 function syncTitleRestY(card: HTMLElement): void {
-  // Scoped to project case-study cards. Other bento cards (e.g. the
-  // stack card) keep their natural-flow title position via a CSS
-  // `transform: none` override.
+  // Scoped to project case-study cards only. The stack card's title
+  // sits top-left at rest (so it doesn't overlap the marquee strip
+  // anchored to the card's bottom) — leaving --title-rest-y at 0
+  // keeps it in its natural-flow position.
   if (!card.classList.contains('cs-card')) return;
   // Skip cards mid-lifecycle — their geometry isn't the resting geometry.
   if (
@@ -462,8 +468,44 @@ function syncTitleRestY(card: HTMLElement): void {
   card.style.setProperty('--title-center-x', `${centerX}px`);
 }
 
+// Stack card carries a one-line subtitle (.card-text) under the title. The
+// title's words morph to centered modal positions via pretext, but the
+// subtitle is a regular block — without this measurement it would stay
+// left-aligned in the modal while the title slides to center. Measure the
+// subtitle's natural width and compute the horizontal offset that lands it
+// centered inside the modal body. The CSS uses --subtitle-center-x on
+// .is-expanding / .is-expanded (transitioned), reverts on .is-collapsing.
+function syncStackSubtitleX(card: HTMLElement): void {
+  if (!card.classList.contains('stack-card')) return;
+  if (
+    card.classList.contains('is-expanding') ||
+    card.classList.contains('is-expanded') ||
+    card.classList.contains('is-collapsing')
+  ) {
+    return;
+  }
+  const subtitle = card.querySelector<HTMLElement>('.card-text');
+  if (!subtitle) return;
+  // Reset before measuring so width reflects natural-flow geometry.
+  card.style.setProperty('--subtitle-center-x', '0px');
+  void subtitle.offsetHeight;
+  const subtitleRect = subtitle.getBoundingClientRect();
+  // Same modal-width math as syncTitleRestY's centerX calc above —
+  // keep these in sync if the expanded-body padding ever changes.
+  const isMobile = window.innerWidth < 540;
+  const expandPad = isMobile ? 16 : Math.max(24, Math.min(48, window.innerWidth * 0.05));
+  const expandedCardW = Math.min(window.innerWidth - expandPad * 2, 920);
+  const expandedBodyPadX = isMobile ? 22 : 48;
+  const expandedBodyInnerW = expandedCardW - 2 * expandedBodyPadX;
+  const centerX = Math.max(0, (expandedBodyInnerW - subtitleRect.width) / 2);
+  card.style.setProperty('--subtitle-center-x', `${centerX}px`);
+}
+
 function syncAllTitleRestY(): void {
-  document.querySelectorAll<HTMLElement>('[data-bento-card]').forEach(syncTitleRestY);
+  document.querySelectorAll<HTMLElement>('[data-bento-card]').forEach((card) => {
+    syncTitleRestY(card);
+    syncStackSubtitleX(card);
+  });
 }
 
 // ── Resize handler ───────────────────────────────────────────────────────

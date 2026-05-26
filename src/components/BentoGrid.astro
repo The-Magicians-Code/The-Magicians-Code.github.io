@@ -668,83 +668,58 @@
      paper-toned active segment. */
   :global(.cs-mode-toggle) {
     position: relative;
-    display: flex;
-    justify-content: center;
-    gap: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
     /* Explicit top margin guarantees vertical separation from the
        preceding flex sibling (the case-study title). */
     margin: 24px auto 18px;
     width: fit-content;
     background: rgba(26, 26, 28, 0.06);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border-radius: 999px;
     padding: 4px;
   }
-  /* Sliding "thumb" behind the buttons. The active button's background
-     fill lives on this single element and translates between the two
-     segment positions on mode swap, producing an iOS-style slide
-     instead of the previous flick (where the fill was a property on
-     each button and snapped between them). The buttons themselves get
-     equal flex-basis so the thumb's translateX(100%) lands precisely
-     on the second segment. */
-  /* Outer thumb — owns the horizontal slide via translateX transition.
-     Background + shadow live on the inner element so the slide and
-     the squash-stretch animation can compose without fighting over
-     the same `transform` property. */
+  /* Sliding "thumb" behind the buttons — single sliding pill whose
+     overshoot easing carries the entire feel. Outer element owns the
+     translateX; inner element exists only to keep the soft glow stable
+     while the outer slides. With a 4px gap between cells, the indicator
+     width is calc(50% - 6px) and the second-segment translation is
+     calc(100% + 4px) — i.e. one cell + gap.
+
+     The bezier overshoot (1.56) gives a pronounced spring "thunk" at
+     the end of the slide. Match changes to the duration in both rules. */
   :global(.cs-mode-toggle__thumb) {
     position: absolute;
     top: 4px;
     bottom: 4px;
     left: 4px;
-    width: calc(50% - 4px);
-    /* Faster than the previous soft-glass setting (which was ~3×
-       slower than the screeny.mov reference). 260ms with a small
-       cubic-bezier overshoot leaves the squash-stretch keyframe
-       room to sell the physics on its own track. */
-    transition: transform 260ms cubic-bezier(0.32, 1.25, 0.4, 1);
+    width: calc(50% - 6px);
+    background: var(--paper);
+    border-radius: 999px;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.10);
+    transition: transform 620ms cubic-bezier(0.34, 1.56, 0.64, 1);
     pointer-events: none;
   }
   :global(.cs-mode-toggle[data-active="detailed"] .cs-mode-toggle__thumb) {
-    transform: translateX(100%);
-  }
-  /* Inner thumb — carries the visible fill and the scaleX squash-
-     stretch animation. Stretches horizontally at peak velocity (mid-
-     flight) and returns to round at rest, mimicking a rubber band
-     under tension. JS toggles the .is-squashing class per swap so
-     the animation restarts cleanly on rapid toggles. */
-  :global(.cs-mode-toggle__thumb-inner) {
-    position: absolute;
-    inset: 0;
-    background: var(--paper);
-    border-radius: 999px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-    transform-origin: center;
-    will-change: transform;
-  }
-  :global(.cs-mode-toggle__thumb-inner.is-squashing) {
-    animation: cs-thumb-squash 280ms cubic-bezier(0.45, 0, 0.55, 1);
-  }
-  @keyframes cs-thumb-squash {
-    0%   { transform: scaleX(1); }
-    40%  { transform: scaleX(1.18); }
-    100% { transform: scaleX(1); }
+    transform: translateX(calc(100% + 4px));
   }
   :global(.cs-mode-toggle button) {
     position: relative;
     z-index: 1;
-    flex: 1 1 0;
-    min-width: 88px;
     text-align: center;
     background: transparent;
     border: 0;
     color: var(--ink-dim);
-    font: 500 12.5px/1 var(--font-sans, -apple-system, system-ui, sans-serif);
-    padding: 7px 16px;
+    font: 500 14px/1 var(--font-sans, -apple-system, system-ui, sans-serif);
+    padding: 8px 24px;
     border-radius: 999px;
     cursor: pointer;
     transition: color 200ms ease;
   }
-  :global(.cs-mode-toggle button:hover) {
-    color: var(--ink);
+  :global(.cs-mode-toggle button:not([aria-selected="true"]):hover) {
+    color: var(--accent);
   }
   :global(.cs-mode-toggle button[aria-selected="true"]) {
     color: var(--ink);

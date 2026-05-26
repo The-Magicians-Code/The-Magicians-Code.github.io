@@ -1,0 +1,128 @@
+---
+// Tech-stack section. Renders as a plain section (no bento card,
+// no marquee, no expand modal) — h2 section title followed by one
+// labelled chip row per category. Preserves `#skills-tools` for
+// Nav.astro / MobileMenu.astro. Anchor tool per category is wrapped
+// in <em> for italic + accent-soft chip background.
+---
+
+<section id="skills-tools" class="stack-section">
+  <h2 class="section-title">Tools I <em>actually</em> reach for.</h2>
+
+  <div class="stack-groups">
+    <div class="stack-group">
+      <h3 class="stack-group-label">Languages</h3>
+      <ul class="stack-chip-row">
+        <li class="stack-chip"><em>Python</em></li>
+        <li class="stack-chip">C++</li>
+        <li class="stack-chip">JavaScript</li>
+        <li class="stack-chip">SQL</li>
+        <li class="stack-chip">Bash</li>
+        <li class="stack-chip">Swift</li>
+      </ul>
+    </div>
+
+    <div class="stack-group">
+      <h3 class="stack-group-label">AI / ML</h3>
+      <ul class="stack-chip-row">
+        <li class="stack-chip"><em>PyTorch</em></li>
+        <li class="stack-chip">TensorFlow</li>
+        <li class="stack-chip">TensorRT</li>
+        <li class="stack-chip">ONNX</li>
+        <li class="stack-chip">OpenCV</li>
+        <li class="stack-chip">GStreamer</li>
+        <li class="stack-chip">Nvidia Jetson</li>
+      </ul>
+    </div>
+
+    <div class="stack-group">
+      <h3 class="stack-group-label">Back end</h3>
+      <ul class="stack-chip-row">
+        <li class="stack-chip"><em>Flask</em></li>
+        <li class="stack-chip">REST APIs</li>
+      </ul>
+    </div>
+
+    <div class="stack-group">
+      <h3 class="stack-group-label">Databases</h3>
+      <ul class="stack-chip-row">
+        <li class="stack-chip"><em>PostgreSQL</em></li>
+      </ul>
+    </div>
+
+    <div class="stack-group">
+      <h3 class="stack-group-label">DevOps</h3>
+      <ul class="stack-chip-row">
+        <li class="stack-chip"><em>Docker</em></li>
+        <li class="stack-chip">Jenkins</li>
+        <li class="stack-chip">GitLab CI/CD</li>
+        <li class="stack-chip">Kubernetes</li>
+        <li class="stack-chip">Grafana</li>
+        <li class="stack-chip">ELK</li>
+        <li class="stack-chip">AWS S3</li>
+      </ul>
+    </div>
+
+    <div class="stack-group">
+      <h3 class="stack-group-label">Tools</h3>
+      <ul class="stack-chip-row">
+        <li class="stack-chip"><em>Git</em></li>
+        <li class="stack-chip">Postman</li>
+        <li class="stack-chip">Selenium</li>
+        <li class="stack-chip">Scrapy</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<style>
+  .section-title {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: clamp(1.75rem, 1.5vw + 1.25rem, 2.5rem);
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    margin: 0 0 32px;
+  }
+
+  .stack-groups {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  .stack-group-label {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-dim);
+    margin: 0 0 10px;
+  }
+
+  .stack-chip-row {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .stack-chip {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(26, 26, 28, 0.06);
+    color: var(--ink);
+  }
+  :global(html.dark) .stack-chip {
+    background: rgba(255, 255, 255, 0.08);
+  }
+  /* Anchor chip — accent-tinted via :has(em). */
+  .stack-chip:has(em) {
+    background: var(--accent-soft);
+  }
+</style>

@@ -165,8 +165,9 @@ export interface ViewportRect {
 
 // Render a single .cs-card or .stack-card title with word spans + source-modal
 // transforms. getViewportRect returns the modal's target rect (provided by
-// bento-expand.ts). Project cards center their modal title; stack card keeps
-// natural-flow (left-aligned) modal positions.
+// bento-expand.ts). Both card types center their modal title — words own the
+// horizontal positioning when expanded, so the container's --title-center-x
+// stays at 0 (see syncTitleRestY's pretext-title branch).
 export function pretextRenderCard(card: HTMLElement, getViewportRect: () => ViewportRect): void {
   if (!PRETEXT_ENABLED) return;
   if (!card.classList.contains('cs-card') && !card.classList.contains('stack-card')) return;
@@ -198,14 +199,14 @@ export function pretextRenderCard(card: HTMLElement, getViewportRect: () => View
 
   // Source positions are NOT centered — natural-flow left-aligned positions
   // preserve the resting visual (cards look identical to today at rest).
+  // Modal positions ARE centered for both .cs-card and .stack-card so the
+  // expanded title sits centered inside the modal width on every bento.
   const sourcePositions = sourceLayout.positions;
-  const modalPositions = card.classList.contains('cs-card')
-    ? pretextCenterPositions(
-        modalLayout.positions,
-        modalLayout.lineWidths,
-        modalWidth,
-      )
-    : modalLayout.positions;
+  const modalPositions = pretextCenterPositions(
+    modalLayout.positions,
+    modalLayout.lineWidths,
+    modalWidth,
+  );
 
   titleEl.replaceChildren();
   for (let i = 0; i < sourcePositions.length; i++) {
