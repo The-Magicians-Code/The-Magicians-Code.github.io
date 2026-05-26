@@ -311,12 +311,13 @@
     /* border-color deliberately omitted — snap in lockstep with bg.
        See spec "Carried-over fixes from the prototype". */
     transition:
-      top        var(--morph-dur) var(--ease-snappy),
-      left       var(--morph-dur) var(--ease-snappy),
-      width      var(--morph-dur) var(--ease-snappy),
-      height     var(--morph-dur) var(--ease-snappy),
-      box-shadow var(--morph-dur) var(--ease-snappy);
-    will-change: top, left, width, height;
+      top           var(--morph-dur) var(--ease-snappy),
+      left          var(--morph-dur) var(--ease-snappy),
+      width         var(--morph-dur) var(--ease-snappy),
+      height        var(--morph-dur) var(--ease-snappy),
+      box-shadow    var(--morph-dur) var(--ease-snappy),
+      border-radius var(--morph-dur) var(--ease-snappy);
+    will-change: top, left, width, height, border-radius;
   }
   :global(.bento-card.is-expanding),
   :global(.bento-card.is-expanded),
@@ -324,6 +325,18 @@
     cursor: default;
     box-shadow: none;
     border-color: transparent;
+  }
+  /* Mobile: edge-to-edge modal. The phone display's own rounded
+     corners frame it; modal border-radius drops to 0 so it doesn't
+     leave visible cutouts at the device-display corners. The morph
+     target rect in bento-expand.ts also goes to full viewport at this
+     breakpoint. */
+  @media (max-width: 540px) {
+    :global(.bento-card.is-expanding),
+    :global(.bento-card.is-expanded),
+    :global(.bento-card.is-collapsing) {
+      border-radius: 0;
+    }
   }
   :global(.bento-card.is-expanding .card-body) {
     transition: padding var(--morph-dur) var(--ease-snappy);
@@ -369,8 +382,126 @@
   :global(.bento-card.is-expanded .card-title),
   :global(.bento-card.is-collapsing .card-title),
   :global(.bento-card.is-expanded .cs-mode-toggle),
-  :global(.bento-card.is-collapsing .cs-mode-toggle) {
+  :global(.bento-card.is-collapsing .cs-mode-toggle),
+  :global(.bento-card.is-expanded .cs-sticky-header),
+  :global(.bento-card.is-collapsing .cs-sticky-header) {
     flex-shrink: 0;
+  }
+  /* Anchored header. Built by bento-expand.ts on open: wraps the
+     eyebrow + title + TL;DR pill so they stay pinned to the top of
+     the scrolling .card-body while the rendered case-study scrolls
+     underneath. Unwrapped before the close morph runs so the resting
+     DOM matches what BentoGrid.astro renders.
+
+     `top: 0` pins the wrapper at the scroll-port top — i.e. .card-body's
+     padding-top (56px) line. The 56px of padding above stays visible
+     as empty card surface, which reads as breathing room above the
+     pinned title rather than a hard cut.
+
+     Opaque `var(--paper)` background covers content scrolling under
+     the wrapper so word-shapes from the body don't bleed through. The
+     top progressive-blur strip (z:2 on the card) still composites
+     above the header — that's intentional, it softens the header's
+     top edge against the scrolling body below.
+
+     Below 540px the header reverts to static — small viewports can't
+     spare the vertical real estate the pinned block eats. */
+  /* iOS-style large-title-into-navbar transition. bento-expand.ts
+     attaches a scroll listener that maps card-body.scrollTop (0..60px)
+     to --scroll-progress (0..1) on this wrapper. The big title SHRINKS
+     and TRANSLATES toward the close-button line via transform; the
+     eyebrow + pill fade out via opacity (no height collapse — that
+     would yank the title's flex position and produce a visible snap
+     mid-scroll). Sticky-header bg fades to transparent so body content
+     visible behind it is blurred by the top progressive strip beneath. */
+  :global(.cs-sticky-header) {
+    --scroll-progress: 0;
+  }
+  /* Scroll-driven opacity / transform applies ONLY while the card is
+     is-expanded. The moment close fires and is-collapsing replaces
+     is-expanded, these rules stop matching and the existing close-
+     morph fade rules (`.bento-card .card-eyebrow { opacity: 0 }` with
+     its 320ms transition, plus `.bento-card.is-collapsing
+     .cs-mode-toggle { opacity: 0 }` over 180ms) take over. That gives
+     a smooth fade-out across the morph instead of holding everything
+     visible and snapping at cleanup. bento-expand.ts also snaps
+     --scroll-progress to 0 at close-start so any in-flight transform
+     resets cleanly before pretext runs. */
+  :global(.bento-card.is-expanded .cs-sticky-header .card-eyebrow) {
+    opacity: calc(1 - clamp(0, var(--scroll-progress) / 0.6, 1));
+  }
+  :global(.bento-card.is-expanded .cs-sticky-header .cs-mode-toggle) {
+    opacity: calc(1 - clamp(0, (var(--scroll-progress) - 0.3) / 0.5, 1));
+  }
+  /* Title shrink + travel. transform-origin: top center anchors the
+     scale at the natural top edge; translateY then nudges the shrunken
+     box up toward the close-button line. Pretext word spans inside
+     compose with this transform — bento-expand.ts snaps
+     --scroll-progress to 0 at close-start so pretext's reverse
+     animation runs with the title at identity. */
+  :global(.bento-card.is-expanded .cs-sticky-header .card-title) {
+    transform-origin: top center;
+    /* Tunables: the multipliers below set the title's end state at
+       progress=1. translateY: -54px lands the shrunken title vertically
+       centered on the close-button line (close is at top:16 + 20 = y:36
+       in card coords; shrunken title's vertical center matches once
+       translated up by ~54px). scale: 0.30 means the title ends at 70%
+       of its original size — large enough to read clearly while still
+       reading as a compact navbar title. */
+    transform:
+      translateY(calc(var(--scroll-progress) * -54px))
+      scale(calc(1 - var(--scroll-progress) * 0.30));
+    will-change: transform;
+  }
+  :global(.bento-card.is-expanded .cs-sticky-header),
+  :global(.bento-card.is-collapsing .cs-sticky-header) {
+    position: sticky;
+    /* card-body has padding: 56px 48px 48px and overflow-y: auto, which
+       clips at the padding edge — so scrolled-up content remains visible
+       inside the 56px padding-top area and would bleed through the gap
+       above the sticky header. Three properties cooperate to cover it:
+       - top: -56px shifts the sticky pin point into the padding area
+         (browsers pin sticky elements at the scroll container's
+         content-box top, not its padding-box top).
+       - margin-top: -56px shifts the wrapper's natural (unscrolled)
+         position up by the same amount so the visual position is
+         identical whether scrolled or not.
+       - padding-top: 56px keeps the wrapper's children at their
+         original visual position. */
+    top: -56px;
+    margin-top: -56px;
+    padding-top: 56px;
+    /* z-index: 6 puts the whole header (and the title inside it) ABOVE
+       the progressive blur strips at z:2 — text stays sharp. */
+    z-index: 6;
+    /* Fully transparent. Body content scrolling underneath shows
+       through, then gets blurred by the top progressive-blur strip
+       (z:2) for a soft fade at the top edge. */
+    background: transparent;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  @media (max-width: 540px) {
+    :global(.bento-card.is-expanded .cs-sticky-header),
+    :global(.bento-card.is-collapsing .cs-sticky-header) {
+      /* Mobile .card-body padding-top is 48px, so the offsets match. */
+      top: -48px;
+      margin-top: -48px;
+      padding-top: 48px;
+      position: static;
+    }
+    /* Disable the scroll-driven shrink + fades on mobile. The header
+       isn't sticky here (position: static above), so the title would
+       scroll out of view naturally AND transform — double motion that
+       reads as a glitch. Force everything to its at-rest state. */
+    :global(.bento-card.is-expanded .cs-sticky-header .card-title) {
+      transform: none !important;
+    }
+    :global(.bento-card.is-expanded .cs-sticky-header .card-eyebrow),
+    :global(.bento-card.is-expanded .cs-sticky-header .cs-mode-toggle) {
+      opacity: 1 !important;
+    }
   }
   /* Centered editorial layout — eyebrow + body prose centered while the
      card is expanded OR collapsing. The .is-collapsing branch keeps the
@@ -723,6 +854,13 @@
   }
   :global(.cs-mode-toggle button[aria-selected="true"]) {
     color: var(--ink);
+  }
+  /* Replace Chrome's default blue focus ring with a subtle accent-ring
+     matching the design tokens. */
+  :global(.cs-mode-toggle button:focus-visible) {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+    border-radius: 999px;
   }
   /* Fade the pill out alongside the body wrap during the close morph.
      The toggle is a sibling of the rendered wrap (not a child), so it

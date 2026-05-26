@@ -24,6 +24,8 @@ interface OpenState {
   originalInline: string;
   appendedBodyWrap: HTMLElement | null;
   pillToggle: HTMLElement | null;
+  stickyHeader: HTMLElement | null;
+  detachScrollCollapse: (() => void) | null;
   closing: boolean;
   /* ms timestamp (performance.now()) when the open morph started. Used by
      onResize to skip the in-place snap during the morph window — without
@@ -60,9 +62,13 @@ let openState: OpenState | null = null;
 // ── Viewport rect computation ────────────────────────────────────────────
 function getViewportRect(): DOMRect {
   const isMobile = window.innerWidth < 540;
-  const pad = isMobile ? 16 : Math.max(24, Math.min(48, window.innerWidth * 0.05));
-  const maxW = 920;
-  const maxH = isMobile ? window.innerHeight - pad * 2 : 720;
+  // Mobile: edge-to-edge. The phone display's rounded corners frame the
+  // modal; the CSS drops .bento-card.is-expanded border-radius to 0 at
+  // the same breakpoint so the square modal corners meet the display
+  // corners cleanly. Desktop: padded modal centred in the viewport.
+  const pad = isMobile ? 0 : Math.max(24, Math.min(48, window.innerWidth * 0.05));
+  const maxW = isMobile ? window.innerWidth : 920;
+  const maxH = isMobile ? window.innerHeight : 720;
   const w = Math.min(window.innerWidth - pad * 2, maxW);
   const h = Math.min(window.innerHeight - pad * 2, maxH);
   return new DOMRect(
@@ -223,6 +229,8 @@ function doOpen(card: HTMLElement): void {
     originalInline,
     appendedBodyWrap: null,
     pillToggle: null,
+    stickyHeader: null,
+    detachScrollCollapse: null,
     closing: false,
     openedAt: performance.now(),
   };
@@ -258,6 +266,45 @@ function doOpen(card: HTMLElement): void {
     body.appendChild(wrap);
     openState.appendedBodyWrap = wrap;
     openState.pillToggle = pillToggle;
+
+    // STICKY HEADER DISABLED — eyebrow + title + pill flow as normal
+    // scroll content (their natural positions inside .card-body) and
+    // scroll with the body. Keeping the code commented intentionally so
+    // restoring is a one-block change. To re-enable: uncomment and the
+    // existing CSS + close-time snap will pick up from there.
+    //
+    //   const eyebrow = body.querySelector<HTMLElement>(':scope > .card-eyebrow');
+    //   const title = body.querySelector<HTMLElement>(':scope > .card-title');
+    //   if (eyebrow || title || pillToggle) {
+    //     const stickyHeader = document.createElement('div');
+    //     stickyHeader.className = 'cs-sticky-header';
+    //     if (eyebrow) stickyHeader.appendChild(eyebrow);
+    //     if (title) stickyHeader.appendChild(title);
+    //     if (pillToggle) stickyHeader.appendChild(pillToggle);
+    //     body.insertBefore(stickyHeader, body.firstChild);
+    //     openState.stickyHeader = stickyHeader;
+    //
+    //     // Scroll listener that drives --scroll-progress for the title
+    //     // shrink + travel CSS. rAF-throttled.
+    //     const THRESHOLD = 60;
+    //     let rafId = 0;
+    //     let lastProgress = -1;
+    //     const onScroll = (): void => {
+    //       if (rafId) return;
+    //       rafId = requestAnimationFrame(() => {
+    //         rafId = 0;
+    //         const p = Math.max(0, Math.min(1, body.scrollTop / THRESHOLD));
+    //         if (Math.abs(p - lastProgress) < 0.005) return;
+    //         lastProgress = p;
+    //         stickyHeader.style.setProperty('--scroll-progress', String(p));
+    //       });
+    //     };
+    //     body.addEventListener('scroll', onScroll, { passive: true });
+    //     openState.detachScrollCollapse = () => {
+    //       body.removeEventListener('scroll', onScroll);
+    //       if (rafId) cancelAnimationFrame(rafId);
+    //     };
+    //   }
 
     const deepwikiUrl = card.dataset.deepwikiUrl;
     if (deepwikiUrl) {
@@ -301,10 +348,26 @@ function closeCaseStudy(): void {
   if (!openState || openState.closing) return;
   openState.closing = true;
   const state = openState;
-  const { card, placeholder, closeBtn, backdrop, blurTop, blurBottom, originalInline, appendedBodyWrap, pillToggle } = state;
+  const { card, placeholder, closeBtn, backdrop, blurTop, blurBottom, originalInline, appendedBodyWrap, pillToggle, stickyHeader, detachScrollCollapse } = state;
+  detachScrollCollapse?.();
 
   // Blur BEFORE the morph so the UA focus outline doesn't trace the shrink.
   card.blur();
+
+  // Snap --scroll-progress back to 0 BEFORE pretext runs. The big title
+  // has a transform: scale + translateY driven by the var; pretext
+  // animates word spans inside the title and the parent transform
+  // would compose with the span transforms, landing them in the wrong
+  // place. Setting the var to 0 in this synchronous tick puts the
+  // title at identity before the next paint, then pretext takes over.
+  // The one-frame title pop is masked by pretext's immediate word
+  // animations and the close morph kicking in.
+  if (stickyHeader) {
+    stickyHeader.style.setProperty('--scroll-progress', '0');
+  }
+  // (detachScrollCollapse was already called above the close handler so
+  // a stray scroll event during the close morph can't raise progress
+  // again and re-engage the transform.)
 
   // Reverse pretext word transforms back to source positions. .is-expanding
   // is still on the card, so the transition rule animates the change.
@@ -320,13 +383,13 @@ function closeCaseStudy(): void {
   card.classList.remove('is-expanded', 'is-resizing');
   card.classList.add('is-collapsing');
 
-  // Unmount blur strips immediately. Previously they faded out via opacity
-  // over 220ms, but backdrop-filter computes regardless of opacity — so the
-  // strips were eating GPU through the entire close morph. Removing them
-  // from the DOM kills backdrop-filter instantly; the card is also shrinking
-  // visibly in the same frame, so the blur disappearance reads as part of
-  // the close, not a discrete pop. doCleanup's .remove() becomes a no-op.
-  blurTop.remove();
+  // Unmount the bottom blur strip immediately — backdrop-filter computes
+  // regardless of opacity, so leaving it through the 520ms close morph
+  // would eat GPU. Card is shrinking visibly in the same frame so the
+  // disappearance reads as part of the close. blurTop now lives inside
+  // the sticky header (kept attached so the progressive blur stays
+  // visible alongside the header through the morph — small bounded
+  // cost, removed in doCleanup with the rest of the wrapper).
   blurBottom.remove();
   card.setAttribute('aria-expanded', 'false');
 
@@ -349,7 +412,25 @@ function closeCaseStudy(): void {
     window.clearTimeout(fallbackTimer);
     card.removeEventListener('transitionend', onTransitionEnd);
 
-    // 1) Remove appended children + close button + blur strips.
+    // 1) Unwrap the sticky header back into .card-body so the resting
+    //    DOM matches what BentoGrid.astro renders. Deferred until here
+    //    (rather than at close-start) so the pill + content stay
+    //    visually in place through the close morph instead of snapping
+    //    to scrollTop=0 + losing the pill the moment the user clicks
+    //    close. The morph already fades the pill + body via the
+    //    is-collapsing CSS rules, so by this point everything inside
+    //    the wrapper is at opacity 0.
+    if (stickyHeader && stickyHeader.parentElement) {
+      const parent = stickyHeader.parentElement;
+      const eyebrow = stickyHeader.querySelector<HTMLElement>(':scope > .card-eyebrow');
+      const title = stickyHeader.querySelector<HTMLElement>(':scope > .card-title');
+      if (eyebrow) parent.insertBefore(eyebrow, stickyHeader);
+      if (title) parent.insertBefore(title, stickyHeader);
+      stickyHeader.remove();
+      parent.scrollTop = 0;
+    }
+
+    // 2) Remove appended children + close button + blur strips.
     if (appendedBodyWrap) appendedBodyWrap.remove();
     if (pillToggle) pillToggle.remove();
     closeBtn.remove();
@@ -460,8 +541,11 @@ function syncTitleRestY(card: HTMLElement): void {
   // intermediate frames sit between left-aligned (rest) and centered
   // (final) — they land precisely centered at morph end.
   const isMobile = window.innerWidth < 540;
-  const expandPad = isMobile ? 16 : Math.max(24, Math.min(48, window.innerWidth * 0.05));
-  const expandedCardW = Math.min(window.innerWidth - expandPad * 2, 920);
+  // Match getViewportRect: mobile is edge-to-edge (pad: 0), desktop padded.
+  const expandPad = isMobile ? 0 : Math.max(24, Math.min(48, window.innerWidth * 0.05));
+  const expandedCardW = isMobile
+    ? window.innerWidth
+    : Math.min(window.innerWidth - expandPad * 2, 920);
   const expandedBodyPadX = isMobile ? 22 : 48;
   const expandedBodyInnerW = expandedCardW - 2 * expandedBodyPadX;
   const centerX = Math.max(0, (expandedBodyInnerW - titleRect.width) / 2);
@@ -493,8 +577,11 @@ function syncStackSubtitleX(card: HTMLElement): void {
   // Same modal-width math as syncTitleRestY's centerX calc above —
   // keep these in sync if the expanded-body padding ever changes.
   const isMobile = window.innerWidth < 540;
-  const expandPad = isMobile ? 16 : Math.max(24, Math.min(48, window.innerWidth * 0.05));
-  const expandedCardW = Math.min(window.innerWidth - expandPad * 2, 920);
+  // Match getViewportRect: mobile is edge-to-edge (pad: 0), desktop padded.
+  const expandPad = isMobile ? 0 : Math.max(24, Math.min(48, window.innerWidth * 0.05));
+  const expandedCardW = isMobile
+    ? window.innerWidth
+    : Math.min(window.innerWidth - expandPad * 2, 920);
   const expandedBodyPadX = isMobile ? 22 : 48;
   const expandedBodyInnerW = expandedCardW - 2 * expandedBodyPadX;
   const centerX = Math.max(0, (expandedBodyInnerW - subtitleRect.width) / 2);
