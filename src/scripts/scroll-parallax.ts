@@ -55,6 +55,7 @@ function clearTransforms(): void {
 
 function update(): void {
   ticking = false;
+  if (!listening) return; // disabled (reduced-motion): don't re-apply transforms
   const vh = window.innerHeight;
   const isMobile = window.innerWidth < MOBILE_BP;
   for (const stage of stages) {
