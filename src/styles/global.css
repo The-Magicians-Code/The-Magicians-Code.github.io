@@ -572,3 +572,34 @@ html.dark #theme-toggle-button .icon-sun  { display: none; }
     transform: translateY(0);
   }
 }
+
+/* ===== Scroll-reveal (IO-gated; homepage parallax module adds .in) ===== */
+.reveal-up {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s var(--ease), transform 0.6s var(--ease);
+}
+.reveal-up.in {
+  opacity: 1;
+  transform: none;
+}
+
+/* Full-bleed hero must not introduce horizontal scroll. The site hides
+   scrollbars, which would otherwise MASK overflow instead of preventing it. */
+html,
+body {
+  overflow-x: clip;
+}
+
+/* Fixed nav offset so smooth-scroll hash jumps don't land headings under the nav. */
+:where(#about, #projects, #skills-tools, #contact) {
+  scroll-margin-top: 7rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-up {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
