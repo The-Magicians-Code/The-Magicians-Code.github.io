@@ -591,9 +591,11 @@ body {
   overflow-x: clip;
 }
 
-/* Fixed nav offset so smooth-scroll hash jumps don't land headings under the nav. */
-:where(#about, #projects, #skills-tools, #contact) {
-  scroll-margin-top: 7rem;
+/* Fixed nav offset so smooth-scroll hash jumps don't land targets under the nav.
+   scroll-padding-top on the scroll container covers all anchors (incl. the hero)
+   and pairs with html.scroll-smooth — no per-id upkeep. */
+html {
+  scroll-padding-top: 7rem;
 }
 
 @media (prefers-reduced-motion: reduce) {
