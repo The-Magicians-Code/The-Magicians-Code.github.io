@@ -31,3 +31,6 @@ logs/
 
 # Local screenshot scratchpad (e.g. Chrome DevTools MCP captures)
 .scratch/
+
+# Brainstorming visual companion scratch
+.superpowers/
