@@ -982,10 +982,8 @@
   :global(body.bento-open) {
     overflow: hidden;
   }
-  /* The viewport scroller is <html>, and global.css sets html { overflow-x:
-     clip } — which disables body→viewport overflow propagation, so the rule
-     above alone does NOT stop the page behind the modal from scrolling. Lock
-     <html> itself while a card is open. */
+  /* <html> is the real scroller (global.css sets html{overflow-x:clip}, which
+     blocks body→viewport overflow propagation), so lock it too. */
   :global(html:has(body.bento-open)) {
     overflow-y: hidden;
   }

@@ -38,6 +38,10 @@ interface OpenState {
      (520ms plain, 760ms for .has-cover). Drives the JS schedule so it stays
      in lockstep with the CSS geometry transition. */
   morphDur: number;
+  /* Resting border-radius captured at open. The card radius is driven inline
+     through the morph so it animates (instead of snapping to 0 on mobile under
+     the lift's transition:none), and is restored to this on collapse. */
+  restRadius: string;
 }
 
 function makeBlurStrip(position: 'top' | 'bottom'): HTMLElement {
@@ -109,13 +113,9 @@ function getViewportRect(): DOMRect {
 }
 
 // ── Body scroll lock ─────────────────────────────────────────────────────
-// Pre-`scrollbar-gutter` versions of this also added padding-right to body
-// and bumped [data-scroll-lock-compensate] elements' inline `right` by the
-// measured scrollbar width to avoid layout shift when overflow:hidden
-// hides the scrollbar. With `scrollbar-gutter: stable both-edges` on html
-// (see global.css) the gutter persists whether the scrollbar is rendered
-// or not, so the page no longer shifts at lock/unlock and the compensation
-// is redundant — removed.
+// Simple class toggle; CSS sets `body.bento-open { overflow: hidden }`. (An
+// earlier attempt to also lock <html> overflow, and then to pin <body> with
+// position:fixed, both caused WebKit-specific jank — reverted.)
 function lockBodyScroll(): void {
   document.body.classList.add('bento-open');
 }
@@ -201,6 +201,16 @@ function doOpen(card: HTMLElement): void {
   card.style.height = `${rect.height}px`;
   card.style.margin = '0';
   card.style.transform = 'none';
+  // The card's CSS aspect-ratio (4/1, or 1/1 mobile) makes WebKit interpolate
+  // width/height OUT OF SYNC with top/left during the morph — the box reaches
+  // full size faster than it travels to center, reading as "expands then jumps
+  // to center" (Safari/iOS, open + collapse). Explicit w/h already override
+  // aspect-ratio; null it so the four geometry props transition in lockstep.
+  card.style.aspectRatio = 'auto';
+  // Hold the radius inline at its rest value so the mobile `border-radius: 0`
+  // from the .is-expanding CLASS (which lands now, under transition:none) can't
+  // snap the corners. applyMorphTarget animates it once the transition is live.
+  card.style.borderRadius = cs.borderTopLeftRadius;
 
   // Close button as a child of the card.
   const closeBtn = document.createElement('button');
@@ -249,15 +259,22 @@ function doOpen(card: HTMLElement): void {
     card.style.left = `${vr.left}px`;
     card.style.width = `${vr.width}px`;
     card.style.height = `${vr.height}px`;
+    // Morph the radius with the box: 0 edge-to-edge on mobile, rest on desktop.
+    // Driven inline (transition now live) so it animates instead of snapping.
+    card.style.borderRadius = window.matchMedia('(max-width: 540px)').matches
+      ? '0px'
+      : cs.borderTopLeftRadius;
     // Animate pretext word spans to modal positions in lockstep with the morph.
     if (card.classList.contains('pretext-title')) {
       pretextAnimateCard(card, true);
     }
   };
 
-  // Cover cards (motion on) delay the box morph by COVER_MORPH_DELAY so the
-  // resting-title blur-out (driven by .is-expanding in CSS) overlaps the start
-  // of the morph. Plain cards and reduced-motion morph on the next frame.
+  // Cover cards delay the box morph by COVER_MORPH_DELAY so the resting-title
+  // blur-out + cover frost lead the box expand ("frost-first"). The WebKit jump
+  // this once seemed to cause was actually the aspect-ratio desync (fixed at
+  // the lift above), so the delay is safe again. Plain/reduced-motion morph on
+  // the next frame.
   if (hasCover && !reduce) {
     window.setTimeout(() => {
       if (!openState || openState.closing) return;
@@ -282,6 +299,7 @@ function doOpen(card: HTMLElement): void {
     closing: false,
     openedAt: performance.now(),
     morphDur,
+    restRadius: cs.borderTopLeftRadius,
   };
 
   // After the morph lands, clone the hidden body content into the visible
@@ -414,7 +432,12 @@ function closeCaseStudy(): void {
   detachScrollCollapse?.();
 
   // Blur BEFORE the morph so the UA focus outline doesn't trace the shrink.
+  // Also blur whatever's focused INSIDE the card (e.g. the TL;DR/Detailed pill
+  // the user just used) — on keyboard close (Esc) its focus-visible ring would
+  // otherwise linger / get stranded as the element is removed during cleanup.
   card.blur();
+  const focused = document.activeElement as HTMLElement | null;
+  if (focused && card.contains(focused)) focused.blur();
 
   // Snap --scroll-progress back to 0 BEFORE pretext runs. The big title
   // has a transform: scale + translateY driven by the var; pretext
@@ -550,6 +573,9 @@ function closeCaseStudy(): void {
     card.style.left = `${slotRect.left}px`;
     card.style.width = `${slotRect.width}px`;
     card.style.height = `${slotRect.height}px`;
+    // Morph the radius back to rest (animates 0 → rest on mobile, instead of
+    // staying square then snapping at cleanup).
+    card.style.borderRadius = state.restRadius;
     card.addEventListener('transitionend', onTransitionEnd);
     // Fallback anchored to collapse-start (cover cards delay collapse behind
     // the content blur-out, so a close-init anchor would fire too early).
