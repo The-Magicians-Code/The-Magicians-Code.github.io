@@ -3,22 +3,26 @@ import { Icon } from 'astro-icon/components';
 ---
 
 <button id="theme-toggle-button" type="button" aria-label="Toggle theme">
-  <Icon name="lucide:sun" class="icon-sun" aria-hidden="true" />
-  <Icon name="lucide:moon" class="icon-moon" aria-hidden="true" />
+  <span class="tt-icons" aria-hidden="true">
+    <Icon name="lucide:sun" class="icon-sun" />
+    <Icon name="lucide:moon" class="icon-moon" />
+  </span>
+  <span class="tt-label" aria-hidden="true">
+    <span class="lbl-sol">Sol</span>
+    <span class="lbl-lua">Lua</span>
+  </span>
 </button>
 
 <style is:global>
   #theme-toggle-button {
-    position: relative;
-    width: 36px;
     height: 36px;
     border-radius: 9999px;
     display: inline-flex;
     align-items: center;
-    justify-content: center;
+    gap: 7px;
+    padding: 0 12px 0 10px;
     color: var(--ink-dim);
     transition: color 0.2s ease, background-color 0.2s ease, transform 0.15s ease-out;
-    line-height: 0;
     cursor: pointer;
   }
 
@@ -32,8 +36,14 @@ import { Icon } from 'astro-icon/components';
     transform: scale(0.97);
   }
 
-  /* Both icons stay rendered, stacked on top of each other, so the theme
-     swap can cross-fade instead of hard-swapping via display:none. */
+  /* Sun/moon icons stacked on top of each other so the theme swap can
+     cross-fade instead of hard-swapping via display:none. */
+  #theme-toggle-button .tt-icons {
+    position: relative;
+    flex: none;
+    width: 20px;
+    height: 20px;
+  }
   #theme-toggle-button .icon-sun,
   #theme-toggle-button .icon-moon {
     position: absolute;
@@ -41,27 +51,50 @@ import { Icon } from 'astro-icon/components';
     margin: auto;
     width: 20px;
     height: 20px;
+  }
+
+  /* Sol/Lua label — both words share one grid cell so the pill width is the
+     widest word (no reflow on toggle); they cross-fade like the icons. */
+  #theme-toggle-button .tt-label {
+    display: grid;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1;
+  }
+  #theme-toggle-button .tt-label > span {
+    grid-area: 1 / 1;
+  }
+
+  /* Shared cross-fade: blur + scale + opacity at 0.15s ease-out. The blur
+     blends the two states so the swap reads as a smooth melt, not a cut. */
+  #theme-toggle-button .icon-sun,
+  #theme-toggle-button .icon-moon,
+  #theme-toggle-button .tt-label > span {
     transition: opacity 0.15s ease-out, transform 0.15s ease-out, filter 0.15s ease-out;
   }
 
-  /* Inactive icon: blurred + shrunk + transparent. The blur blends the two
-     states together so the swap reads as a smooth melt rather than a cut. */
-  #theme-toggle-button .icon-moon {
+  /* Light mode: Sol + sun active; moon + Lua parked (blurred, shrunk, hidden). */
+  #theme-toggle-button .icon-moon,
+  #theme-toggle-button .lbl-lua {
     opacity: 0;
     transform: scale(0.6);
     filter: blur(2px);
   }
-  #theme-toggle-button .icon-sun {
+  #theme-toggle-button .icon-sun,
+  #theme-toggle-button .lbl-sol {
     opacity: 1;
     transform: scale(1);
     filter: blur(0);
   }
-  html.dark #theme-toggle-button .icon-sun {
+  /* Dark mode: the reverse. */
+  html.dark #theme-toggle-button .icon-sun,
+  html.dark #theme-toggle-button .lbl-sol {
     opacity: 0;
     transform: scale(0.6);
     filter: blur(2px);
   }
-  html.dark #theme-toggle-button .icon-moon {
+  html.dark #theme-toggle-button .icon-moon,
+  html.dark #theme-toggle-button .lbl-lua {
     opacity: 1;
     transform: scale(1);
     filter: blur(0);
@@ -70,7 +103,8 @@ import { Icon } from 'astro-icon/components';
   @media (prefers-reduced-motion: reduce) {
     #theme-toggle-button,
     #theme-toggle-button .icon-sun,
-    #theme-toggle-button .icon-moon {
+    #theme-toggle-button .icon-moon,
+    #theme-toggle-button .tt-label > span {
       transition: none;
     }
     #theme-toggle-button:active {
