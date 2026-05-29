@@ -1098,10 +1098,26 @@
     transition: opacity 340ms var(--fade-ease), filter 340ms var(--fade-ease);
   }
 
+  /* Modal content is pre-laid-out at the final modal size so it doesn't
+     reflow/shift during the morph — the growing box (overflow:hidden) just
+     masks/reveals it. Padding is fixed at the EXPANDED value (the resting card
+     shows the cover, not the body, so it's invisible until open), align-items
+     centers the fixed-width children, and --modal-w (set in JS from the morph
+     target) is the expanded inner width the content is sized to. */
+  :global(.bento-card.has-cover .card-body) {
+    text-align: center;
+    align-items: center;
+    padding: 56px 48px 48px;
+  }
+  @media (max-width: 540px) {
+    :global(.bento-card.has-cover .card-body) {
+      padding: 48px 22px 32px;
+    }
+  }
+
   /* ── Modal content items (eyebrow + title + pill + prose) ──
      Hidden at rest; the real card-title is centered ink (not the rest
-     overlay). Staggered by --i (open) / --ri (close), set per-element
-     in bento-expand.ts. ── */
+     overlay). Pre-sized to --modal-w so they don't reflow during the morph. ── */
   :global(.bento-card.has-cover .card-eyebrow),
   :global(.bento-card.has-cover .card-title),
   :global(.bento-card.has-cover .cs-mode-toggle),
@@ -1121,9 +1137,20 @@
      fit-content width, and the is-expanded center-x transform). */
   :global(.bento-card.has-cover .card-title) {
     color: var(--ink);
-    width: 100%;
+    /* Fixed to the expanded inner width (max-width:none beats the base
+       max-width:100% that would otherwise re-clamp it to the small card during
+       the morph) so the title never re-wraps. */
+    width: var(--modal-w, 100%);
+    max-width: none;
     text-align: center;
     align-self: auto;
+  }
+  :global(.bento-card.has-cover .card-eyebrow) {
+    width: var(--modal-w, 100%);
+  }
+  :global(.bento-card.has-cover .bento-card-body-rendered) {
+    width: var(--modal-w, 100%);
+    max-width: 60ch; /* desktop caps for readable measure; mobile uses --modal-w */
   }
   /* Modal title likewise uniform — no italic/accent emphasis (ink here). */
   :global(.bento-card.has-cover .card-title em) {

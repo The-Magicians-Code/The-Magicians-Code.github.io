@@ -38,9 +38,6 @@ interface OpenState {
      (520ms plain, 760ms for .has-cover). Drives the JS schedule so it stays
      in lockstep with the CSS geometry transition. */
   morphDur: number;
-  /* Number of staggered modal content items (.has-cover only) — used to time
-     the close content-blur-out phase before the box collapses. */
-  contentCount: number;
 }
 
 function makeBlurStrip(position: 'top' | 'bottom'): HTMLElement {
@@ -66,6 +63,16 @@ function readMorphDur(card: HTMLElement): number {
   const n = parseFloat(raw);
   if (!Number.isFinite(n)) return MORPH_DUR;
   return raw.endsWith('ms') ? n : raw.endsWith('s') ? n * 1000 : n;
+}
+
+// Pre-size .has-cover modal content to the EXPANDED inner width so it doesn't
+// reflow during the morph (the growing box masks it). --modal-w = the morph
+// target width minus the expanded card-body horizontal padding (must match the
+// CSS: 22px ≤540px, else 48px — use matchMedia so the breakpoint matches CSS
+// exactly, not a strict `< 540`).
+function setModalWidthVar(card: HTMLElement, vr: DOMRect): void {
+  const padX = window.matchMedia('(max-width: 540px)').matches ? 22 : 48;
+  card.style.setProperty('--modal-w', `${Math.max(0, Math.round(vr.width - 2 * padX))}px`);
 }
 
 let openState: OpenState | null = null;
@@ -161,6 +168,9 @@ function doOpen(card: HTMLElement): void {
 
   const rect = card.getBoundingClientRect();
   const vr = getViewportRect();
+  // Pre-size the modal content to this exact morph target before it reveals,
+  // so it lays out at the final width and never reflows during the morph.
+  setModalWidthVar(card, vr);
   const originalInline = card.getAttribute('style') ?? '';
 
   // Grid placeholder preserves the bento layout while the card lifts.
@@ -272,7 +282,6 @@ function doOpen(card: HTMLElement): void {
     closing: false,
     openedAt: performance.now(),
     morphDur,
-    contentCount: 0,
   };
 
   // After the morph lands, clone the hidden body content into the visible
@@ -368,22 +377,6 @@ function doOpen(card: HTMLElement): void {
       (child as HTMLElement).classList.add('body-para');
     }
     if (hasCover) {
-      // Stagger indices for the modal content items, in visual (top→bottom)
-      // order: eyebrow, title, pill, then each prose block. --i drives the
-      // open reveal; --ri the bottom-to-top close exit.
-      const eyebrowEl = body.querySelector<HTMLElement>(':scope > .card-eyebrow');
-      const titleEl = body.querySelector<HTMLElement>(':scope > .card-title');
-      const contentItems: HTMLElement[] = [];
-      if (eyebrowEl) contentItems.push(eyebrowEl);
-      if (titleEl) contentItems.push(titleEl);
-      if (pillToggle) contentItems.push(pillToggle);
-      contentItems.push(...(Array.from(wrap.children) as HTMLElement[]));
-      const n = contentItems.length;
-      contentItems.forEach((el, i) => {
-        el.style.setProperty('--i', String(i));
-        el.style.setProperty('--ri', String(n - 1 - i));
-      });
-      if (openState) openState.contentCount = n;
       void wrap.offsetHeight;
       // Reveal the content (blur/fade/rise) CONCURRENT with the box morph and
       // lasting its full duration — mirrors the close (content blurs out over
@@ -592,6 +585,12 @@ function syncTitleRestY(card: HTMLElement): void {
   if (card.classList.contains('has-cover')) {
     card.style.setProperty('--title-rest-y', '0px');
     card.style.setProperty('--title-center-x', '0px');
+    // Keep the pre-sized content width current for idle cards. Skip the OPEN
+    // card — its --modal-w is owned by doOpen / the resize snap, and this runs
+    // (via syncAllTitleRestY) before the open-card resize guard.
+    if (card !== openState?.card) {
+      setModalWidthVar(card, getViewportRect());
+    }
     return;
   }
   // Skip cards mid-lifecycle — their geometry isn't the resting geometry.
@@ -727,6 +726,9 @@ function onResize(): void {
 
     card.classList.add('is-resizing');
     const vr = getViewportRect();
+    // Re-size the pre-laid content to the new modal target (open-card path —
+    // deliberately not done in the bulk syncAllTitleRestY loop above).
+    setModalWidthVar(card, vr);
     card.style.transition = 'none';
     card.style.top = `${vr.top}px`;
     card.style.left = `${vr.left}px`;
