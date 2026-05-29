@@ -11,6 +11,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 There is no automated test suite. Verification on changes is `npm run check` + `npm run build` + manual browser checks. Do not claim "tests pass" — say so explicitly when verification is build-only.
 
+## Debugging engine-specific visual bugs
+
+When a visual or animation bug reproduces on one engine only (e.g. Safari/iOS but not Chromium), capture visual evidence **before** the first speculative fix — ask the user for a screen recording and inspect it frame-by-frame (ffmpeg montage / high-fps extraction). Code-reading cannot distinguish "size leads position" from "position leads size"; frames can. And never let a fix for one symptom silently change unrelated behavior (scroll position, focus state) — if it must, call it out.
+
+Precedent: the bento card morph-jump ("expands right, then jumps to center", Safari/iOS only) was misdiagnosed three times — scroll-lock, `position:fixed` body lock, then removing the morph delay — before frame extraction from a user screen recording revealed the real cause was the card's `aspect-ratio` desyncing WebKit's `width`/`height` interpolation from `top`/`left`. Two of those wrong fixes also broke scroll position. See `memory/project_cover_parallax.md` for the full gotcha.
+
 ## Deployment
 
 - GitHub Actions workflow at [.github/workflows/deploy.yml](.github/workflows/deploy.yml) runs on push to `main` and uses `withastro/action@v6` + `actions/deploy-pages@v5`.
