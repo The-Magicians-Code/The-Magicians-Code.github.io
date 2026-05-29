@@ -109,32 +109,15 @@ function getViewportRect(): DOMRect {
 }
 
 // ── Body scroll lock ─────────────────────────────────────────────────────
-// iOS/Safari-safe lock: pin <body> with position:fixed at -scrollY rather than
-// toggling html/body `overflow`. On WebKit, changing root overflow re-resolves
-// the positions of in-flight position:fixed elements — which yanked the
-// morphing card to the side before it centered, on BOTH open and collapse.
-// position:fixed leaves fixed descendants (the card, the nav) alone, locks the
-// page, and preserves the visual position with no reflow; we restore the scroll
-// offset on unlock. Scrollbars are hidden globally so there's no gutter shift.
-let lockedScrollY = 0;
+// Simple class toggle; CSS sets `body.bento-open { overflow: hidden }`. (An
+// earlier attempt to also lock <html> overflow, and then to pin <body> with
+// position:fixed, both caused WebKit-specific jank — reverted.)
 function lockBodyScroll(): void {
-  lockedScrollY = window.scrollY;
   document.body.classList.add('bento-open');
-  document.body.style.position = 'fixed';
-  document.body.style.top = `-${lockedScrollY}px`;
-  document.body.style.left = '0';
-  document.body.style.right = '0';
-  document.body.style.width = '100%';
 }
 
 function unlockBodyScroll(): void {
   document.body.classList.remove('bento-open');
-  document.body.style.position = '';
-  document.body.style.top = '';
-  document.body.style.left = '';
-  document.body.style.right = '';
-  document.body.style.width = '';
-  window.scrollTo(0, lockedScrollY);
 }
 
 // ── Close-button SVG (Lucide "minimize-2" / "shrink" glyph) ──────────────
@@ -268,17 +251,13 @@ function doOpen(card: HTMLElement): void {
     }
   };
 
-  // Cover cards (motion on) delay the box morph by COVER_MORPH_DELAY so the
-  // resting-title blur-out (driven by .is-expanding in CSS) overlaps the start
-  // of the morph. Plain cards and reduced-motion morph on the next frame.
-  if (hasCover && !reduce) {
-    window.setTimeout(() => {
-      if (!openState || openState.closing) return;
-      requestAnimationFrame(applyMorphTarget);
-    }, COVER_MORPH_DELAY);
-  } else {
-    requestAnimationFrame(applyMorphTarget);
-  }
+  // Morph on the next frame for ALL cards (the pre-cover, Safari-known-good
+  // path). An earlier cover-only variant delayed this by COVER_MORPH_DELAY via
+  // setTimeout so the title blur-out led the box expand — but that delayed
+  // transition-enable is the prime suspect for the WebKit "box jumps to the
+  // side then centers" bug, so the box now expands immediately (the cover still
+  // frosts in parallel; content still reveals at COVER_MORPH_DELAY below).
+  requestAnimationFrame(applyMorphTarget);
 
   openState = {
     card,
@@ -731,10 +710,7 @@ function onResize(): void {
     // setting `transition: none` and yanking the card to the modal-
     // centered target — reads as the animation "skipping to the end".
     // After the morph completes, resizes continue to recenter normally.
-    const guardWindow =
-      openState.morphDur +
-      (openState.card.classList.contains('has-cover') ? COVER_MORPH_DELAY : 0);
-    if (performance.now() - openState.openedAt < guardWindow) return;
+    if (performance.now() - openState.openedAt < openState.morphDur) return;
     const { card } = openState;
 
     card.classList.add('is-resizing');

@@ -978,11 +978,15 @@
     pointer-events: auto;
   }
 
-  /* ── Body scroll lock ───────────────────────────────────────────
-     Done in bento-expand.ts via position:fixed on <body> (iOS/Safari-safe).
-     We deliberately do NOT toggle html/body `overflow` here: on WebKit that
-     re-resolves in-flight position:fixed elements (the morphing card), which
-     made the modal jump to the side before centering on open AND collapse. */
+  /* ── Body scroll lock ─────────────────────────────────────────── */
+  :global(body.bento-open) {
+    overflow: hidden;
+  }
+  /* <html> is the real scroller (global.css sets html{overflow-x:clip}, which
+     blocks body→viewport overflow propagation), so lock it too. */
+  :global(html:has(body.bento-open)) {
+    overflow-y: hidden;
+  }
 
   /* ════════════════════════════════════════════════════════════════
      PHOTOGRAPHIC COVERS + blur cross-dissolve choreography (.has-cover)
