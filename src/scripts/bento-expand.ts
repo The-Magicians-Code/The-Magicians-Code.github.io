@@ -197,6 +197,12 @@ function doOpen(card: HTMLElement): void {
   card.style.height = `${rect.height}px`;
   card.style.margin = '0';
   card.style.transform = 'none';
+  // The card's CSS aspect-ratio (4/1, or 1/1 mobile) makes WebKit interpolate
+  // width/height OUT OF SYNC with top/left during the morph — the box reaches
+  // full size faster than it travels to center, reading as "expands then jumps
+  // to center" (Safari/iOS, open + collapse). Explicit w/h already override
+  // aspect-ratio; null it so the four geometry props transition in lockstep.
+  card.style.aspectRatio = 'auto';
 
   // Close button as a child of the card.
   const closeBtn = document.createElement('button');
