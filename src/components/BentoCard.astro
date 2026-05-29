@@ -7,6 +7,7 @@ interface Props {
   slug: string;
   bentoSpan?: 'hero' | 'wide' | 'tall' | 'normal';
   coverVariant?: 'base' | 'alt';
+  cover?: string;
   deepwikiUrl?: string;
 }
 
@@ -16,6 +17,7 @@ const {
   slug,
   bentoSpan = 'normal',
   coverVariant = 'base',
+  cover,
   deepwikiUrl,
 } = Astro.props;
 ---
@@ -27,8 +29,10 @@ const {
     'cs-card',
     `span-${bentoSpan}`,
     `cover-${coverVariant}`,
+    cover && 'has-cover',
   ]}
   data-bento-card
+  data-parallax={cover ? '' : undefined}
   data-slug={slug}
   data-deepwiki-url={deepwikiUrl ?? undefined}
   role="button"
@@ -37,7 +41,19 @@ const {
   aria-expanded="false"
   aria-label={titleToText(title)}
 >
-  <div class="cover"></div>
+  <div class="cover">
+    {cover && (
+      <Fragment>
+        <div class="cover-img" data-depth="0.2" style={`background-image:url('${cover}')`}></div>
+        <div class="cover-overlay"></div>
+      </Fragment>
+    )}
+  </div>
+  {cover && (
+    <div class="cover-resttitle" aria-hidden="true">
+      <span set:html={titleToHtml(title)}></span>
+    </div>
+  )}
   <span class="cs-expand" aria-hidden="true">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
       <polyline points="15 3 21 3 21 9" />

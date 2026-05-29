@@ -36,11 +36,17 @@ function collect(): Stage[] {
   return [...document.querySelectorAll<HTMLElement>('[data-parallax]')].map((el) => ({
     el,
     mobile: el.hasAttribute('data-parallax-mobile'),
-    layers: [...el.querySelectorAll<HTMLElement>('[data-depth]')].map((layer) => ({
-      el: layer,
-      depth: parseDepth(layer.dataset.depth),
-      lastY: Number.NaN,
-    })),
+    // Only own [data-depth] layers whose NEAREST [data-parallax] ancestor is
+    // this stage. Without this, a nested stage (e.g. a parallax card inside a
+    // parallax section) would have its layers driven by both stages at once —
+    // each keeps its own lastY, so they fight and the drift stutters/freezes.
+    layers: [...el.querySelectorAll<HTMLElement>('[data-depth]')]
+      .filter((layer) => layer.closest('[data-parallax]') === el)
+      .map((layer) => ({
+        el: layer,
+        depth: parseDepth(layer.dataset.depth),
+        lastY: Number.NaN,
+      })),
   }));
 }
 
@@ -59,6 +65,20 @@ function update(): void {
   const vh = window.innerHeight;
   const isMobile = window.innerWidth < MOBILE_BP;
   for (const stage of stages) {
+    // Skip a stage mid-expand/collapse (bento cover cards). While the card
+    // is position:fixed as a modal, its rect is the modal geometry, not the
+    // resting stage — applying a transform here would strand a wrong offset
+    // on the (faded-out) cover layer that survives into the close. The body
+    // scroll-lock preserves scroll position, so the pre-open transform stays
+    // valid; drift resumes once the card returns to rest.
+    const cl = stage.el.classList;
+    if (
+      cl.contains('is-expanding') ||
+      cl.contains('is-expanded') ||
+      cl.contains('is-collapsing')
+    ) {
+      continue;
+    }
     const r = stage.el.getBoundingClientRect();
     if (r.bottom < -vh * 0.3 || r.top > vh * 1.3) continue; // off-screen
     const active = !isMobile || stage.mobile;

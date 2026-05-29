@@ -6,6 +6,7 @@ deepwikiUrl: https://deepwiki.com/The-Magicians-Code/Strato-Pi
 order: 2
 bentoSpan: wide
 coverVariant: alt
+cover: /covers/strato-pi.jpg
 draft: false
 ---
 

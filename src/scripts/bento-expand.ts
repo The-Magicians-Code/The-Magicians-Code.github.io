@@ -34,6 +34,13 @@ interface OpenState {
      new viewport-centered target with `transition: none`, reading as the
      animation "skipping to the end". */
   openedAt: number;
+  /* Effective box-morph duration for this card, parsed from --morph-dur
+     (520ms plain, 760ms for .has-cover). Drives the JS schedule so it stays
+     in lockstep with the CSS geometry transition. */
+  morphDur: number;
+  /* Number of staggered modal content items (.has-cover only) — used to time
+     the close content-blur-out phase before the box collapses. */
+  contentCount: number;
 }
 
 function makeBlurStrip(position: 'top' | 'bottom'): HTMLElement {
@@ -44,7 +51,22 @@ function makeBlurStrip(position: 'top' | 'bottom'): HTMLElement {
   return strip;
 }
 
-const MORPH_DUR = 520; // must match --morph-dur in CSS
+const MORPH_DUR = 520; // must match --morph-dur in CSS (plain cards)
+
+// Cover cards delay the box morph so the resting title can blur out first.
+const COVER_MORPH_DELAY = 180; // ms; matches the choreography overlap
+
+const prefersReducedMotion = (): boolean =>
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// Effective morph duration for a card from its computed --morph-dur token
+// (handles both "760ms" and "0.76s"). Falls back to MORPH_DUR.
+function readMorphDur(card: HTMLElement): number {
+  const raw = getComputedStyle(card).getPropertyValue('--morph-dur').trim();
+  const n = parseFloat(raw);
+  if (!Number.isFinite(n)) return MORPH_DUR;
+  return raw.endsWith('ms') ? n : raw.endsWith('s') ? n * 1000 : n;
+}
 
 let openState: OpenState | null = null;
 
@@ -206,7 +228,11 @@ function doOpen(card: HTMLElement): void {
 
   void card.offsetHeight; // commit lift before re-enabling transitions
 
-  requestAnimationFrame(() => {
+  const hasCover = card.classList.contains('has-cover');
+  const reduce = prefersReducedMotion();
+  const morphDur = readMorphDur(card);
+
+  const applyMorphTarget = (): void => {
     card.style.transition = ''; // CSS-defined transitions apply now
     card.classList.add('is-expanded');
     card.style.top = `${vr.top}px`;
@@ -217,7 +243,19 @@ function doOpen(card: HTMLElement): void {
     if (card.classList.contains('pretext-title')) {
       pretextAnimateCard(card, true);
     }
-  });
+  };
+
+  // Cover cards (motion on) delay the box morph by COVER_MORPH_DELAY so the
+  // resting-title blur-out (driven by .is-expanding in CSS) overlaps the start
+  // of the morph. Plain cards and reduced-motion morph on the next frame.
+  if (hasCover && !reduce) {
+    window.setTimeout(() => {
+      if (!openState || openState.closing) return;
+      requestAnimationFrame(applyMorphTarget);
+    }, COVER_MORPH_DELAY);
+  } else {
+    requestAnimationFrame(applyMorphTarget);
+  }
 
   openState = {
     card,
@@ -233,6 +271,8 @@ function doOpen(card: HTMLElement): void {
     detachScrollCollapse: null,
     closing: false,
     openedAt: performance.now(),
+    morphDur,
+    contentCount: 0,
   };
 
   // After the morph lands, clone the hidden body content into the visible
@@ -247,7 +287,9 @@ function doOpen(card: HTMLElement): void {
     if (!body || !source) return;
 
     const wrap = document.createElement('div');
-    wrap.className = 'bento-card-body-rendered is-swapping';
+    // Cover cards reveal each item via the .is-content-in stagger (below), not
+    // the wrap-level is-swapping fade.
+    wrap.className = 'bento-card-body-rendered' + (hasCover ? '' : ' is-swapping');
     const initialMode = readMode();
     applyMode(wrap, initialMode);
     // Clone children so the original hidden source stays intact for a
@@ -325,11 +367,38 @@ function doOpen(card: HTMLElement): void {
     for (const child of wrap.children) {
       (child as HTMLElement).classList.add('body-para');
     }
-    void wrap.offsetHeight;
-    requestAnimationFrame(() => {
-      wrap.classList.remove('is-swapping');
-    });
-  }, MORPH_DUR);
+    if (hasCover) {
+      // Stagger indices for the modal content items, in visual (top→bottom)
+      // order: eyebrow, title, pill, then each prose block. --i drives the
+      // open reveal; --ri the bottom-to-top close exit.
+      const eyebrowEl = body.querySelector<HTMLElement>(':scope > .card-eyebrow');
+      const titleEl = body.querySelector<HTMLElement>(':scope > .card-title');
+      const contentItems: HTMLElement[] = [];
+      if (eyebrowEl) contentItems.push(eyebrowEl);
+      if (titleEl) contentItems.push(titleEl);
+      if (pillToggle) contentItems.push(pillToggle);
+      contentItems.push(...(Array.from(wrap.children) as HTMLElement[]));
+      const n = contentItems.length;
+      contentItems.forEach((el, i) => {
+        el.style.setProperty('--i', String(i));
+        el.style.setProperty('--ri', String(n - 1 - i));
+      });
+      if (openState) openState.contentCount = n;
+      void wrap.offsetHeight;
+      // Reveal the content (blur/fade/rise) CONCURRENT with the box morph and
+      // lasting its full duration — mirrors the close (content blurs out over
+      // the whole collapse). Fires at the morph start, not after it.
+      window.setTimeout(() => {
+        if (!openState || openState.closing) return;
+        card.classList.add('is-content-in');
+      }, reduce ? 0 : COVER_MORPH_DELAY);
+    } else {
+      void wrap.offsetHeight;
+      requestAnimationFrame(() => {
+        wrap.classList.remove('is-swapping');
+      });
+    }
+  }, hasCover ? 0 : MORPH_DUR);
 
   closeBtn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -375,37 +444,23 @@ function closeCaseStudy(): void {
     pretextAnimateCard(card, false);
   }
 
-  // Clear is-resizing in case a resize snap was mid-flight; otherwise the
-  // close transition would inherit `transition: none !important`.
-  // .is-collapsing also drives the body-para fade-out via CSS (see
-  // .bento-card.is-collapsing .body-para.appended rule) — no per-child
-  // class loop needed.
-  card.classList.remove('is-expanded', 'is-resizing');
-  card.classList.add('is-collapsing');
+  const hasCover = card.classList.contains('has-cover');
+  const reduce = prefersReducedMotion();
+  const morphDur = state.morphDur || readMorphDur(card);
 
   // Unmount the bottom blur strip immediately — backdrop-filter computes
-  // regardless of opacity, so leaving it through the 520ms close morph
-  // would eat GPU. Card is shrinking visibly in the same frame so the
-  // disappearance reads as part of the close. blurTop now lives inside
-  // the sticky header (kept attached so the progressive blur stays
-  // visible alongside the header through the morph — small bounded
-  // cost, removed in doCleanup with the rest of the wrapper).
+  // regardless of opacity, so leaving it through the close morph eats GPU.
   blurBottom.remove();
   card.setAttribute('aria-expanded', 'false');
 
-  // Re-measure the placeholder; resize may have moved it.
-  const slotRect = placeholder.getBoundingClientRect();
-
-  card.style.top = `${slotRect.top}px`;
-  card.style.left = `${slotRect.left}px`;
-  card.style.width = `${slotRect.width}px`;
-  card.style.height = `${slotRect.height}px`;
-
-  backdrop.classList.remove('is-open');
+  // Note: the backdrop's `is-open` is dropped in runCollapse (not here) so its
+  // blur fades in step with the box collapse rather than at close-init — for
+  // cover cards the collapse is delayed behind the content blur-out.
   backdrop.removeEventListener('click', closeCaseStudy);
   document.removeEventListener('keydown', escClose);
 
   let cleanedUp = false;
+  let fallbackTimer = 0;
   const doCleanup = (): void => {
     if (cleanedUp) return;
     cleanedUp = true;
@@ -457,7 +512,13 @@ function closeCaseStudy(): void {
       } else {
         card.removeAttribute('style');
       }
-      card.classList.remove('is-expanding', 'is-collapsing', 'is-resizing');
+      card.classList.remove(
+        'is-expanding',
+        'is-collapsing',
+        'is-resizing',
+        'is-content-in',
+        'is-closing-content',
+      );
       // Belt-and-suspenders re-blur. Focus is intentionally NOT restored to
       // the card on keyboard close — restoring focus triggers :focus-visible
       // and the browser draws a default focus outline that reads as a white
@@ -482,8 +543,35 @@ function closeCaseStudy(): void {
     if (e.propertyName !== 'width') return;
     doCleanup();
   };
-  card.addEventListener('transitionend', onTransitionEnd);
-  const fallbackTimer = window.setTimeout(doCleanup, MORPH_DUR + 280);
+
+  // Collapse the box back to the placeholder slot. Shared by both paths.
+  const runCollapse = (): void => {
+    // Fade the backdrop blur in step with the box collapse (kept until now so
+    // it doesn't vanish ahead of the content blur-out + collapse).
+    backdrop.classList.remove('is-open');
+    card.classList.remove('is-expanded', 'is-resizing');
+    card.classList.add('is-collapsing');
+    // Re-measure the placeholder; a resize may have moved it.
+    const slotRect = placeholder.getBoundingClientRect();
+    card.style.top = `${slotRect.top}px`;
+    card.style.left = `${slotRect.left}px`;
+    card.style.width = `${slotRect.width}px`;
+    card.style.height = `${slotRect.height}px`;
+    card.addEventListener('transitionend', onTransitionEnd);
+    // Fallback anchored to collapse-start (cover cards delay collapse behind
+    // the content blur-out, so a close-init anchor would fire too early).
+    fallbackTimer = window.setTimeout(doCleanup, morphDur + 280);
+  };
+
+  if (hasCover && !reduce) {
+    // Blur the content + modal title out AT THE SAME TIME as the box collapses
+    // — content (340ms) and box (760ms) run concurrently. .is-closing-content
+    // persists through the collapse (cleared in doCleanup); the resting-title
+    // blur-in is free once doCleanup strips the lifecycle classes.
+    card.classList.remove('is-content-in');
+    card.classList.add('is-closing-content');
+  }
+  runCollapse();
 }
 
 // ── Title rest-y measurement ─────────────────────────────────────────────
@@ -498,6 +586,14 @@ function syncTitleRestY(card: HTMLElement): void {
   // anchored to the card's bottom) — leaving --title-rest-y at 0
   // keeps it in its natural-flow position.
   if (!card.classList.contains('cs-card')) return;
+  // Cover cards: the resting title is the .cover-resttitle overlay; the real
+  // .card-title is the modal heading and lives in natural top-flow. No rest-y
+  // centering — leave it at the top so the blur cross-dissolve lands there.
+  if (card.classList.contains('has-cover')) {
+    card.style.setProperty('--title-rest-y', '0px');
+    card.style.setProperty('--title-center-x', '0px');
+    return;
+  }
   // Skip cards mid-lifecycle — their geometry isn't the resting geometry.
   if (
     card.classList.contains('is-expanding') ||
@@ -623,7 +719,10 @@ function onResize(): void {
     // setting `transition: none` and yanking the card to the modal-
     // centered target — reads as the animation "skipping to the end".
     // After the morph completes, resizes continue to recenter normally.
-    if (performance.now() - openState.openedAt < MORPH_DUR) return;
+    const guardWindow =
+      openState.morphDur +
+      (openState.card.classList.contains('has-cover') ? COVER_MORPH_DELAY : 0);
+    if (performance.now() - openState.openedAt < guardWindow) return;
     const { card } = openState;
 
     card.classList.add('is-resizing');
