@@ -331,12 +331,12 @@
      leave visible cutouts at the device-display corners. The morph
      target rect in bento-expand.ts also goes to full viewport at this
      breakpoint. */
-  @media (max-width: 540px) {
-    :global(.bento-card.is-expanding),
-    :global(.bento-card.is-expanded),
-    :global(.bento-card.is-collapsing) {
-      border-radius: 0;
-    }
+  /* TEST: square corners at all widths to match the full-viewport edge-to-edge
+     expand (was gated to @media (max-width: 540px)). */
+  :global(.bento-card.is-expanding),
+  :global(.bento-card.is-expanded),
+  :global(.bento-card.is-collapsing) {
+    border-radius: 0;
   }
   :global(.bento-card.is-expanding .card-body) {
     transition: padding var(--morph-dur) var(--ease-snappy);
