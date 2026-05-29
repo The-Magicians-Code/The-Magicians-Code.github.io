@@ -171,6 +171,11 @@ export interface ViewportRect {
 export function pretextRenderCard(card: HTMLElement, getViewportRect: () => ViewportRect): void {
   if (!PRETEXT_ENABLED) return;
   if (!card.classList.contains('cs-card') && !card.classList.contains('stack-card')) return;
+  // Cover cards use a blur cross-dissolve (a separate .cover-resttitle overlay
+  // blurs out, the modal .card-title blurs in) instead of the word-scatter
+  // morph. Skip pretext entirely for them. Placed inside pretextRenderCard so
+  // every call path is covered, including bento-expand's direct doCleanup call.
+  if (card.classList.contains('has-cover')) return;
   const titleEl = card.querySelector<HTMLElement>('.card-title');
   if (!titleEl) return;
   const words = pretextOriginalWords(titleEl);
@@ -199,8 +204,6 @@ export function pretextRenderCard(card: HTMLElement, getViewportRect: () => View
 
   // Source positions are NOT centered — natural-flow left-aligned positions
   // preserve the resting visual (cards look identical to today at rest).
-  // Modal positions ARE centered for both .cs-card and .stack-card so the
-  // expanded title sits centered inside the modal width on every bento.
   const sourcePositions = sourceLayout.positions;
   const modalPositions = pretextCenterPositions(
     modalLayout.positions,

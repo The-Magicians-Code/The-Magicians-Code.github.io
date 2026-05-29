@@ -348,6 +348,8 @@
        pill) flows with the case-study body. Single scroll context;
        no locked/fixed header. */
     overflow-y: auto;
+    /* Don't chain scroll to the page behind once the modal hits its end. */
+    overscroll-behavior: contain;
   }
   /* Preserve the scroll context through the close morph. Without this,
      dropping .is-expanded reverts overflow-y to `visible`, which kills
@@ -966,7 +968,9 @@
     -webkit-backdrop-filter: blur(10px);
     opacity: 0;
     pointer-events: none;
-    transition: opacity 320ms ease;
+    /* Longer fade so the backdrop blur tracks the box collapse rather than
+       snapping off ahead of it (paired with the runCollapse-time removal). */
+    transition: opacity 600ms ease;
     cursor: pointer;
   }
   .bento-backdrop.is-open {
@@ -977,5 +981,219 @@
   /* ── Body scroll lock ─────────────────────────────────────────── */
   :global(body.bento-open) {
     overflow: hidden;
+  }
+  /* The viewport scroller is <html>, and global.css sets html { overflow-x:
+     clip } — which disables body→viewport overflow propagation, so the rule
+     above alone does NOT stop the page behind the modal from scrolling. Lock
+     <html> itself while a card is open. */
+  :global(html:has(body.bento-open)) {
+    overflow-y: hidden;
+  }
+
+  /* ════════════════════════════════════════════════════════════════
+     PHOTOGRAPHIC COVERS + blur cross-dissolve choreography (.has-cover)
+     Rest: oversized parallax image (.cover-img) + dark overlay
+     (.cover-overlay) + a separate white title overlay (.cover-resttitle).
+     The real .card-title + eyebrow + cloned prose are the MODAL content —
+     hidden at rest, revealed on .is-content-in. Pretext is disabled for
+     these cards (blur cross-dissolve, not word-scatter). Phase *timing*
+     is driven from bento-expand.ts (delayed morph, .is-content-in /
+     .is-closing-content toggles, per-item --i/--ri stagger indices); this
+     CSS owns the blur/opacity/transform of each phase. Spring easing +
+     760ms morph are token overrides so the existing geometry transition
+     picks them up. Placed last so equal-specificity ties win on order.
+     ════════════════════════════════════════════════════════════════ */
+  :global(.bento-card.has-cover) {
+    --morph-dur: 760ms;
+    /* No spring/overshoot — the box morph uses the inherited smooth snappy
+       curve so expand/collapse don't bounce. --fade-ease drives the
+       blur/rise; content opacity fades LINEAR over --content-dur (longer than
+       the morph) so the text lingers and fades evenly instead of vanishing
+       up-front under the ease-out curve. */
+    --fade-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --content-dur: 1000ms;
+  }
+
+  /* Cover image + overlay */
+  :global(.bento-card.has-cover .cover) {
+    overflow: hidden;
+    background: var(--paper); /* paper shows through as the cover fades */
+  }
+  :global(.bento-card.has-cover .cover-img) {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: -56px;                  /* oversize so parallax can't reveal an edge */
+    height: calc(100% + 112px);
+    background-size: cover;
+    background-position: center 42%;
+    filter: blur(0px);
+    will-change: transform, filter;
+  }
+  :global(.bento-card.has-cover .cover-overlay) {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.34) 0%,
+      rgba(0, 0, 0, 0.12) 38%,
+      rgba(0, 0, 0, 0.22) 62%,
+      rgba(0, 0, 0, 0.60) 100%
+    );
+  }
+  /* Cover blurs + fades into the paper surface as the box morphs ("frosted
+     melt"); un-blurs + fades back in on collapse. The overlay just fades. */
+  :global(.bento-card.has-cover .cover-img) {
+    transition: opacity 456ms var(--fade-ease), filter 456ms var(--fade-ease);
+  }
+  :global(.bento-card.has-cover .cover-overlay) {
+    transition: opacity 456ms var(--fade-ease);
+  }
+  :global(.bento-card.has-cover.is-expanding .cover-img) {
+    opacity: 0;
+    filter: blur(16px);
+  }
+  :global(.bento-card.has-cover.is-expanding .cover-overlay) {
+    opacity: 0;
+  }
+  /* No is-collapsing return rule: the cover stays hidden through the whole
+     collapse (box shrinks as a plain white card while the content blurs out).
+     Once the box lands, doCleanup strips the lifecycle classes and the cover
+     reverts to its resting state — fading + un-blurring back in via the base
+     456ms transition above. That's the "fade to white box, then image back in"
+     two-beat. */
+
+  /* ── ① Resting title overlay (white, centered). Blurs out on open
+     (340ms); blurs back in via this base 420ms transition when the
+     lifecycle classes are stripped at cleanup. ── */
+  :global(.bento-card.has-cover .cover-resttitle) {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 0 28px;
+    pointer-events: none;
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: 24px;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    color: #fff;
+    opacity: 1;
+    filter: blur(0px);
+    transition: opacity 420ms var(--fade-ease), filter 420ms var(--fade-ease);
+  }
+  /* Project titles render as one uniform weight/color — drop the italic +
+     accent emphasis on the *…* span (white over the cover here). */
+  :global(.bento-card.has-cover .cover-resttitle em) {
+    font-style: normal;
+    color: inherit;
+  }
+  :global(.bento-card.has-cover.is-expanding .cover-resttitle) {
+    opacity: 0;
+    filter: blur(14px);
+    transition: opacity 340ms var(--fade-ease), filter 340ms var(--fade-ease);
+  }
+
+  /* Modal content is pre-laid-out at the final modal size so it doesn't
+     reflow/shift during the morph — the growing box (overflow:hidden) just
+     masks/reveals it. Padding is fixed at the EXPANDED value (the resting card
+     shows the cover, not the body, so it's invisible until open), align-items
+     centers the fixed-width children, and --modal-w (set in JS from the morph
+     target) is the expanded inner width the content is sized to. */
+  :global(.bento-card.has-cover .card-body) {
+    text-align: center;
+    align-items: center;
+    padding: 56px 48px 48px;
+  }
+  @media (max-width: 540px) {
+    :global(.bento-card.has-cover .card-body) {
+      padding: 48px 22px 32px;
+    }
+  }
+
+  /* ── Modal content items (eyebrow + title + pill + prose) ──
+     Hidden at rest; the real card-title is centered ink (not the rest
+     overlay). Pre-sized to --modal-w so they don't reflow during the morph. ── */
+  :global(.bento-card.has-cover .card-eyebrow),
+  :global(.bento-card.has-cover .card-title),
+  :global(.bento-card.has-cover .cs-mode-toggle),
+  :global(.bento-card.has-cover .bento-card-body-rendered > *) {
+    opacity: 0;
+    filter: blur(20px);
+    transform: translateY(10px);
+    /* filter is LINEAR (not the front-loaded ease-out) so the un-blur spreads
+       over the whole duration — text resolves into focus gradually rather than
+       snapping sharp in the first ~300ms, mirroring how the close stays soft. */
+    transition:
+      opacity var(--content-dur) linear,
+      filter var(--content-dur) linear,
+      transform var(--content-dur) var(--fade-ease);
+  }
+  /* Modal title: centered ink (overrides base rest-y transform, the
+     fit-content width, and the is-expanded center-x transform). */
+  :global(.bento-card.has-cover .card-title) {
+    color: var(--ink);
+    /* Fixed to the expanded inner width (max-width:none beats the base
+       max-width:100% that would otherwise re-clamp it to the small card during
+       the morph) so the title never re-wraps. */
+    width: var(--modal-w, 100%);
+    max-width: none;
+    text-align: center;
+    align-self: auto;
+  }
+  :global(.bento-card.has-cover .card-eyebrow) {
+    width: var(--modal-w, 100%);
+  }
+  :global(.bento-card.has-cover .bento-card-body-rendered) {
+    width: var(--modal-w, 100%);
+    max-width: 60ch; /* desktop caps for readable measure; mobile uses --modal-w */
+  }
+  /* Modal title likewise uniform — no italic/accent emphasis (ink here). */
+  :global(.bento-card.has-cover .card-title em) {
+    font-style: normal;
+    color: inherit;
+  }
+  /* Reveal (open ③) — staggered top-to-bottom by --i. */
+  :global(.bento-card.has-cover.is-content-in .card-eyebrow),
+  :global(.bento-card.has-cover.is-content-in .card-title),
+  :global(.bento-card.has-cover.is-content-in .cs-mode-toggle),
+  :global(.bento-card.has-cover.is-content-in .bento-card-body-rendered > *) {
+    opacity: 1;
+    filter: blur(0px);
+    transform: none;
+  }
+  /* Exit (close ③) — content blurs out over the FULL box-collapse duration
+     (--morph-dur) so the frosting runs for the whole collapse and the two
+     land together, rather than the text clearing early. */
+  :global(.bento-card.has-cover.is-closing-content .card-eyebrow),
+  :global(.bento-card.has-cover.is-closing-content .card-title),
+  :global(.bento-card.has-cover.is-closing-content .cs-mode-toggle),
+  :global(.bento-card.has-cover.is-closing-content .bento-card-body-rendered > *) {
+    opacity: 0;
+    filter: blur(14px);
+    transform: translateY(6px);
+    transition:
+      opacity var(--content-dur) linear,
+      filter var(--content-dur) var(--fade-ease),
+      transform var(--content-dur) var(--fade-ease);
+  }
+
+  /* Reduced motion: no blur/transform/stagger — snap each phase. */
+  @media (prefers-reduced-motion: reduce) {
+    :global(.bento-card.has-cover .cover-img),
+    :global(.bento-card.has-cover .cover-overlay),
+    :global(.bento-card.has-cover .cover-resttitle),
+    :global(.bento-card.has-cover .card-eyebrow),
+    :global(.bento-card.has-cover .card-title),
+    :global(.bento-card.has-cover .cs-mode-toggle),
+    :global(.bento-card.has-cover .bento-card-body-rendered > *) {
+      transition: none !important;
+      filter: none !important;
+      transform: none !important;
+    }
   }
 </style>

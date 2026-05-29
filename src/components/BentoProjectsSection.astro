@@ -19,8 +19,10 @@ const projectsWithContent = await Promise.all(
 );
 ---
 
-<section id="projects">
-  <h2 class="section-title">Projects <em>worth</em> showing.</h2>
+<section id="projects" data-parallax>
+  <div data-depth="0.15">
+    <h2 class="section-title reveal-up">Projects <em>worth</em> showing.</h2>
+  </div>
   <BentoGrid>
     {projectsWithContent.map(({ project, Content }) => (
       <BentoCard
@@ -29,6 +31,7 @@ const projectsWithContent = await Promise.all(
         slug={project.id}
         bentoSpan={project.data.bentoSpan}
         coverVariant={project.data.coverVariant}
+        cover={project.data.cover}
         deepwikiUrl={project.data.deepwikiUrl}
       >
         <Content />

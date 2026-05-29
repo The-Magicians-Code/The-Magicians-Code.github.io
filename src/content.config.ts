@@ -12,6 +12,7 @@ const projects = defineCollection({
     draft: z.boolean().default(false),
     bentoSpan: z.enum(['hero', 'wide', 'tall', 'normal']).default('normal'),
     coverVariant: z.enum(['base', 'alt']).default('base'),
+    cover: z.string().optional(),
     deepwikiUrl: z.url().optional(),
   }),
 });

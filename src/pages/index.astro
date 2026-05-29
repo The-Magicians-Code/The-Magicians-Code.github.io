@@ -13,8 +13,8 @@ import Contact from '../components/Contact.astro';
   canonicalPath="/"
   includePersonSchema={true}
 >
+  <Hero />
   <main class="page">
-    <Hero />
     <About />
     <BentoProjectsSection />
     <BentoStackSection />
@@ -38,3 +38,7 @@ import Contact from '../components/Contact.astro';
     }
   }
 </style>
+
+<script>
+  import '../scripts/scroll-parallax.ts';
+</script>

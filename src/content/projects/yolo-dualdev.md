@@ -6,6 +6,7 @@ deepwikiUrl: https://deepwiki.com/The-Magicians-Code/yolo-dualdev
 order: 1
 bentoSpan: hero
 coverVariant: base
+cover: /covers/yolo-dualdev.jpg
 draft: false
 ---
 
