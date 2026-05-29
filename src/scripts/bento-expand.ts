@@ -109,19 +109,32 @@ function getViewportRect(): DOMRect {
 }
 
 // ── Body scroll lock ─────────────────────────────────────────────────────
-// Pre-`scrollbar-gutter` versions of this also added padding-right to body
-// and bumped [data-scroll-lock-compensate] elements' inline `right` by the
-// measured scrollbar width to avoid layout shift when overflow:hidden
-// hides the scrollbar. With `scrollbar-gutter: stable both-edges` on html
-// (see global.css) the gutter persists whether the scrollbar is rendered
-// or not, so the page no longer shifts at lock/unlock and the compensation
-// is redundant — removed.
+// iOS/Safari-safe lock: pin <body> with position:fixed at -scrollY rather than
+// toggling html/body `overflow`. On WebKit, changing root overflow re-resolves
+// the positions of in-flight position:fixed elements — which yanked the
+// morphing card to the side before it centered, on BOTH open and collapse.
+// position:fixed leaves fixed descendants (the card, the nav) alone, locks the
+// page, and preserves the visual position with no reflow; we restore the scroll
+// offset on unlock. Scrollbars are hidden globally so there's no gutter shift.
+let lockedScrollY = 0;
 function lockBodyScroll(): void {
+  lockedScrollY = window.scrollY;
   document.body.classList.add('bento-open');
+  document.body.style.position = 'fixed';
+  document.body.style.top = `-${lockedScrollY}px`;
+  document.body.style.left = '0';
+  document.body.style.right = '0';
+  document.body.style.width = '100%';
 }
 
 function unlockBodyScroll(): void {
   document.body.classList.remove('bento-open');
+  document.body.style.position = '';
+  document.body.style.top = '';
+  document.body.style.left = '';
+  document.body.style.right = '';
+  document.body.style.width = '';
+  window.scrollTo(0, lockedScrollY);
 }
 
 // ── Close-button SVG (Lucide "minimize-2" / "shrink" glyph) ──────────────
