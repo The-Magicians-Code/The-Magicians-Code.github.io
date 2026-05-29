@@ -50,6 +50,7 @@
 - https://cofounder.co
 - https://www.hover.dev
 - https://gridportfolio.sites.blink.new
+- https://rauno.me
 
 ### Glass
 - https://themagicianscode.dev/prototypes/liquid-glass-pill/
@@ -73,3 +74,8 @@
 - https://performance.dev/how-is-linear-so-fast-a-technical-breakdown
 - https://www.npmjs.com/package/html-in-canvas-polyfill
 - https://performance.dev
+
+### Courses
+- https://devouringdetails.com
+- https://animations.dev
+- https://motion.dev
