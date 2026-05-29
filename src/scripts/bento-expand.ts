@@ -94,22 +94,11 @@ let openState: OpenState | null = null;
 
 // ── Viewport rect computation ────────────────────────────────────────────
 function getViewportRect(): DOMRect {
-  const isMobile = window.innerWidth < 540;
-  // Mobile: edge-to-edge. The phone display's rounded corners frame the
-  // modal; the CSS drops .bento-card.is-expanded border-radius to 0 at
-  // the same breakpoint so the square modal corners meet the display
-  // corners cleanly. Desktop: padded modal centred in the viewport.
-  const pad = isMobile ? 0 : Math.max(24, Math.min(48, window.innerWidth * 0.05));
-  const maxW = isMobile ? window.innerWidth : 920;
-  const maxH = isMobile ? window.innerHeight : 720;
-  const w = Math.min(window.innerWidth - pad * 2, maxW);
-  const h = Math.min(window.innerHeight - pad * 2, maxH);
-  return new DOMRect(
-    (window.innerWidth - w) / 2,
-    (window.innerHeight - h) / 2,
-    w,
-    h,
-  );
+  // TEST: full-viewport edge-to-edge expand at ALL widths. Previously gated to
+  // window.innerWidth < 540 (mobile edge-to-edge); desktop got a padded 920×720
+  // modal centred in the viewport. Flipped globally to evaluate the
+  // edge-to-edge treatment on desktop.
+  return new DOMRect(0, 0, window.innerWidth, window.innerHeight);
 }
 
 // ── Body scroll lock ─────────────────────────────────────────────────────
@@ -259,11 +248,10 @@ function doOpen(card: HTMLElement): void {
     card.style.left = `${vr.left}px`;
     card.style.width = `${vr.width}px`;
     card.style.height = `${vr.height}px`;
-    // Morph the radius with the box: 0 edge-to-edge on mobile, rest on desktop.
-    // Driven inline (transition now live) so it animates instead of snapping.
-    card.style.borderRadius = window.matchMedia('(max-width: 540px)').matches
-      ? '0px'
-      : cs.borderTopLeftRadius;
+    // TEST: square corners at all widths to match the full-viewport edge-to-edge
+    // expand (was: 0 ≤540px, rest radius on desktop). Driven inline (transition
+    // now live) so it animates instead of snapping.
+    card.style.borderRadius = '0px';
     // Animate pretext word spans to modal positions in lockstep with the morph.
     if (card.classList.contains('pretext-title')) {
       pretextAnimateCard(card, true);
@@ -661,13 +649,11 @@ function syncTitleRestY(card: HTMLElement): void {
   // The transform from 0 → centerX runs in lockstep with the morph, so
   // intermediate frames sit between left-aligned (rest) and centered
   // (final) — they land precisely centered at morph end.
-  const isMobile = window.innerWidth < 540;
-  // Match getViewportRect: mobile is edge-to-edge (pad: 0), desktop padded.
-  const expandPad = isMobile ? 0 : Math.max(24, Math.min(48, window.innerWidth * 0.05));
-  const expandedCardW = isMobile
-    ? window.innerWidth
-    : Math.min(window.innerWidth - expandPad * 2, 920);
-  const expandedBodyPadX = isMobile ? 22 : 48;
+  // TEST: full-viewport expand at all widths — expandedCardW must match
+  // getViewportRect's full-viewport width. Body padding still follows the CSS
+  // (.is-expanded .card-body): 22px ≤540px, else 48px.
+  const expandedCardW = window.innerWidth;
+  const expandedBodyPadX = window.innerWidth < 540 ? 22 : 48;
   const expandedBodyInnerW = expandedCardW - 2 * expandedBodyPadX;
   const centerX = Math.max(0, (expandedBodyInnerW - titleRect.width) / 2);
   card.style.setProperty('--title-center-x', `${centerX}px`);
@@ -697,13 +683,9 @@ function syncStackSubtitleX(card: HTMLElement): void {
   const subtitleRect = subtitle.getBoundingClientRect();
   // Same modal-width math as syncTitleRestY's centerX calc above —
   // keep these in sync if the expanded-body padding ever changes.
-  const isMobile = window.innerWidth < 540;
-  // Match getViewportRect: mobile is edge-to-edge (pad: 0), desktop padded.
-  const expandPad = isMobile ? 0 : Math.max(24, Math.min(48, window.innerWidth * 0.05));
-  const expandedCardW = isMobile
-    ? window.innerWidth
-    : Math.min(window.innerWidth - expandPad * 2, 920);
-  const expandedBodyPadX = isMobile ? 22 : 48;
+  // TEST: full-viewport expand at all widths (matches getViewportRect).
+  const expandedCardW = window.innerWidth;
+  const expandedBodyPadX = window.innerWidth < 540 ? 22 : 48;
   const expandedBodyInnerW = expandedCardW - 2 * expandedBodyPadX;
   const centerX = Math.max(0, (expandedBodyInnerW - subtitleRect.width) / 2);
   card.style.setProperty('--subtitle-center-x', `${centerX}px`);
