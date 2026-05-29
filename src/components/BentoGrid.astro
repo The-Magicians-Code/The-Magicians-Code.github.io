@@ -1126,10 +1126,13 @@
     /* filter is LINEAR (not the front-loaded ease-out) so the un-blur spreads
        over the whole duration — text resolves into focus gradually rather than
        snapping sharp in the first ~300ms, mirroring how the close stays soft. */
+    /* Reveal runs for the box-morph duration (not --content-dur) so the
+       content finishes resolving exactly when the box lands. The close exit
+       keeps --content-dur (its own rule below) for the slower fade-out. */
     transition:
-      opacity var(--content-dur) linear,
-      filter var(--content-dur) linear,
-      transform var(--content-dur) var(--fade-ease);
+      opacity var(--morph-dur) linear,
+      filter var(--morph-dur) linear,
+      transform var(--morph-dur) var(--fade-ease);
   }
   /* Modal title: centered ink (overrides base rest-y transform, the
      fit-content width, and the is-expanded center-x transform). */
