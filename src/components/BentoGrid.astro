@@ -1004,12 +1004,10 @@
   :global(.bento-card.has-cover) {
     --morph-dur: 760ms;
     /* No spring/overshoot — the box morph uses the inherited smooth snappy
-       curve so expand/collapse don't bounce. --fade-ease drives the
-       blur/rise; content opacity fades LINEAR over --content-dur (longer than
-       the morph) so the text lingers and fades evenly instead of vanishing
-       up-front under the ease-out curve. */
+       curve so expand/collapse don't bounce. --fade-ease drives the blur/rise;
+       content opacity fades LINEAR (over --morph-dur) so it resolves evenly
+       and lands with the box rather than vanishing up-front under ease-out. */
     --fade-ease: cubic-bezier(0.22, 1, 0.36, 1);
-    --content-dur: 1000ms;
   }
 
   /* Cover image + overlay */
@@ -1126,9 +1124,8 @@
     /* filter is LINEAR (not the front-loaded ease-out) so the un-blur spreads
        over the whole duration — text resolves into focus gradually rather than
        snapping sharp in the first ~300ms, mirroring how the close stays soft. */
-    /* Reveal runs for the box-morph duration (not --content-dur) so the
-       content finishes resolving exactly when the box lands. The close exit
-       keeps --content-dur (its own rule below) for the slower fade-out. */
+    /* Reveal runs for the box-morph duration so the content finishes resolving
+       exactly when the box lands (the close exit mirrors this). */
     transition:
       opacity var(--morph-dur) linear,
       filter var(--morph-dur) linear,
@@ -1177,10 +1174,13 @@
     opacity: 0;
     filter: blur(14px);
     transform: translateY(6px);
+    /* Blur out over the box-collapse duration so the content finishes fading
+       exactly as the box lands (mirrors the open reveal), instead of being
+       clipped mid-fade when cleanup removes it at collapse-end. */
     transition:
-      opacity var(--content-dur) linear,
-      filter var(--content-dur) var(--fade-ease),
-      transform var(--content-dur) var(--fade-ease);
+      opacity var(--morph-dur) linear,
+      filter var(--morph-dur) var(--fade-ease),
+      transform var(--morph-dur) var(--fade-ease);
   }
 
   /* Reduced motion: no blur/transform/stagger — snap each phase. */
