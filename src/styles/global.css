@@ -365,34 +365,7 @@ body.bento-open .nav-progressive-blur {
   gap: 0.25rem;
 }
 
-#theme-toggle-button {
-  width: 36px;
-  height: 36px;
-  border-radius: 9999px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--ink-dim);
-  transition: color 0.2s ease, background-color 0.2s ease;
-  line-height: 0;
-  cursor: pointer;
-}
-
-#theme-toggle-button:hover {
-  color: var(--ink);
-  background-color: rgba(128, 128, 128, .15);
-}
-
-#theme-toggle-button .icon-moon { display: none; }
-#theme-toggle-button .icon-sun  { display: inline-block; }
-html.dark #theme-toggle-button .icon-moon { display: inline-block; }
-html.dark #theme-toggle-button .icon-sun  { display: none; }
-
-#theme-toggle-button > svg,
-#theme-toggle-button > i > svg {
-  width: 20px;
-  height: 20px;
-}
+/* #theme-toggle-button styles live in src/components/ThemeToggle.astro */
 
 .hamburger-button {
   width: 44px;
@@ -419,13 +392,17 @@ html.dark #theme-toggle-button .icon-sun  { display: none; }
   width: 100%;
   background-color: currentColor;
   border-radius: 1px;
-  transition: transform 0.3s ease-in-out, opacity 0.2s ease-in-out;
   transform-origin: center;
+  /* Closing: un-rotate to flat first, then slide back apart. */
+  transition: rotate 0.15s ease-in-out, translate 0.15s ease-in-out 0.15s;
 }
 
-.hamburger-button.open .line1 { transform: translateY(8px) rotate(45deg); }
-.hamburger-button.open .line2 { opacity: 0; transform: scaleX(0); }
-.hamburger-button.open .line3 { transform: translateY(-8px) rotate(-45deg); }
+/* Opening: slide together vertically (staying parallel) first, then rotate into the X. */
+.hamburger-button.open .line {
+  transition: translate 0.15s ease-in-out, rotate 0.15s ease-in-out 0.15s;
+}
+.hamburger-button.open .line1 { translate: 0 6px; rotate: 45deg; }
+.hamburger-button.open .line2 { translate: 0 -6px; rotate: -45deg; }
 
 /* ===== Mobile Menu Panel ===== */
 #mobile-menu {

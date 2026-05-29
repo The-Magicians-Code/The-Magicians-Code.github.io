@@ -7,6 +7,78 @@ import { Icon } from 'astro-icon/components';
   <Icon name="lucide:moon" class="icon-moon" aria-hidden="true" />
 </button>
 
+<style is:global>
+  #theme-toggle-button {
+    position: relative;
+    width: 36px;
+    height: 36px;
+    border-radius: 9999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink-dim);
+    transition: color 0.2s ease, background-color 0.2s ease, transform 0.15s ease-out;
+    line-height: 0;
+    cursor: pointer;
+  }
+
+  #theme-toggle-button:hover {
+    color: var(--ink);
+    background-color: rgba(128, 128, 128, .15);
+  }
+
+  /* Subtle press dip — feels responsive, animations.dev copy-button style. */
+  #theme-toggle-button:active {
+    transform: scale(0.97);
+  }
+
+  /* Both icons stay rendered, stacked on top of each other, so the theme
+     swap can cross-fade instead of hard-swapping via display:none. */
+  #theme-toggle-button .icon-sun,
+  #theme-toggle-button .icon-moon {
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 20px;
+    height: 20px;
+    transition: opacity 0.15s ease-out, transform 0.15s ease-out, filter 0.15s ease-out;
+  }
+
+  /* Inactive icon: blurred + shrunk + transparent. The blur blends the two
+     states together so the swap reads as a smooth melt rather than a cut. */
+  #theme-toggle-button .icon-moon {
+    opacity: 0;
+    transform: scale(0.6);
+    filter: blur(2px);
+  }
+  #theme-toggle-button .icon-sun {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+  html.dark #theme-toggle-button .icon-sun {
+    opacity: 0;
+    transform: scale(0.6);
+    filter: blur(2px);
+  }
+  html.dark #theme-toggle-button .icon-moon {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #theme-toggle-button,
+    #theme-toggle-button .icon-sun,
+    #theme-toggle-button .icon-moon {
+      transition: none;
+    }
+    #theme-toggle-button:active {
+      transform: none;
+    }
+  }
+</style>
+
 <script>
   const THEME_KEY = 'theme-preference';
 
