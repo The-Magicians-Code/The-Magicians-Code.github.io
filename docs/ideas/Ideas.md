@@ -68,6 +68,8 @@
 ### Performance
 - WebGPU or WebGL
 - Web Animaions API
+- Lottie animations
+- GSAP
 - https://performance.dev/how-is-linear-so-fast-a-technical-breakdown
 - https://www.npmjs.com/package/html-in-canvas-polyfill
 - https://performance.dev
