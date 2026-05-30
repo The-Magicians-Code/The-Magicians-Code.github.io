@@ -517,6 +517,23 @@ function init() {
 
   overlay?.addEventListener('click', close);
 
+  // iOS touch-scroll guard. The CSS lock (body.cmdk-open{overflow:hidden} +
+  // html:has(...)) stops wheel/keyboard scroll, but iOS Safari lets touch and
+  // momentum scrolling bleed through overflow:hidden on the background. Block
+  // touchmove while the palette is open, except inside the scrollable results
+  // list so it can still be flicked. Non-passive so preventDefault() works.
+  // (Deliberately not position:fixed — see CLAUDE.md, that broke scroll
+  // position twice on iOS.)
+  document.addEventListener(
+    'touchmove',
+    (e) => {
+      if (root!.hidden) return;
+      if (list && list.contains(e.target as Node)) return; // allow list scroll
+      e.preventDefault();
+    },
+    { passive: false },
+  );
+
   // Belt-and-suspenders focus trap: if focus escapes the open dialog (e.g. a
   // programmatic move), pull it back to the input.
   document.addEventListener('focusin', (e) => {
