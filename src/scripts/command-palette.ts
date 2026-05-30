@@ -18,7 +18,7 @@ interface PaletteEntry {
   subtitle?: string;
   keywords?: string[];
   body?: string;
-  action: 'navigate' | 'open-url' | 'copy-email' | 'toggle-theme' | 'print';
+  action: 'navigate' | 'open-url' | 'copy-email' | 'toggle-theme';
   href?: string;
 }
 
@@ -42,8 +42,11 @@ declare global {
 const THEME_KEY = 'theme-preference';
 const COMMANDS = ['help', 'ls', 'cat', 'grep', 'whoami', 'open', 'theme', 'email', 'clear', 'ask'];
 
-// Minimal inline-SVG sprite (lucide-flavored) so the palette has zero icon-font
-// dependency and works regardless of astro-icon hydration timing.
+// Minimal inline-SVG sprite (lucide path data). The client module injects
+// per-result icons via innerHTML at runtime and can't call Astro's <Icon>
+// component (which only renders at build time), so the glyphs are inlined
+// here. Trade-off: these paths can drift from the lucide version astro-icon
+// resolves elsewhere — keep them in sync if icons look off.
 const ICONS: Record<string, string> = {
   home: '<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/>',
   user: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
@@ -141,18 +144,40 @@ function init() {
   let visible: PaletteEntry[] = [];
   let scrollback: string[] = []; // committed terminal lines (HTML)
   let lastFocused: Element | null = null;
+  let closeTimer: number | null = null; // pending hide after the close transition
 
   const isTerminal = (q: string) => COMMANDS.includes(q.trim().split(/\s+/)[0]?.toLowerCase());
 
   // ----- open / close -----
+  // The close animation hides the root only after the transition (or a 260ms
+  // fallback) so it can fade out. If the user re-opens within that window we
+  // must cancel the pending hide, or the stale timer would blank the freshly
+  // opened palette.
+  function finishClose() {
+    closeTimer = null;
+    root!.removeEventListener('transitionend', onCloseTransitionEnd);
+    if (root!.classList.contains('is-open')) return; // re-opened mid-transition
+    root!.hidden = true;
+  }
+  function onCloseTransitionEnd(e: TransitionEvent) {
+    if (e.target === root || (e.target as HTMLElement).classList?.contains('cmdk-dialog')) finishClose();
+  }
+
   function open() {
-    if (!root!.hidden) return;
-    lastFocused = document.activeElement;
+    if (closeTimer !== null) {
+      clearTimeout(closeTimer);
+      closeTimer = null;
+    }
+    root!.removeEventListener('transitionend', onCloseTransitionEnd);
+    const wasHidden = root!.hidden;
     root!.hidden = false;
     document.body.classList.add('cmdk-open');
     requestAnimationFrame(() => root!.classList.add('is-open'));
-    input!.value = '';
-    render();
+    if (wasHidden) {
+      lastFocused = document.activeElement;
+      input!.value = '';
+      render();
+    }
     input!.focus();
   }
 
@@ -160,15 +185,9 @@ function init() {
     if (root!.hidden) return;
     root!.classList.remove('is-open');
     document.body.classList.remove('cmdk-open');
-    const done = () => {
-      root!.hidden = true;
-      root!.removeEventListener('transitionend', onEnd);
-    };
-    const onEnd = (e: TransitionEvent) => {
-      if (e.target === root || (e.target as HTMLElement).classList?.contains('cmdk-dialog')) done();
-    };
-    root!.addEventListener('transitionend', onEnd);
-    setTimeout(done, 260); // fallback if transitionend doesn't fire
+    root!.addEventListener('transitionend', onCloseTransitionEnd);
+    if (closeTimer !== null) clearTimeout(closeTimer);
+    closeTimer = window.setTimeout(finishClose, 260); // fallback if transitionend doesn't fire
     if (lastFocused instanceof HTMLElement) lastFocused.focus();
   }
 
@@ -312,13 +331,16 @@ function init() {
 
       case 'grep': {
         if (!arg) return muted('usage: grep <term>');
-        const re = new RegExp(arg.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+        // Escape regex metacharacters once: a query like `grep c++` would
+        // otherwise build an invalid pattern and throw on every keystroke.
+        const safe = arg.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const re = new RegExp(safe, 'i');
         const hits: string[] = [];
         corpus().forEach((e) => {
           const text = `${e.title}. ${e.subtitle ?? ''} ${e.body ?? ''}`;
           text.split(/(?<=[.!?\n])\s+/).forEach((sentence) => {
             if (re.test(sentence)) {
-              const hl = escapeHtml(sentence.trim()).replace(new RegExp(`(${escapeHtml(arg)})`, 'ig'), '<mark>$1</mark>');
+              const hl = escapeHtml(sentence.trim()).replace(new RegExp(`(${safe})`, 'ig'), '<mark>$1</mark>');
               hits.push(line('', `<span class="cmdk-term-path">${escapeHtml(e.href ?? e.id)}:</span> ${hl}`));
             }
           });
@@ -336,7 +358,8 @@ function init() {
       case 'theme': {
         const mode = arg.toLowerCase();
         if (!preview) applyTheme(mode === 'dark' || mode === 'light' ? mode : 'toggle');
-        const now = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
+        // After applyTheme, html.dark reflects the *new* state — report it as-is.
+        const now = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
         return line('', `theme → <span class="cmdk-term-key">${preview ? (mode || 'toggle') : now}</span>`);
       }
 
@@ -357,10 +380,10 @@ function init() {
       }
 
       case 'clear':
-        if (!preview) {
-          scrollback = [];
-          requestAnimationFrame(() => (list!.innerHTML = '<div class="cmdk-term"></div>'));
-        }
+        // Just drop the scrollback. The Enter handler clears the input and
+        // calls render() next, which repaints from the (now empty) state — a
+        // queued rAF wipe here would race that render and blank the palette.
+        if (!preview) scrollback = [];
         return '';
 
       default:
@@ -408,9 +431,6 @@ function init() {
       case 'toggle-theme':
         applyTheme('toggle');
         break;
-      case 'print':
-        close();
-        break;
     }
   }
 
@@ -422,6 +442,13 @@ function init() {
     if (e.key === 'Escape') {
       e.preventDefault();
       close();
+      return;
+    }
+    // Focus trap: the input is the only focusable control in the dialog, so
+    // Tab/Shift+Tab would otherwise escape to the nav/page behind the overlay.
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      input.focus();
       return;
     }
     if (terminal) {
@@ -495,6 +522,14 @@ function init() {
   });
 
   overlay?.addEventListener('click', close);
+
+  // Belt-and-suspenders focus trap: if focus escapes the open dialog (e.g. a
+  // programmatic move), pull it back to the input.
+  document.addEventListener('focusin', (e) => {
+    if (root!.hidden) return;
+    const dialog = root!.querySelector('.cmdk-dialog');
+    if (dialog && !dialog.contains(e.target as Node)) input.focus();
+  });
 
   // Global hotkeys: ⌘K / Ctrl+K toggles; "/" opens when not already typing.
   document.addEventListener('keydown', (e) => {

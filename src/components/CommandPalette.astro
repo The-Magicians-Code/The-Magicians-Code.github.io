@@ -23,6 +23,21 @@ const projects = (await getCollection('projects'))
   .filter((p) => !p.data.draft)
   .sort((a, b) => a.data.order - b.data.order);
 
+// Flatten a project's Markdown body to plain text so `grep`/`cat` can search
+// the full detail page, not just the frontmatter description (the detail route
+// renders the same body via <Content />).
+function mdToText(md: string): string {
+  return md
+    .replace(/```[\s\S]*?```/g, ' ') // fenced code blocks
+    .replace(/`[^`]*`/g, ' ') // inline code
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ') // images
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1') // links → text
+    .replace(/^[>#\-*+\s]+/gm, ' ') // leading md punctuation
+    .replace(/[*_~`#>]/g, ' ') // inline md punctuation
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 const languages = resume.skills.find((s) => s.label === 'Languages')?.items ?? [];
 const allSkills = resume.skills.map((g) => `${g.label}: ${g.items.join(', ')}`).join(' · ');
 const email = resume.contact[0].label;
@@ -39,7 +54,7 @@ interface PaletteEntry {
   subtitle?: string;
   keywords?: string[];
   body?: string; // plain-text used by `cat` / `grep`
-  action: 'navigate' | 'open-url' | 'copy-email' | 'toggle-theme' | 'print';
+  action: 'navigate' | 'open-url' | 'copy-email' | 'toggle-theme';
   href?: string;
 }
 
@@ -60,7 +75,7 @@ const entries: PaletteEntry[] = [
     title: titleToText(p.data.title),
     subtitle: p.data.description,
     keywords: ['project', 'repo', p.id],
-    body: p.data.description,
+    body: `${p.data.description} ${mdToText(p.body ?? '')}`.trim(),
     action: 'navigate' as const,
     href: `/projects/${p.id}/`,
   })),
@@ -184,13 +199,20 @@ const meta = {
   </div>
 </div>
 
-<script type="application/json" id="cmdk-data" is:inline set:html={JSON.stringify({ entries, meta })} />
+<script
+  type="application/json"
+  id="cmdk-data"
+  is:inline
+  set:html={JSON.stringify({ entries, meta }).replace(/</g, '\\u003c')}
+/>
 
 <style>
   .cmdk-root {
     position: fixed;
     inset: 0;
-    z-index: 120;
+    /* Above the bento case-study modal (backdrop 200 / card 201) so ⌘K never
+       opens the palette hidden behind an open case study. */
+    z-index: 300;
     display: grid;
     grid-template-rows: 1fr;
     justify-items: center;
@@ -199,8 +221,12 @@ const meta = {
   }
   .cmdk-root[hidden] { display: none; }
 
-  /* Scrollbars are hidden globally, so locking scroll causes no layout shift. */
+  /* Scroll lock. Scrollbars are hidden globally so there's no layout shift,
+     but global.css sets html{overflow-x:clip} which makes <html> the real
+     scroller — so body{overflow:hidden} alone won't stop the background from
+     scrolling. Lock html too, matching the bento modal precedent. */
   :global(body.cmdk-open) { overflow: hidden; }
+  :global(html:has(body.cmdk-open)) { overflow-y: hidden; }
 
   .cmdk-overlay {
     position: fixed;
