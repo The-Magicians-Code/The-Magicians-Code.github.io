@@ -206,7 +206,12 @@ const meta = {
   set:html={JSON.stringify({ entries, meta }).replace(/</g, '\\u003c')}
 />
 
-<style>
+<!-- is:global is required: the result rows, group labels and terminal lines are
+     injected at runtime via innerHTML in command-palette.ts, so they never
+     receive Astro's scoped-style attribute. Scoped CSS would only reach the
+     server-rendered chrome (dialog/input/footer), leaving the dynamic rows
+     unstyled. All selectors here are .cmdk-* namespaced, so global is safe. -->
+<style is:global>
   .cmdk-root {
     position: fixed;
     inset: 0;
