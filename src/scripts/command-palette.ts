@@ -432,11 +432,8 @@ function init() {
 
   input.addEventListener('keydown', (e) => {
     const terminal = isTerminal(input.value);
-    if (e.key === 'Escape') {
-      e.preventDefault();
-      close();
-      return;
-    }
+    // Esc is handled by the document-level listener (see below) so it works
+    // even when focus isn't on the input.
     // Focus trap: the input is the only focusable control in the dialog, so
     // Tab/Shift+Tab would otherwise escape to the nav/page behind the overlay.
     if (e.key === 'Tab') {
@@ -511,6 +508,10 @@ function init() {
       const idx = Number(item.dataset.idx);
       const entry = visible[idx];
       if (entry) runAction(entry);
+      // For actions that keep the palette open (e.g. theme toggle), the click
+      // may have moved focus off the input; restore it so keyboard nav and the
+      // Esc/Tab handlers keep working.
+      if (!root!.hidden) input.focus();
     }
   });
 
@@ -526,6 +527,15 @@ function init() {
 
   // Global hotkeys: ⌘K / Ctrl+K toggles; "/" opens when not already typing.
   document.addEventListener('keydown', (e) => {
+    // Esc closes whenever the palette is open. Handled at the document level
+    // (not just on the input) so it still works after an in-palette action that
+    // keeps the dialog open but moves focus off the input — e.g. clicking the
+    // theme toggle, which in some engines blurs focus to <body>.
+    if (e.key === 'Escape' && !root!.hidden) {
+      e.preventDefault();
+      close();
+      return;
+    }
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
       e.preventDefault();
       toggle();
