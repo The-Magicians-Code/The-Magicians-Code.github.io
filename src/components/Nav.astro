@@ -494,9 +494,9 @@ const isDev = import.meta.env.DEV;
               ev.target.textContent = 'Copied ✓';
               setTimeout(() => { ev.target.textContent = 'Copy values'; }, 1200);
             } catch {
-              const ta = document.getElementById('nav-tuner-output');
-              ta.select();
-              document.execCommand('copy');
+              // Clipboard API blocked (rare; dev-only tool). Select the output
+              // so it can be copied manually with ⌘/Ctrl+C.
+              document.getElementById('nav-tuner-output').select();
             }
           });
 
