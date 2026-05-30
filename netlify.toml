@@ -1,0 +1,17 @@
+# Netlify config — used for per-PR Deploy Previews.
+# Production stays on GitHub Pages (themagicianscode.dev) via
+# .github/workflows/deploy.yml. Netlify never serves the custom domain (we
+# don't point DNS at it), so its build is only ever reached through the
+# *.netlify.app preview URLs.
+#
+# One-time setup: connect this repo at app.netlify.com (Add new site → Import
+# an existing project → GitHub → pick this repo). Netlify auto-detects this
+# file. With the Netlify GitHub App installed, every PR gets a Deploy Preview
+# URL posted as a check. No secrets are stored in the repo.
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
