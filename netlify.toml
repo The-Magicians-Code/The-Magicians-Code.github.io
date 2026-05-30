@@ -18,7 +18,8 @@
   publish = "dist"
 
 [build.environment]
-  NODE_VERSION = "20"
+  # Astro 6 requires Node >=22.12.0 (see astro engines field); 20 fails the build.
+  NODE_VERSION = "22"
 
 # main is already live on GitHub Pages, so don't waste a Netlify production
 # build on it. `ignore` exiting 0 tells Netlify "nothing to build" → the
