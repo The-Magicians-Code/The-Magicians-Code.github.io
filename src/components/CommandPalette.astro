@@ -230,8 +230,8 @@ const meta = {
      but global.css sets html{overflow-x:clip} which makes <html> the real
      scroller — so body{overflow:hidden} alone won't stop the background from
      scrolling. Lock html too, matching the bento modal precedent. */
-  :global(body.cmdk-open) { overflow: hidden; }
-  :global(html:has(body.cmdk-open)) { overflow-y: hidden; }
+  body.cmdk-open { overflow: hidden; }
+  html:has(body.cmdk-open) { overflow-y: hidden; }
 
   .cmdk-overlay {
     position: fixed;
@@ -263,7 +263,7 @@ const meta = {
 
   /* The liquid-glass upgrade applies its own translucent backdrop on Chromium;
      keep a near-opaque paper tint underneath so text stays legible. */
-  :global(html.lg-no-svg-backdrop) .cmdk-dialog,
+  html.lg-no-svg-backdrop .cmdk-dialog,
   .cmdk-dialog { background: color-mix(in oklab, var(--paper) 94%, transparent); }
 
   .cmdk-input-row {
