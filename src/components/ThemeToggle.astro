@@ -114,13 +114,8 @@ import { Icon } from 'astro-icon/components';
 </style>
 
 <script>
-  const THEME_KEY = 'theme-preference';
-
-  const handleClick = () => {
-    const isDark = document.documentElement.classList.toggle('dark');
-    localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light');
-  };
+  import { applyTheme } from '../lib/theme';
 
   const button = document.getElementById('theme-toggle-button');
-  button?.addEventListener('click', handleClick);
+  button?.addEventListener('click', () => applyTheme('toggle'));
 </script>

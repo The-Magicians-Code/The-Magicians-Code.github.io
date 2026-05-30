@@ -10,6 +10,8 @@
  * becomes a shell transcript that operates over the same index.
  */
 
+import { applyTheme } from '../lib/theme';
+
 interface PaletteEntry {
   id: string;
   group: string;
@@ -39,7 +41,6 @@ declare global {
   }
 }
 
-const THEME_KEY = 'theme-preference';
 const COMMANDS = ['help', 'ls', 'cat', 'grep', 'whoami', 'open', 'theme', 'email', 'clear', 'ask'];
 
 // Minimal inline-SVG sprite (lucide path data). The client module injects
@@ -357,10 +358,11 @@ function init() {
 
       case 'theme': {
         const mode = arg.toLowerCase();
-        if (!preview) applyTheme(mode === 'dark' || mode === 'light' ? mode : 'toggle');
-        // After applyTheme, html.dark reflects the *new* state — report it as-is.
-        const now = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
-        return line('', `theme → <span class="cmdk-term-key">${preview ? (mode || 'toggle') : now}</span>`);
+        const requested = mode === 'dark' || mode === 'light' ? mode : 'toggle';
+        // applyTheme returns the resulting state, so we report exactly what was
+        // applied (in preview we just echo the requested mode).
+        const label = preview ? mode || 'toggle' : applyTheme(requested) ? 'dark' : 'light';
+        return line('', `theme → <span class="cmdk-term-key">${label}</span>`);
       }
 
       case 'email':
@@ -401,15 +403,6 @@ function init() {
   }
 
   // ----- actions -----
-  function applyTheme(mode: 'dark' | 'light' | 'toggle') {
-    const html = document.documentElement;
-    const dark = mode === 'toggle' ? !html.classList.contains('dark') : mode === 'dark';
-    html.classList.toggle('dark', dark);
-    try {
-      localStorage.setItem(THEME_KEY, dark ? 'dark' : 'light');
-    } catch {}
-  }
-
   function copyEmail() {
     navigator.clipboard?.writeText(meta.email).catch(() => {});
   }
