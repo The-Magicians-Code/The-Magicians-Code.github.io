@@ -26,6 +26,18 @@ const isDev = import.meta.env.DEV;
       <div class="flex-1"></div>
       <div class="side-wrap actions-wrap">
         <div class="nav-actions">
+          <button
+            id="cmdk-trigger"
+            type="button"
+            class="cmdk-trigger"
+            data-cmdk-open
+            aria-label="Open command palette"
+            aria-keyshortcuts="Meta+K Control+K"
+          >
+            <Icon name="lucide:search" class="cmdk-trigger-icon" aria-hidden="true" />
+            <span class="cmdk-trigger-label">Search</span>
+            <kbd class="cmdk-trigger-kbd" aria-hidden="true">⌘K</kbd>
+          </button>
           <ThemeToggle />
           <button
             id="hamburger-button"
@@ -45,6 +57,50 @@ const isDev = import.meta.env.DEV;
     </div>
   </div>
 </nav>
+
+<style>
+  /* Command-palette trigger — sits with the nav actions. Reads as a quiet
+     search affordance with a keyboard hint; collapses to an icon on mobile. */
+  .cmdk-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 34px;
+    padding: 0 10px;
+    border-radius: 999px;
+    border: 1px solid var(--rule);
+    background: color-mix(in oklab, var(--ink) 4%, transparent);
+    color: var(--ink-dim);
+    font-family: var(--font-sans);
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+  }
+  .cmdk-trigger:hover {
+    color: var(--ink);
+    border-color: color-mix(in oklab, var(--ink) 22%, transparent);
+  }
+  .cmdk-trigger-icon {
+    width: 16px;
+    height: 16px;
+    flex: none;
+  }
+  .cmdk-trigger-kbd {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    line-height: 1;
+    padding: 3px 5px;
+    border-radius: 5px;
+    border: 1px solid var(--rule);
+    color: var(--ink-3);
+  }
+  /* Below the desktop breakpoint, show just the magnifier icon. */
+  @media (max-width: 640px) {
+    .cmdk-trigger { padding: 0; width: 34px; justify-content: center; }
+    .cmdk-trigger-label,
+    .cmdk-trigger-kbd { display: none; }
+  }
+</style>
 
 <script>
   // When the Home brand is clicked AND we're already on the home page,

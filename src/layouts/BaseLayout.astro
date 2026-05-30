@@ -5,6 +5,7 @@ import '../styles/liquid-glass.css';
 import Nav from '../components/Nav.astro';
 import MobileMenu from '../components/MobileMenu.astro';
 import SiteFooter from '../components/SiteFooter.astro';
+import CommandPalette from '../components/CommandPalette.astro';
 
 interface Props {
   title: string;
@@ -119,6 +120,10 @@ const personSchema = {
     </script>
 
     <script>
+      import '../scripts/command-palette';
+    </script>
+
+    <script>
       // Dev-only element picker. The `import.meta.env.DEV` guard is a Vite
       // build-time constant, so the dynamic import is dead-code-eliminated in
       // production and `pick-mode` never enters the prod bundle graph.
@@ -132,5 +137,6 @@ const personSchema = {
     <MobileMenu />
     <slot />
     <SiteFooter />
+    <CommandPalette />
   </body>
 </html>
