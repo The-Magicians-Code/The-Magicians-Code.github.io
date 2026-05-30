@@ -212,6 +212,11 @@ html.dark .bento:hover {
   position: fixed;
   inset: 0 0 auto 0;
   z-index: 40;
+  /* Suppress double-tap-to-zoom (and the legacy ~300ms tap delay) across the
+     whole nav bar and its mobile dropdown. `manipulation` keeps normal scroll
+     and pinch-zoom; an ancestor opting out is enough to disable double-tap zoom
+     for taps on any descendant link/button. */
+  touch-action: manipulation;
 }
 
 /* When a bento case-study modal is open, the backdrop (z:200) visually

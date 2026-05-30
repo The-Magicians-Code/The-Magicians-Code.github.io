@@ -100,6 +100,19 @@ import { Icon } from 'astro-icon/components';
     filter: blur(0);
   }
 
+  /* Mobile: icon-only. The labelled ("Sol"/"Lua") variant is destined for the
+     dropdown menu, where text beside the icon reads well; in the compact nav we
+     drop the label and collapse the pill to a square icon button. */
+  @media (max-width: 640px) {
+    #theme-toggle-button {
+      width: 36px;
+      padding: 0;
+      gap: 0;
+      justify-content: center;
+    }
+    #theme-toggle-button .tt-label { display: none; }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     #theme-toggle-button,
     #theme-toggle-button .icon-sun,
@@ -114,13 +127,8 @@ import { Icon } from 'astro-icon/components';
 </style>
 
 <script>
-  const THEME_KEY = 'theme-preference';
-
-  const handleClick = () => {
-    const isDark = document.documentElement.classList.toggle('dark');
-    localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light');
-  };
+  import { applyTheme } from '../lib/theme';
 
   const button = document.getElementById('theme-toggle-button');
-  button?.addEventListener('click', handleClick);
+  button?.addEventListener('click', () => applyTheme('toggle'));
 </script>

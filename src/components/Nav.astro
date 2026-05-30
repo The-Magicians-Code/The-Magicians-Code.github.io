@@ -26,6 +26,18 @@ const isDev = import.meta.env.DEV;
       <div class="flex-1"></div>
       <div class="side-wrap actions-wrap">
         <div class="nav-actions">
+          <button
+            id="cmdk-trigger"
+            type="button"
+            class="cmdk-trigger"
+            data-cmdk-open
+            aria-label="Open command palette"
+            aria-keyshortcuts="Meta+K Control+K"
+          >
+            <Icon name="lucide:search" class="cmdk-trigger-icon" aria-hidden="true" />
+            <span class="cmdk-trigger-label">Search</span>
+            <kbd class="cmdk-trigger-kbd" aria-hidden="true">⌘K</kbd>
+          </button>
           <ThemeToggle />
           <button
             id="hamburger-button"
@@ -45,6 +57,50 @@ const isDev = import.meta.env.DEV;
     </div>
   </div>
 </nav>
+
+<style>
+  /* Command-palette trigger — sits with the nav actions. Reads as a quiet
+     search affordance with a keyboard hint; collapses to an icon on mobile. */
+  .cmdk-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 34px;
+    padding: 0 10px;
+    border-radius: 999px;
+    border: 1px solid var(--rule);
+    background: color-mix(in oklab, var(--ink) 4%, transparent);
+    color: var(--ink-dim);
+    font-family: var(--font-sans);
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+  }
+  .cmdk-trigger:hover {
+    color: var(--ink);
+    border-color: color-mix(in oklab, var(--ink) 22%, transparent);
+  }
+  .cmdk-trigger-icon {
+    width: 16px;
+    height: 16px;
+    flex: none;
+  }
+  .cmdk-trigger-kbd {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    line-height: 1;
+    padding: 3px 5px;
+    border-radius: 5px;
+    border: 1px solid var(--rule);
+    color: var(--ink-3);
+  }
+  /* Below the desktop breakpoint, show just the magnifier icon. */
+  @media (max-width: 640px) {
+    .cmdk-trigger { padding: 0; width: 34px; justify-content: center; }
+    .cmdk-trigger-label,
+    .cmdk-trigger-kbd { display: none; }
+  }
+</style>
 
 <script>
   // When the Home brand is clicked AND we're already on the home page,
@@ -67,7 +123,7 @@ const isDev = import.meta.env.DEV;
   <Fragment>
     <div class="nav-progressive-blur" aria-hidden="true" data-scroll-lock-compensate></div>
 
-    <aside id="nav-tuner-panel" class="nav-tuner mode-simple collapsed" aria-label="Liquid glass tuner" data-scroll-lock-compensate>
+    <aside id="nav-tuner-panel" class="nav-tuner mode-simple collapsed is-hidden" aria-label="Liquid glass tuner" data-scroll-lock-compensate>
       <header class="nav-tuner__head">
         <span>Nav glass tuner</span>
         <button type="button" id="nav-tuner-toggle" aria-label="Expand tuner">+</button>
@@ -178,6 +234,8 @@ const isDev = import.meta.env.DEV;
         gap: 10px;
       }
       .nav-tuner.collapsed .nav-tuner__body { display: none; }
+      /* Hidden until summoned with ⌘/Ctrl+Shift+G (or #tuner in the URL). */
+      .nav-tuner.is-hidden { display: none; }
       .nav-tuner label {
         display: flex;
         flex-direction: column;
@@ -436,9 +494,9 @@ const isDev = import.meta.env.DEV;
               ev.target.textContent = 'Copied ✓';
               setTimeout(() => { ev.target.textContent = 'Copy values'; }, 1200);
             } catch {
-              const ta = document.getElementById('nav-tuner-output');
-              ta.select();
-              document.execCommand('copy');
+              // Clipboard API blocked (rare; dev-only tool). Select the output
+              // so it can be copied manually with ⌘/Ctrl+C.
+              document.getElementById('nav-tuner-output').select();
             }
           });
 
@@ -452,11 +510,45 @@ const isDev = import.meta.env.DEV;
             apply();
           });
 
-          document.getElementById('nav-tuner-toggle').addEventListener('click', (ev) => {
+          const collapseBtn = document.getElementById('nav-tuner-toggle');
+          collapseBtn.addEventListener('click', (ev) => {
             const collapsed = panel.classList.toggle('collapsed');
             ev.target.textContent = collapsed ? '+' : '−';
             ev.target.setAttribute('aria-label', collapsed ? 'Expand tuner' : 'Collapse tuner');
           });
+
+          // Hidden by default; summon with ⌘/Ctrl+Shift+G (state persisted),
+          // or force it open with #tuner / ?tuner in the URL.
+          const VISIBLE_KEY = 'navTunerVisible';
+          function setVisible(visible, persist = true) {
+            panel.classList.toggle('is-hidden', !visible);
+            if (visible) {
+              // Open ready-to-use rather than as a bare collapsed header.
+              panel.classList.remove('collapsed');
+              collapseBtn.textContent = '−';
+              collapseBtn.setAttribute('aria-label', 'Collapse tuner');
+            }
+            if (persist) {
+              try { localStorage.setItem(VISIBLE_KEY, visible ? '1' : '0'); } catch {}
+            }
+          }
+
+          let storedVisible = null;
+          try { storedVisible = localStorage.getItem(VISIBLE_KEY); } catch {}
+          const forcedOpen = location.hash === '#tuner'
+            || new URLSearchParams(location.search).has('tuner');
+          setVisible(forcedOpen || storedVisible === '1', false);
+
+          window.addEventListener('keydown', (ev) => {
+            if ((ev.metaKey || ev.ctrlKey) && ev.shiftKey && (ev.key === 'g' || ev.key === 'G')) {
+              ev.preventDefault();
+              setVisible(panel.classList.contains('is-hidden'));
+            }
+          });
+
+          if (import.meta.env.DEV) {
+            console.info('[nav-tuner] hidden — press ⌘/Ctrl+Shift+G to toggle (or add #tuner to the URL).');
+          }
 
           pushCssVars();
           apply();
