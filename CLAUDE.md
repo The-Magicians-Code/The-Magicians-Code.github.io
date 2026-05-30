@@ -46,7 +46,7 @@ The nav pill's refraction effect is the most non-obvious system in the repo. It'
 
 **Design context:** [docs/superpowers/specs/2026-05-08-liquid-glass-module-design.md](docs/superpowers/specs/2026-05-08-liquid-glass-module-design.md) captures the architectural decisions, the codex-rescue review findings that shaped the spec (the original `var(--lg-filter, none)` chain was invalid CSS that would have dropped the whole declaration), explicit non-goals (no dynamic-mount support, no per-element filter cleanup on DOM removal), and acceptance criteria. Read this before refactoring the module.
 
-**Nav-specific tuner:** [src/components/Nav.astro](src/components/Nav.astro) renders a sliders panel inside `{isDev && (...)}` (only in `import.meta.env.DEV`). It writes the eight module CSS vars to `#nav-pill`'s inline style and calls `window.__lg.refresh(pill)`, plus mutates two nav-only knobs (`glassBg`, `progBlur`) that the module itself doesn't know about.
+**Nav-specific tuner:** [src/components/Nav.astro](src/components/Nav.astro) renders a sliders panel inside `{isDev && (...)}` (only in `import.meta.env.DEV`). It writes the eight module CSS vars to `#nav-pill`'s inline style and calls `window.__lg.refresh(pill)`, plus mutates two nav-only knobs (`glassBg`, `progBlur`) that the module itself doesn't know about. The panel is **hidden by default** even in dev — summon it with `⌘/Ctrl+Shift+G` (visibility persists in `localStorage` under `navTunerVisible`) or force it open with `#tuner`/`?tuner` in the URL. Showing it auto-expands the body; the in-panel `+/−` button still collapses to a header.
 
 ## Content Collections
 

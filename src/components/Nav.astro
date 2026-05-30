@@ -123,7 +123,7 @@ const isDev = import.meta.env.DEV;
   <Fragment>
     <div class="nav-progressive-blur" aria-hidden="true" data-scroll-lock-compensate></div>
 
-    <aside id="nav-tuner-panel" class="nav-tuner mode-simple collapsed" aria-label="Liquid glass tuner" data-scroll-lock-compensate>
+    <aside id="nav-tuner-panel" class="nav-tuner mode-simple collapsed is-hidden" aria-label="Liquid glass tuner" data-scroll-lock-compensate>
       <header class="nav-tuner__head">
         <span>Nav glass tuner</span>
         <button type="button" id="nav-tuner-toggle" aria-label="Expand tuner">+</button>
@@ -234,6 +234,8 @@ const isDev = import.meta.env.DEV;
         gap: 10px;
       }
       .nav-tuner.collapsed .nav-tuner__body { display: none; }
+      /* Hidden until summoned with ⌘/Ctrl+Shift+G (or #tuner in the URL). */
+      .nav-tuner.is-hidden { display: none; }
       .nav-tuner label {
         display: flex;
         flex-direction: column;
@@ -508,11 +510,45 @@ const isDev = import.meta.env.DEV;
             apply();
           });
 
-          document.getElementById('nav-tuner-toggle').addEventListener('click', (ev) => {
+          const collapseBtn = document.getElementById('nav-tuner-toggle');
+          collapseBtn.addEventListener('click', (ev) => {
             const collapsed = panel.classList.toggle('collapsed');
             ev.target.textContent = collapsed ? '+' : '−';
             ev.target.setAttribute('aria-label', collapsed ? 'Expand tuner' : 'Collapse tuner');
           });
+
+          // Hidden by default; summon with ⌘/Ctrl+Shift+G (state persisted),
+          // or force it open with #tuner / ?tuner in the URL.
+          const VISIBLE_KEY = 'navTunerVisible';
+          function setVisible(visible, persist = true) {
+            panel.classList.toggle('is-hidden', !visible);
+            if (visible) {
+              // Open ready-to-use rather than as a bare collapsed header.
+              panel.classList.remove('collapsed');
+              collapseBtn.textContent = '−';
+              collapseBtn.setAttribute('aria-label', 'Collapse tuner');
+            }
+            if (persist) {
+              try { localStorage.setItem(VISIBLE_KEY, visible ? '1' : '0'); } catch {}
+            }
+          }
+
+          let storedVisible = null;
+          try { storedVisible = localStorage.getItem(VISIBLE_KEY); } catch {}
+          const forcedOpen = location.hash === '#tuner'
+            || new URLSearchParams(location.search).has('tuner');
+          setVisible(forcedOpen || storedVisible === '1', false);
+
+          window.addEventListener('keydown', (ev) => {
+            if ((ev.metaKey || ev.ctrlKey) && ev.shiftKey && (ev.key === 'g' || ev.key === 'G')) {
+              ev.preventDefault();
+              setVisible(panel.classList.contains('is-hidden'));
+            }
+          });
+
+          if (import.meta.env.DEV) {
+            console.info('[nav-tuner] hidden — press ⌘/Ctrl+Shift+G to toggle (or add #tuner to the URL).');
+          }
 
           pushCssVars();
           apply();
