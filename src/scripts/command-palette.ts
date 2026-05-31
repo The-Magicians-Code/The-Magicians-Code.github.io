@@ -146,8 +146,27 @@ function init() {
   let scrollback: string[] = []; // committed terminal lines (HTML)
   let lastFocused: Element | null = null;
   let closeTimer: number | null = null; // pending hide after the close transition
+  let prevHtmlOverflow = ''; // saved html overflow for the JS scroll lock
 
   const isTerminal = (q: string) => COMMANDS.includes(q.trim().split(/\s+/)[0]?.toLowerCase());
+
+  // Scroll lock driven from JS, not just CSS. The CSS rule relies on
+  // `html:has(body.cmdk-open)`, but <html> is the real scroller here and :has()
+  // isn't supported everywhere (older Safari/Firefox, some in-app webviews) —
+  // where it's missing the background scrolls freely behind the palette. Lock
+  // <html> directly so it works regardless of :has() support and for wheel and
+  // trackpad scroll (the touchmove guard below only covers touch). Not
+  // position:fixed — see CLAUDE.md, that broke scroll position twice on iOS.
+  // Scrollbars are hidden globally (scrollbar-width:none), so there's no shift.
+  function lockScroll() {
+    const html = document.documentElement;
+    prevHtmlOverflow = html.style.overflow;
+    html.style.overflow = 'hidden';
+  }
+  function unlockScroll() {
+    document.documentElement.style.overflow = prevHtmlOverflow;
+  }
+
 
   // ----- open / close -----
   // The close animation hides the root only after the transition (or a 260ms
@@ -175,6 +194,7 @@ function init() {
     document.body.classList.add('cmdk-open');
     requestAnimationFrame(() => root!.classList.add('is-open'));
     if (wasHidden) {
+      lockScroll();
       lastFocused = document.activeElement;
       input!.value = '';
       render();
@@ -186,6 +206,7 @@ function init() {
     if (root!.hidden) return;
     root!.classList.remove('is-open');
     document.body.classList.remove('cmdk-open');
+    unlockScroll();
     root!.addEventListener('transitionend', onCloseTransitionEnd);
     if (closeTimer !== null) clearTimeout(closeTimer);
     closeTimer = window.setTimeout(finishClose, 260); // fallback if transitionend doesn't fire
