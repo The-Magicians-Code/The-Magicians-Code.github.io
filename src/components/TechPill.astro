@@ -1,27 +1,34 @@
 ---
-// Reusable squircle pill: brand logo on a light plate (left) + name (right).
-// The raw SVGs are inlined from src/assets/logos/ via a ?raw glob, so the markup
-// ships with zero runtime/CDN icon dependency. The plate stays a constant light
-// surface in both themes so full-colour brand marks (incl. dark ones like
-// PostgreSQL/Kubernetes) stay legible; the pill shell + label recolour with the
-// theme toggle. Items without a brand mark fall back to a `mono` monogram.
+// Reusable squircle pill: brand logo + name on the same layer (no plate).
+// Raw SVGs are inlined from src/assets/logos/ via a ?raw glob, so the markup
+// ships with zero runtime/CDN icon dependency. Logos that are too dark/light to
+// read on both themes have a `<slug>.dark.svg` knockout that the CSS swaps in
+// under html.dark; full-colour marks legible on both just render once. Generic
+// glyphs (SQL/REST) and mono knockouts inherit currentColor from the label, so
+// they recolour with the theme toggle.
 import type { TechItem } from '../data/techStack';
 
 type Props = TechItem;
-const { name, slug, mono, featured = false } = Astro.props;
+const { name, slug, featured = false } = Astro.props;
 
 const logos = import.meta.glob<string>('../assets/logos/*.svg', {
   eager: true,
   query: '?raw',
   import: 'default',
 });
-const svg = slug ? logos[`../assets/logos/${slug}.svg`] : undefined;
+const light = logos[`../assets/logos/${slug}.svg`];
+const dark = logos[`../assets/logos/${slug}.dark.svg`];
 ---
 
 <li class:list={['tech-pill', { 'is-featured': featured }]}>
-  <span class="tech-pill__plate">
-    {svg ? <Fragment set:html={svg} /> : <span class="tech-pill__mono">{mono ?? name.slice(0, 2)}</span>}
-  </span>
+  {dark ? (
+    <Fragment>
+      <span class="tech-pill__logo tech-pill__logo--light" set:html={light} />
+      <span class="tech-pill__logo tech-pill__logo--dark" set:html={dark} />
+    </Fragment>
+  ) : (
+    <span class="tech-pill__logo" set:html={light} />
+  )}
   <span class="tech-pill__label">{name}</span>
 </li>
 
@@ -29,9 +36,10 @@ const svg = slug ? logos[`../assets/logos/${slug}.svg`] : undefined;
   .tech-pill {
     display: inline-flex;
     align-items: center;
-    gap: 9px;
-    padding: 4px 14px 4px 4px;
+    gap: 8px;
+    padding: 6px 14px;
     border-radius: 999px;
+    color: var(--ink);
     background: rgba(26, 26, 28, 0.05);
     border: 1px solid var(--rule);
     transition:
@@ -46,33 +54,26 @@ const svg = slug ? logos[`../assets/logos/${slug}.svg`] : undefined;
     transform: translateY(-2px);
   }
 
-  /* Constant light plate — the white circle from the design. Keeps brand
-     colours readable on either theme; mono monograms inherit a dark ink. */
-  .tech-pill__plate {
+  .tech-pill__logo {
     flex: none;
     display: grid;
     place-items: center;
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    background: #faf8f3;
-    color: #1a1a1c;
-    box-shadow:
-      inset 0 0 0 1px rgba(26, 26, 28, 0.06),
-      0 2px 5px -1px rgba(26, 26, 28, 0.22);
   }
-  .tech-pill__plate :global(svg) {
-    width: 19px;
-    height: 19px;
+  .tech-pill__logo :global(svg) {
+    width: 18px;
+    height: 18px;
     display: block;
   }
 
-  .tech-pill__mono {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    color: #1a1a1c;
+  /* Per-theme logo swap for marks that need a knockout in one theme. */
+  .tech-pill__logo--dark {
+    display: none;
+  }
+  :global(html.dark) .tech-pill__logo--light {
+    display: none;
+  }
+  :global(html.dark) .tech-pill__logo--dark {
+    display: grid;
   }
 
   .tech-pill__label {
