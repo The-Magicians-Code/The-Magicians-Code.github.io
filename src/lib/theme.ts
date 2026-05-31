@@ -1,6 +1,6 @@
-// Single source of truth for runtime theme switching. Both the nav's
-// ThemeToggle button and the command palette drive the theme through here so
-// the persisted value and the applied `html.dark` class can't diverge.
+// Single source of truth for runtime theme switching. The nav's ThemeToggle
+// button drives the theme through here so the persisted value and the applied
+// `html.dark` class can't diverge.
 //
 // Note: BaseLayout's pre-paint <script is:inline> deliberately does NOT import
 // this — it must run before any module loads (to avoid a flash of the wrong
