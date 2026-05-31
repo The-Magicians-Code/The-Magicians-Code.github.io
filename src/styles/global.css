@@ -61,6 +61,10 @@ html.dark {
 html {
   background: var(--bg);
   color: var(--ink);
+  /* App-like mobile: keep text at its authored size (don't let iOS inflate
+     font sizes on orientation change) so the layout reads like a native app. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 /* Hide scrollbars globally while keeping scroll functionality.
@@ -89,6 +93,12 @@ body {
   position: relative;
   isolation: isolate;
   min-height: 100vh;
+  /* Suppress double-tap-to-zoom (and the legacy ~300ms tap delay) page-wide so
+     the site behaves like a native app. `manipulation` still permits normal
+     scrolling; pinch-zoom is blocked separately (viewport meta on Android,
+     gesture* listeners on iOS — see BaseLayout). The nav sets this on itself
+     too as a defensive belt; this body rule covers everything else. */
+  touch-action: manipulation;
 }
 
 ::selection { background: var(--ink); color: var(--bg); }

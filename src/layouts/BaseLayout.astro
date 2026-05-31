@@ -48,7 +48,10 @@ const personSchema = {
 <html lang="en" class="scroll-smooth">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
 
     <title>{title}</title>
     <meta name="description" content={description} />
@@ -93,6 +96,23 @@ const personSchema = {
           var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
           var useDark = saved ? saved === 'dark' : prefersDark;
           if (useDark) document.documentElement.classList.add('dark');
+        } catch (_) {}
+      })();
+    </script>
+
+    <script is:inline>
+      // App-like mobile: suppress browser zoom gestures.
+      // The viewport meta (maximum-scale=1, user-scalable=no) covers Android
+      // Chrome/Firefox, but iOS Safari has ignored user-scalable since iOS 10,
+      // so pinch-zoom must be cancelled at the gesture* events here. Double-tap
+      // zoom is handled separately by `touch-action: manipulation` in
+      // global.css. No imports allowed in is:inline scripts.
+      (function () {
+        try {
+          var prevent = function (e) { e.preventDefault(); };
+          document.addEventListener('gesturestart', prevent, { passive: false });
+          document.addEventListener('gesturechange', prevent, { passive: false });
+          document.addEventListener('gestureend', prevent, { passive: false });
         } catch (_) {}
       })();
     </script>
