@@ -1,0 +1,101 @@
+---
+// Reusable squircle pill: brand logo + name on the same layer (no plate).
+// Raw SVGs are inlined from src/assets/logos/ via a ?raw glob, so the markup
+// ships with zero runtime/CDN icon dependency. Logos that are too dark/light to
+// read on both themes have a `<slug>.dark.svg` knockout that the CSS swaps in
+// under html.dark; full-colour marks legible on both just render once. Mono
+// knockouts inherit currentColor from the label, so they recolour with the
+// theme toggle.
+import type { TechItem } from '../data/techStack';
+
+type Props = TechItem;
+const { name, slug, featured = false } = Astro.props;
+
+const logos = import.meta.glob<string>('../assets/logos/*.svg', {
+  eager: true,
+  query: '?raw',
+  import: 'default',
+});
+const light = logos[`../assets/logos/${slug}.svg`];
+const dark = logos[`../assets/logos/${slug}.dark.svg`];
+---
+
+<li class:list={['tech-pill', { 'is-featured': featured }]}>
+  {dark ? (
+    <Fragment>
+      <span class="tech-pill__logo tech-pill__logo--light" set:html={light} />
+      <span class="tech-pill__logo tech-pill__logo--dark" set:html={dark} />
+    </Fragment>
+  ) : (
+    <span class="tech-pill__logo" set:html={light} />
+  )}
+  <span class="tech-pill__label">{name}</span>
+</li>
+
+<style>
+  .tech-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    color: var(--ink);
+    background: rgba(26, 26, 28, 0.05);
+    border: 1px solid var(--rule);
+    transition:
+      transform 0.25s var(--ease),
+      background 0.25s var(--ease),
+      border-color 0.25s var(--ease);
+  }
+  :global(html.dark) .tech-pill {
+    background: rgba(255, 255, 255, 0.06);
+  }
+  .tech-pill:hover {
+    transform: translateY(-2px);
+  }
+
+  .tech-pill__logo {
+    flex: none;
+    display: grid;
+    place-items: center;
+  }
+  .tech-pill__logo :global(svg) {
+    width: 18px;
+    height: 18px;
+    display: block;
+  }
+
+  /* Per-theme logo swap for marks that need a knockout in one theme. */
+  .tech-pill__logo--dark {
+    display: none;
+  }
+  :global(html.dark) .tech-pill__logo--light {
+    display: none;
+  }
+  :global(html.dark) .tech-pill__logo--dark {
+    display: grid;
+  }
+
+  .tech-pill__label {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+
+  /* Featured = the tools previously emphasised with <em>: subtle accent ring. */
+  .tech-pill.is-featured {
+    background: var(--accent-soft);
+    border-color: transparent;
+    box-shadow: inset 0 0 0 1px var(--accent-soft);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tech-pill {
+      transition: none;
+    }
+    .tech-pill:hover {
+      transform: none;
+    }
+  }
+</style>
