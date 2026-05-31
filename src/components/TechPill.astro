@@ -1,0 +1,100 @@
+---
+// Reusable squircle pill: brand logo on a light plate (left) + name (right).
+// The raw SVGs are inlined from src/assets/logos/ via a ?raw glob, so the markup
+// ships with zero runtime/CDN icon dependency. The plate stays a constant light
+// surface in both themes so full-colour brand marks (incl. dark ones like
+// PostgreSQL/Kubernetes) stay legible; the pill shell + label recolour with the
+// theme toggle. Items without a brand mark fall back to a `mono` monogram.
+import type { TechItem } from '../data/techStack';
+
+type Props = TechItem;
+const { name, slug, mono, featured = false } = Astro.props;
+
+const logos = import.meta.glob<string>('../assets/logos/*.svg', {
+  eager: true,
+  query: '?raw',
+  import: 'default',
+});
+const svg = slug ? logos[`../assets/logos/${slug}.svg`] : undefined;
+---
+
+<li class:list={['tech-pill', { 'is-featured': featured }]}>
+  <span class="tech-pill__plate">
+    {svg ? <Fragment set:html={svg} /> : <span class="tech-pill__mono">{mono ?? name.slice(0, 2)}</span>}
+  </span>
+  <span class="tech-pill__label">{name}</span>
+</li>
+
+<style>
+  .tech-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    padding: 4px 14px 4px 4px;
+    border-radius: 999px;
+    background: rgba(26, 26, 28, 0.05);
+    border: 1px solid var(--rule);
+    transition:
+      transform 0.25s var(--ease),
+      background 0.25s var(--ease),
+      border-color 0.25s var(--ease);
+  }
+  :global(html.dark) .tech-pill {
+    background: rgba(255, 255, 255, 0.06);
+  }
+  .tech-pill:hover {
+    transform: translateY(-2px);
+  }
+
+  /* Constant light plate — the white circle from the design. Keeps brand
+     colours readable on either theme; mono monograms inherit a dark ink. */
+  .tech-pill__plate {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #faf8f3;
+    color: #1a1a1c;
+    box-shadow:
+      inset 0 0 0 1px rgba(26, 26, 28, 0.06),
+      0 2px 5px -1px rgba(26, 26, 28, 0.22);
+  }
+  .tech-pill__plate :global(svg) {
+    width: 19px;
+    height: 19px;
+    display: block;
+  }
+
+  .tech-pill__mono {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #1a1a1c;
+  }
+
+  .tech-pill__label {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+
+  /* Featured = the tools previously emphasised with <em>: subtle accent ring. */
+  .tech-pill.is-featured {
+    background: var(--accent-soft);
+    border-color: transparent;
+    box-shadow: inset 0 0 0 1px var(--accent-soft);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tech-pill {
+      transition: none;
+    }
+    .tech-pill:hover {
+      transform: none;
+    }
+  }
+</style>

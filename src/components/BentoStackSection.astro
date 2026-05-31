@@ -1,9 +1,10 @@
 ---
-// Tech-stack section. Renders as a plain section (no bento card,
-// no marquee, no expand modal) — h2 section title followed by one
-// labelled chip row per category. Preserves `#skills-tools` for
-// Nav.astro / MobileMenu.astro. Anchor tool per category is wrapped
-// in <em> for italic + accent-soft chip background.
+// Tech-stack section. Renders an h2 section title followed by one labelled
+// row of logo pills per category. Preserves `#skills-tools` for Nav.astro /
+// MobileMenu.astro. Each tool is a reusable <TechPill> (brand logo on a light
+// plate + name); the stack data lives in src/data/techStack.ts.
+import { techGroups } from '../data/techStack';
+import TechPill from './TechPill.astro';
 ---
 
 <section id="skills-tools" class="stack-section" data-parallax>
@@ -12,68 +13,18 @@
   </div>
 
   <div class="stack-groups reveal-up">
-    <div class="stack-group">
-      <h3 class="stack-group-label">Languages</h3>
-      <ul class="stack-chip-row">
-        <li class="stack-chip"><em>Python</em></li>
-        <li class="stack-chip">C++</li>
-        <li class="stack-chip">JavaScript</li>
-        <li class="stack-chip">SQL</li>
-        <li class="stack-chip">Bash</li>
-        <li class="stack-chip">Swift</li>
-      </ul>
-    </div>
-
-    <div class="stack-group">
-      <h3 class="stack-group-label">AI / ML</h3>
-      <ul class="stack-chip-row">
-        <li class="stack-chip"><em>PyTorch</em></li>
-        <li class="stack-chip">TensorFlow</li>
-        <li class="stack-chip">TensorRT</li>
-        <li class="stack-chip">ONNX</li>
-        <li class="stack-chip">OpenCV</li>
-        <li class="stack-chip">GStreamer</li>
-        <li class="stack-chip">Nvidia Jetson</li>
-      </ul>
-    </div>
-
-    <div class="stack-group">
-      <h3 class="stack-group-label">Back end</h3>
-      <ul class="stack-chip-row">
-        <li class="stack-chip"><em>Flask</em></li>
-        <li class="stack-chip">REST APIs</li>
-      </ul>
-    </div>
-
-    <div class="stack-group">
-      <h3 class="stack-group-label">Databases</h3>
-      <ul class="stack-chip-row">
-        <li class="stack-chip"><em>PostgreSQL</em></li>
-      </ul>
-    </div>
-
-    <div class="stack-group">
-      <h3 class="stack-group-label">DevOps</h3>
-      <ul class="stack-chip-row">
-        <li class="stack-chip"><em>Docker</em></li>
-        <li class="stack-chip">Jenkins</li>
-        <li class="stack-chip">GitLab CI/CD</li>
-        <li class="stack-chip">Kubernetes</li>
-        <li class="stack-chip">Grafana</li>
-        <li class="stack-chip">ELK</li>
-        <li class="stack-chip">AWS S3</li>
-      </ul>
-    </div>
-
-    <div class="stack-group">
-      <h3 class="stack-group-label">Tools</h3>
-      <ul class="stack-chip-row">
-        <li class="stack-chip"><em>Git</em></li>
-        <li class="stack-chip">Postman</li>
-        <li class="stack-chip">Selenium</li>
-        <li class="stack-chip">Scrapy</li>
-      </ul>
-    </div>
+    {
+      techGroups.map((group) => (
+        <div class="stack-group">
+          <h3 class="stack-group-label">{group.label}</h3>
+          <ul class="stack-pill-row">
+            {group.items.map((item) => (
+              <TechPill {...item} />
+            ))}
+          </ul>
+        </div>
+      ))
+    }
   </div>
 </section>
 
@@ -100,31 +51,15 @@
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--ink-dim);
-    margin: 0 0 10px;
+    margin: 0 0 12px;
   }
 
-  .stack-chip-row {
+  .stack-pill-row {
     list-style: none;
     padding: 0;
     margin: 0;
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
-  }
-
-  .stack-chip {
-    font-family: var(--font-mono);
-    font-size: 12px;
-    padding: 4px 10px;
-    border-radius: 999px;
-    background: rgba(26, 26, 28, 0.06);
-    color: var(--ink);
-  }
-  :global(html.dark) .stack-chip {
-    background: rgba(255, 255, 255, 0.08);
-  }
-  /* Anchor chip — accent-tinted via :has(em). */
-  .stack-chip:has(em) {
-    background: var(--accent-soft);
+    gap: 10px;
   }
 </style>
