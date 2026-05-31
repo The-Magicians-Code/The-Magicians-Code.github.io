@@ -3,9 +3,9 @@
 // Raw SVGs are inlined from src/assets/logos/ via a ?raw glob, so the markup
 // ships with zero runtime/CDN icon dependency. Logos that are too dark/light to
 // read on both themes have a `<slug>.dark.svg` knockout that the CSS swaps in
-// under html.dark; full-colour marks legible on both just render once. Generic
-// glyphs (SQL/REST) and mono knockouts inherit currentColor from the label, so
-// they recolour with the theme toggle.
+// under html.dark; full-colour marks legible on both just render once. Mono
+// knockouts inherit currentColor from the label, so they recolour with the
+// theme toggle.
 import type { TechItem } from '../data/techStack';
 
 type Props = TechItem;

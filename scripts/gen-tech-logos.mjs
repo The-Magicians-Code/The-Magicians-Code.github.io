@@ -1,8 +1,8 @@
 // Generates the brand-logo SVG assets for the tech-stack section from the
-// theSVG library (https://github.com/glincker/thesvg, MIT), plus two generic
-// glyphs from Lucide (already a project dep) for tools with no brand mark.
-// All output is committed to src/assets/logos/ so the site ships zero runtime
-// or CDN icon dependency. The logos sit directly on the pill (no plate), so
+// theSVG library (https://github.com/glincker/thesvg, MIT). Every logo is
+// sourced from theSVG; SQL/REST use SQLite/OpenAPI marks as the conventional
+// stand-ins. All output is committed to src/assets/logos/ so the site ships
+// zero runtime or CDN icon dependency. The logos sit directly on the pill, so
 // each is sanitised so a page can inline many at once:
 //
 //   * root width/height stripped (size is CSS-controlled; viewBox stays)
@@ -27,7 +27,6 @@
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createRequire } from 'node:module';
 
 const SRC = process.env.THESVG_DIR ?? '/tmp/thesvg';
 const ICONS = join(SRC, 'public', 'icons');
@@ -60,13 +59,8 @@ const LOGOS = {
   postman: { light: 'default' },
   selenium: { light: 'default' },
   scrapy: { light: 'default' },
-};
-
-// Generic Lucide glyphs (stroke=currentColor → adapt to the theme by themselves)
-// for tools with no brand mark. slug → lucide icon name.
-const GENERICS = {
-  'generic-sql': 'database',
-  'generic-rest': 'braces',
+  sqlite: { light: 'default', dark: 'mono' }, // SQL — navy mark → white knockout on dark
+  openapi: { light: 'default', dark: 'mono' }, // REST APIs — has dark-grey parts
 };
 
 function sanitise(svg, slug, { forceCurrentColor = false } = {}) {
@@ -115,21 +109,6 @@ for (const [slug, { light, dark }] of Object.entries(LOGOS)) {
     writeFileSync(join(OUT, `${slug}${suffix}.svg`), out);
     n++;
   }
-}
-
-// Generic glyphs from Lucide (local package; not a CDN). Wrap the body in a
-// stroke-based <svg> that inherits currentColor from the pill label.
-const require = createRequire(import.meta.url);
-const lucide = require('@iconify-json/lucide/icons.json');
-for (const [slug, name] of Object.entries(GENERICS)) {
-  const icon = lucide.icons[name];
-  if (!icon) {
-    console.error(`MISSING lucide icon: ${name}`);
-    process.exit(1);
-  }
-  const svg = `<svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${icon.body}</svg>\n`;
-  writeFileSync(join(OUT, `${slug}.svg`), svg);
-  n++;
 }
 
 console.log(`Wrote ${n} SVGs to src/assets/logos/`);
