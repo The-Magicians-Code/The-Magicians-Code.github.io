@@ -147,6 +147,16 @@ function init() {
   let lastFocused: Element | null = null;
   let closeTimer: number | null = null; // pending hide after the close transition
 
+  // Touch-primary devices (phones/tablets: no hover + coarse pointer) have no
+  // physical keyboard, so auto-focusing the input on open just pops the soft
+  // keyboard over a half-screen dialog before the user has decided whether to
+  // type or tap a result. On these devices we open as a tappable list and let
+  // the user focus the input themselves. Escape/close is document-level and
+  // tap-to-select doesn't need focus, so nothing breaks.
+  const isTouchPrimary =
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+
   const isTerminal = (q: string) => COMMANDS.includes(q.trim().split(/\s+/)[0]?.toLowerCase());
 
   // ----- open / close -----
@@ -179,7 +189,9 @@ function init() {
       input!.value = '';
       render();
     }
-    input!.focus();
+    // Skip auto-focus on touch-primary devices to avoid popping the soft
+    // keyboard; the user taps the input when they actually want to type.
+    if (!isTouchPrimary) input!.focus();
   }
 
   function close() {

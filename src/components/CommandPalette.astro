@@ -190,9 +190,9 @@ const meta = {
     <div id="cmdk-list" class="cmdk-body" role="listbox" aria-label="Results"></div>
 
     <div class="cmdk-footer">
-      <span><kbd>↑</kbd><kbd>↓</kbd> navigate</span>
-      <span><kbd>↵</kbd> select</span>
-      <span><kbd>esc</kbd> close</span>
+      <span class="cmdk-kbd-hint"><kbd>↑</kbd><kbd>↓</kbd> navigate</span>
+      <span class="cmdk-kbd-hint"><kbd>↵</kbd> select</span>
+      <span class="cmdk-kbd-hint"><kbd>esc</kbd> close</span>
       <span class="cmdk-footer-spacer"></span>
       <span class="cmdk-hint">Type <kbd>help</kbd> for commands</span>
     </div>
@@ -443,7 +443,10 @@ const meta = {
     color: var(--ink-dim);
   }
   @media (max-width: 520px) {
-    .cmdk-footer .cmdk-hint,
+    /* No physical keyboard on phones — the ↑↓/↵/esc hints are noise. Drop
+       them (and the now-redundant spacer) and keep only the still-relevant
+       "type help for commands" hint, left-aligned. */
+    .cmdk-footer .cmdk-kbd-hint,
     .cmdk-footer-spacer { display: none; }
   }
 </style>
