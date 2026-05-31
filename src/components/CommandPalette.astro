@@ -324,6 +324,11 @@ const meta = {
 
   .cmdk-body {
     overflow-y: auto;
+    /* Trap scroll inside the results list. Without this, flicking past the
+       list's top/bottom chains the scroll out to <html> and pans the page
+       behind the palette — most easily triggered on iOS once the soft
+       keyboard shrinks the visible dialog. Mirrors the bento grid's lock. */
+    overscroll-behavior: contain;
     padding: 8px;
     flex: 1;
     min-height: 0;
