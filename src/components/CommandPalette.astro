@@ -226,13 +226,6 @@ const meta = {
   }
   .cmdk-root[hidden] { display: none; }
 
-  /* Scroll lock. Scrollbars are hidden globally so there's no layout shift,
-     but global.css sets html{overflow-x:clip} which makes <html> the real
-     scroller — so body{overflow:hidden} alone won't stop the background from
-     scrolling. Lock html too, matching the bento modal precedent. */
-  body.cmdk-open { overflow: hidden; }
-  html:has(body.cmdk-open) { overflow-y: hidden; }
-
   .cmdk-overlay {
     position: fixed;
     inset: 0;
@@ -327,12 +320,6 @@ const meta = {
     padding: 8px;
     flex: 1;
     min-height: 0;
-    /* The dialog's scrollable region. overscroll-behavior:contain stops a flick
-       that reaches the list's top/bottom edge from chain-scrolling the page
-       behind it; touch-action:pan-y keeps the list itself vertically
-       scrollable. Complements the JS scroll lock in command-palette.ts. */
-    overscroll-behavior: contain;
-    touch-action: pan-y;
   }
 
   /* ----- Spotlight list ----- */
