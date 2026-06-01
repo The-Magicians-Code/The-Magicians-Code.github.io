@@ -84,7 +84,14 @@
 - https://motion.dev
 
 ### Layout ideas
-Parallax Hero
-Stagger blur fade text appear and disappear
-Horizontally scrollable parallax projects
-The nav bar is the sections navigator displaying circular progress for each section + the section's title instead of inline
+- Parallax Hero
+- Stagger blur fade text appear and disappear
+- Horizontally scrollable parallax projects
+- The nav bar is the sections navigator displaying circular progress for each section + the section's title instead of inline
+- https://juanmora.co/
+Website made using:
+- Figma
+- Webflow
+- GSAP
+- AE/Lottie
+- Lennis Scroll
