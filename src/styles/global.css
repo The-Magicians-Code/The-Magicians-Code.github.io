@@ -3,13 +3,40 @@
 /* ===== Class-based dark mode (Tailwind v4) ===== */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* ===== Self-hosted Inter (variable) =====
+   Bundled in the repo at public/fonts/ — no runtime Google Fonts request for
+   the body/heading family. One face per style; the single variable file
+   carries every weight 100–900 (plus Inter's optical-size axis, applied via
+   the default `font-optical-sizing: auto`). `swap` mirrors the old Google
+   Fonts `display=swap` behaviour. */
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/InterVariable.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Inter";
+  font-style: italic;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/InterVariable-Italic.woff2") format("woff2");
+}
+
 /* ===== Theme tokens (Tailwind side) ===== */
 @theme {
-  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system,
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system,
     BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
     "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
     "Segoe UI Symbol", "Noto Color Emoji";
-  --font-serif: "Fraunces", Georgia, "Times New Roman", serif;
+  /* The site dropped its serif (Fraunces); headings now use Inter too. The
+     token name is preserved so the ~25 `var(--font-serif)` consumers don't
+     need touching — only its value changes. Fallback is a sans stack so a
+     failed Inter load degrades to a system sans-serif, not a serif. */
+  --font-serif: "Inter", ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    "Noto Sans", sans-serif;
   --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas,
     "Liberation Mono", "Courier New", monospace;
 }

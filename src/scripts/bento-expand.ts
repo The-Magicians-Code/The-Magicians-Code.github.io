@@ -532,7 +532,7 @@ function closeCaseStudy(): void {
       // Re-measure pretext + rest-y in case viewport changed during the
       // open. Order matters: pretext sets the title height; rest-y
       // depends on that height.
-      if (document.fonts?.check?.('24px Fraunces')) {
+      if (document.fonts?.check?.('24px Inter')) {
         pretextRenderCard(card, getViewportRect);
       }
       syncTitleRestY(card);
@@ -712,7 +712,7 @@ function onResize(): void {
     // Re-measure pretext for idle cards (their rest width changed with
     // the viewport via the 4:1 aspect ratio). Skip the open card —
     // its geometry reflects the modal, not the rest position.
-    if (document.fonts?.check?.('24px Fraunces')) {
+    if (document.fonts?.check?.('24px Inter')) {
       pretextRenderAll(getViewportRect, openState?.card ?? null);
     }
     // Re-measure rest-y for all idle cards (their card height changed
@@ -788,15 +788,15 @@ function init(): void {
 
   initCardEnter();
 
-  // Title rest-y depends on the rendered font (Fraunces, loaded from
-  // Google Fonts). Gate on document.fonts.ready so the measurement uses
-  // actual serif metrics rather than the fallback.
+  // Title rest-y depends on the rendered font (Inter, self-hosted from
+  // /fonts). Gate on document.fonts.ready so the measurement uses the
+  // actual Inter metrics rather than the system fallback.
   const measureWhenFontsReady = (): void => {
     const run = (): void => {
       // Belt-and-suspenders: even after document.fonts.ready, double-check
-      // Fraunces specifically. If not loaded, skip pretext entirely so
-      // measurements don't fall back to Georgia metrics.
-      if (document.fonts?.check?.('24px Fraunces')) {
+      // Inter specifically. If not loaded, skip pretext entirely so
+      // measurements don't fall back to system-font metrics.
+      if (document.fonts?.check?.('24px Inter')) {
         pretextRenderAll(getViewportRect);
       }
       syncAllTitleRestY();
