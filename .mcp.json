@@ -1,10 +1,9 @@
 {
   "mcpServers": {
     "css-studio": {
-      "command": "npx",
+      "command": "node",
       "args": [
-        "-y",
-        "cssstudio"
+        "node_modules/cssstudio/dist/bin.js"
       ]
     }
   }
