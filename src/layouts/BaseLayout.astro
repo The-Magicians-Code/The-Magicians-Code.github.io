@@ -146,6 +146,16 @@ const personSchema = {
         import('../scripts/pick-mode');
       }
     </script>
+
+    <script>
+      // Dev-only CSS Studio (cssstudio). Same Vite build-constant guard as
+      // pick-mode above: `import.meta.env.DEV` is statically false in prod, so
+      // the dynamic import is dead-code-eliminated and `cssstudio` never enters
+      // the production bundle graph.
+      if (import.meta.env.DEV) {
+        import('cssstudio').then(({ startStudio }) => startStudio());
+      }
+    </script>
   </head>
   <body class="pt-28">
     <Nav />
