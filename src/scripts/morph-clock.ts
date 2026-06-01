@@ -38,6 +38,36 @@ function pad(n: number): string {
   return String(n).padStart(2, '0');
 }
 
+// DST-correct UTC offset label for an IANA zone, e.g. "GMT+2", "GMT+5:30".
+// Computed by formatting the instant as wall-clock numbers in the zone and
+// diffing against real UTC — works without timeZoneName:'shortOffset' (which
+// older iOS lacks). Returns '' on an invalid zone.
+export function formatTzOffset(timeZone: string, date: Date = new Date()): string {
+  try {
+    const fmt = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23',
+      numberingSystem: 'latn',
+    });
+    const p = Object.fromEntries(fmt.formatToParts(date).map((x) => [x.type, x.value]));
+    const asUTC = Date.UTC(+p.year!, +p.month! - 1, +p.day!, +p.hour!, +p.minute!, +p.second!);
+    let mins = Math.round((asUTC - date.getTime()) / 60000);
+    const sign = mins >= 0 ? '+' : '-';
+    mins = Math.abs(mins);
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return `GMT${sign}${h}${m ? ':' + pad(m) : ''}`;
+  } catch {
+    return '';
+  }
+}
+
 interface MorphOpts {
   duration: number;
   stagger: number;
@@ -157,6 +187,8 @@ interface ClockConfig {
   seconds: boolean;
   duration: number;
   stagger: number;
+  timeZone?: string; // IANA zone; when set, time comes from Intl, not the browser
+  label?: string; // appended to the accessible time, e.g. "Warsaw time"
 }
 
 class Clock {
@@ -167,6 +199,9 @@ class Clock {
   private value = '';
   private timer = 0;
   private visible = true;
+  // Cached zone formatter (built once, reused every tick); null = browser-local.
+  private timeFmt: Intl.DateTimeFormat | null = null;
+  private offsetLabel = '';
 
   constructor(private wrap: HTMLElement) {
     this.digitsHost =
@@ -177,7 +212,25 @@ class Clock {
       seconds: wrap.dataset.seconds !== 'false',
       duration: Number(wrap.dataset.duration) || 640,
       stagger: Number(wrap.dataset.stagger) || 12,
+      timeZone: wrap.dataset.timezone || undefined,
+      label: wrap.dataset.label || undefined,
     };
+
+    if (this.cfg.timeZone) {
+      try {
+        this.timeFmt = new Intl.DateTimeFormat('en-US', {
+          timeZone: this.cfg.timeZone,
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hourCycle: 'h23',
+          numberingSystem: 'latn',
+        });
+        this.offsetLabel = formatTzOffset(this.cfg.timeZone);
+      } catch {
+        this.timeFmt = null; // invalid zone → fall back to browser-local time
+      }
+    }
 
     this.build();
     this.observe();
@@ -201,17 +254,30 @@ class Clock {
     this.render(this.format(now), this.a11y(now), true); // initial snap
   }
 
+  // Hour (0–23), minute, second strings for the active zone (or browser-local).
+  private wall(now: Date): { h: number; m: string; s: string } {
+    if (this.timeFmt) {
+      const p = Object.fromEntries(this.timeFmt.formatToParts(now).map((x) => [x.type, x.value]));
+      return { h: Number(p.hour), m: p.minute!, s: p.second! };
+    }
+    return { h: now.getHours(), m: pad(now.getMinutes()), s: pad(now.getSeconds()) };
+  }
+
   private format(now: Date): string {
-    let h = now.getHours();
-    if (this.cfg.format === 12) h = h % 12 || 12;
-    const parts = [pad(h), pad(now.getMinutes())];
-    if (this.cfg.seconds) parts.push(pad(now.getSeconds()));
+    const { h, m, s } = this.wall(now);
+    const hour = this.cfg.format === 12 ? h % 12 || 12 : h;
+    const parts = [pad(hour), m];
+    if (this.cfg.seconds) parts.push(s);
     return parts.join(':');
   }
 
   private a11y(now: Date): string {
-    const base = this.format(now);
-    return this.cfg.format === 12 ? `${base} ${now.getHours() < 12 ? 'AM' : 'PM'}` : base;
+    const { h } = this.wall(now);
+    let s = this.format(now);
+    if (this.cfg.format === 12) s += ` ${h < 12 ? 'AM' : 'PM'}`;
+    if (this.cfg.label) s += ` ${this.cfg.label}`;
+    if (this.offsetLabel) s += `, ${this.offsetLabel}`;
+    return s;
   }
 
   private render(value: string, a11y: string, immediate = false): void {
@@ -271,6 +337,8 @@ if (!customElements.get('morph-digit')) {
 
 function init(): void {
   for (const el of document.querySelectorAll<HTMLElement>('[data-morph-clock]')) {
+    if (el.dataset.morphReady) continue; // guard against double-mount (HMR / re-import)
+    el.dataset.morphReady = '1';
     new Clock(el);
   }
 }

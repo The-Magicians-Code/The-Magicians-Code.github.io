@@ -8,8 +8,18 @@ interface Props {
   duration?: number; // morph tween length, ms
   stagger?: number; // per-circle delay, ms
   color?: string; // overrides --clock-ink
+  timeZone?: string; // IANA zone; shows that zone's time to every visitor
+  label?: string; // appended to the accessible time, e.g. "Warsaw time"
 }
-const { format = 24, seconds = true, duration = 640, stagger = 12, color } = Astro.props;
+const {
+  format = 24,
+  seconds = true,
+  duration = 640,
+  stagger = 12,
+  color,
+  timeZone,
+  label,
+} = Astro.props;
 ---
 
 <div
@@ -19,6 +29,8 @@ const { format = 24, seconds = true, duration = 640, stagger = 12, color } = Ast
   data-seconds={String(seconds)}
   data-duration={String(duration)}
   data-stagger={String(stagger)}
+  data-timezone={timeZone}
+  data-label={label}
   style={color ? `--clock-ink:${color}` : undefined}
 >
   <div class="morph-clock-digits" data-morph-digits aria-hidden="true"></div>
