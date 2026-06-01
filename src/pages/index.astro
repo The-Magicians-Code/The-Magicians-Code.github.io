@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import Hero from '../components/Hero.astro';
+import ScrollHero from '../components/ScrollHero.astro';
 import About from '../components/About.astro';
 import BentoProjectsSection from '../components/BentoProjectsSection.astro';
 import BentoStackSection from '../components/BentoStackSection.astro';
@@ -13,7 +13,7 @@ import Contact from '../components/Contact.astro';
   canonicalPath="/"
   includePersonSchema={true}
 >
-  <Hero />
+  <ScrollHero />
   <main class="page">
     <About />
     <BentoProjectsSection />
@@ -41,4 +41,5 @@ import Contact from '../components/Contact.astro';
 
 <script>
   import '../scripts/scroll-parallax.ts';
+  import '../scripts/scroll-hero.ts';
 </script>

@@ -1,0 +1,166 @@
+---
+// SpaceX-style scroll-driven hero (homepage).
+//
+// Native scroll drives the *structural* reveal (clip-path + opacity) so the
+// clip edges stay locked to the pointer; an eased scroll value drives the
+// *decorative* motion (backdrop zoom + card drift) for a Lenis-like feel
+// without hijacking the page scroll. Logic lives in
+// src/scripts/scroll-hero.ts. Honors prefers-reduced-motion.
+//
+// The cards are decorative (the real projects live in BentoProjectsSection
+// below), so the layer is aria-hidden and its images carry empty alt.
+
+const cards = [
+  { src: '/covers/organic-flow.jpg', start: -180, end: 180, lane: 'start', w: '36%' },
+  { src: '/covers/strato-pi.jpg', start: 180, end: -220, lane: 'center', w: '64%' },
+  { src: '/covers/yolo-dualdev.jpg', start: -160, end: 200, lane: 'end', w: '40%' },
+];
+---
+
+<section class="psh" data-scroll-hero aria-label="Featured work">
+  <div class="psh-center" data-psh-center>
+    <div class="psh-center-img" data-psh-center-img aria-hidden="true"></div>
+    <div class="psh-center-copy">
+      <h1>Tanel <em>Treuberg</em></h1>
+      <p>Keep scrolling</p>
+    </div>
+  </div>
+
+  <div class="psh-cards" data-psh-cards aria-hidden="true">
+    {cards.map((c) => (
+      <figure class={`psh-card lane-${c.lane}`} data-psh-card data-start={c.start} data-end={c.end} style={`--w:${c.w}`}>
+        <img src={c.src} alt="" loading="lazy" fetchpriority="low" decoding="async" />
+      </figure>
+    ))}
+  </div>
+
+  <div class="psh-fade" aria-hidden="true"></div>
+</section>
+
+<style>
+  /* Full-bleed under the fixed nav: cancel body's 7rem nav padding (same trick
+     as Hero.astro). overflow-x:clip (not overflow:clip) so it can't interfere
+     with the sticky child's vertical pinning. */
+  .psh {
+    position: relative;
+    width: 100%;
+    height: calc(1600px + 100svh); /* FADE_END (1600) + one viewport of runway */
+    margin-top: -7rem;
+    overflow-x: clip;
+  }
+
+  .psh-center {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    width: 100%;
+    z-index: 1; /* below nav (z-index 40) */
+    overflow: clip;
+    display: grid;
+    place-items: center;
+    clip-path: inset(12%); /* rest state; JS opens it to inset(0) */
+    will-change: clip-path, opacity;
+  }
+  .psh-center-img {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(120% 110% at 50% 32%, var(--accent-soft), transparent 60%),
+      linear-gradient(180deg, var(--paper), var(--bg) 72%);
+    transform: scale(1.25); /* rest state; JS eases to scale(1) */
+    transform-origin: center;
+    will-change: transform;
+  }
+  .psh-center-copy {
+    position: relative;
+    text-align: center;
+    padding: 0 24px;
+  }
+  .psh-center-copy h1 {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: clamp(2.6rem, 7vw, 5rem);
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+    margin: 0;
+    color: var(--ink);
+  }
+  .psh-center-copy em { font-style: italic; color: var(--accent); }
+  .psh-center-copy p {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+    margin: 18px 0 0;
+  }
+
+  /* Card layer is absolutely positioned so its flow never lengthens the scroll
+     track or collides with the footer. Starts one viewport down, drifts up over
+     the pinned backdrop. */
+  .psh-cards {
+    position: absolute;
+    top: 100svh;
+    left: 0;
+    right: 0;
+    z-index: 2;
+    max-width: 760px;
+    margin-inline: auto;
+    padding: 0 24px;
+    pointer-events: none;
+  }
+  .psh-card {
+    width: var(--w, 40%);
+    margin: 0 0 9svh;
+    will-change: transform, opacity;
+  }
+  .psh-card.lane-start { margin-right: auto; }
+  .psh-card.lane-center { margin-inline: auto; }
+  .psh-card.lane-end { margin-left: auto; }
+  .psh-card img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 10; /* stable box before the cover loads */
+    object-fit: cover;
+    border-radius: 14px;
+    box-shadow: var(--glass-shadow);
+  }
+
+  .psh-fade {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 42svh;
+    background: linear-gradient(to bottom, transparent, var(--bg));
+    z-index: 3;
+    pointer-events: none;
+  }
+
+  @media (max-width: 641px) {
+    .psh-card { width: clamp(60%, var(--w, 60%), 88%); }
+  }
+
+  /* Static fallback: full backdrop, cards in normal flow, no scroll track. */
+  @media (prefers-reduced-motion: reduce) {
+    .psh { height: auto; }
+    .psh-center {
+      position: relative;
+      height: 100svh;
+      clip-path: none;
+      opacity: 1;
+    }
+    .psh-center-img { transform: none; }
+    .psh-cards {
+      position: static;
+      transform: none;
+      margin: 64px auto;
+    }
+    .psh-card {
+      transform: none;
+      opacity: 1;
+      margin-inline: auto;
+    }
+    .psh-fade { display: none; }
+  }
+</style>
