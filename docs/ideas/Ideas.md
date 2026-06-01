@@ -18,6 +18,9 @@
 - https://www.agentation.com
 - Chuck Norris queotes daily
 - Claude thinking rotating words
+- https://uditakhourii.github.io/adhd/
+- https://thesvg.org
+- https://www.radix-ui.com
 
 ### Design
 - https://emilkowal.ski/ui/7-practical-animation-tips
