@@ -1,0 +1,239 @@
+---
+// Standalone test harness for the RavaNav component. Deliberately renders its
+// own <html> rather than using BaseLayout — BaseLayout mounts the real site nav
+// + liquid-glass runtime, which would collide with this demo.
+import RavaNav from "../components/RavaNav.astro";
+
+const sections = [
+  { id: "hero", title: "RAVA®" },
+  { id: "work", title: "Work Examples" },
+  { id: "about", title: "About" },
+  { id: "pricing", title: "Pricing" },
+];
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RavaNav — test harness</title>
+  </head>
+  <body>
+    <RavaNav sections={sections} />
+
+    <aside class="motion-panel" aria-label="Motion mapping">
+      <strong>Motion Mapping</strong>
+      <div class="motion-row"><span>Nav state</span><span class="motion-value" data-readout="state">intro</span></div>
+      <div class="motion-row"><span>Section variant</span><span class="motion-value" data-readout="section">hero</span></div>
+      <div class="motion-row"><span>Shell transition</span><span class="motion-value">1000ms bezier(.44,0,.08,1)</span></div>
+      <div class="motion-row"><span>Title reel</span><span class="motion-value">300ms bezier(.5,0,.88,.77)</span></div>
+      <div class="motion-row"><span>Progress source</span><span class="motion-value">global scrollYProgress</span></div>
+    </aside>
+
+    <main>
+      <section id="hero" class="page-section" data-nav-section="hero">
+        <div class="section-inner">
+          <div class="eyebrow">Rava®</div>
+          <h1>Raw ideas into refined digital design.</h1>
+          <p>Scroll the page and watch the pill title, compact state, and progress ring react to the active section.</p>
+        </div>
+      </section>
+
+      <section id="work" class="page-section" data-nav-section="work">
+        <div class="section-inner">
+          <div class="eyebrow">Work Examples</div>
+          <h2>Selected interface directions for ambitious teams.</h2>
+          <div class="work-grid">
+            <div class="work-card"></div>
+            <div class="work-card"></div>
+            <div class="work-card"></div>
+            <div class="work-card"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="about" class="page-section" data-nav-section="about">
+        <div class="section-inner">
+          <div class="eyebrow">About</div>
+          <h2>Design systems, product surfaces, and brands shaped together.</h2>
+          <p>The title is not swapped in place. It is a vertical stack clipped by a 27px window, with the stack offset changed per active section.</p>
+        </div>
+      </section>
+
+      <section id="pricing" class="page-section" data-nav-section="pricing">
+        <div class="section-inner">
+          <div class="eyebrow">Pricing</div>
+          <h2>Two service tracks for focused product work.</h2>
+          <div class="pricing-box">
+            <div class="price">Retainer<strong>$7,900</strong></div>
+            <div class="price">One-time sprint<strong>$1,700</strong></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const stateReadout = document.querySelector('[data-readout="state"]');
+      const sectionReadout = document.querySelector('[data-readout="section"]');
+      document.addEventListener("rava-nav:change", (event) => {
+        const { state, section } = (event as CustomEvent).detail;
+        if (stateReadout) stateReadout.textContent = state;
+        if (sectionReadout && section) sectionReadout.textContent = section;
+      });
+    </script>
+
+    <style is:global>
+      :root {
+        color-scheme: light;
+        --bg: #ffffff;
+        --ink: #171717;
+        --muted: #868a8f;
+        --blue: #12a7ff;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background: var(--bg);
+      }
+
+      .motion-panel {
+        position: fixed;
+        right: 18px;
+        bottom: 18px;
+        z-index: 12;
+        width: min(320px, calc(100vw - 36px));
+        padding: 14px;
+        border: 1px solid rgba(134, 138, 143, 0.18);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.86);
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.45;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+      }
+
+      .motion-panel strong {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--ink);
+        font-size: 12px;
+        font-weight: 650;
+      }
+
+      .motion-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 5px 0;
+        border-top: 1px solid rgba(134, 138, 143, 0.12);
+      }
+
+      .motion-row:first-of-type {
+        border-top: 0;
+      }
+
+      .motion-value {
+        color: var(--ink);
+        text-align: right;
+        white-space: nowrap;
+      }
+
+      .page-section {
+        min-height: 105vh;
+        display: grid;
+        place-items: center;
+        padding: 120px 24px 80px;
+        border-bottom: 1px solid rgba(134, 138, 143, 0.12);
+      }
+
+      .section-inner {
+        width: min(960px, 100%);
+      }
+
+      .eyebrow {
+        margin-bottom: 16px;
+        color: var(--blue);
+        font-size: 13px;
+        font-weight: 650;
+      }
+
+      h1,
+      h2 {
+        margin: 0;
+        max-width: 850px;
+        font-size: clamp(42px, 8vw, 112px);
+        line-height: 0.92;
+        letter-spacing: 0;
+      }
+
+      p {
+        max-width: 560px;
+        margin: 24px 0 0;
+        color: var(--muted);
+        font-size: 17px;
+        line-height: 1.6;
+      }
+
+      .work-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+        margin-top: 40px;
+      }
+
+      .work-card {
+        min-height: 260px;
+        border-radius: 8px;
+        background:
+          linear-gradient(135deg, rgba(18, 167, 255, 0.2), rgba(49, 222, 75, 0.12)),
+          #f5f5f5;
+        border: 1px solid rgba(134, 138, 143, 0.14);
+      }
+
+      .pricing-box {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+        margin-top: 40px;
+      }
+
+      .price {
+        padding: 28px;
+        min-height: 210px;
+        border: 1px solid rgba(134, 138, 143, 0.18);
+        border-radius: 8px;
+        background: #fafafa;
+      }
+
+      .price strong {
+        display: block;
+        margin-top: 32px;
+        font-size: 40px;
+        font-weight: 500;
+      }
+
+      @media (max-width: 720px) {
+        .work-grid,
+        .pricing-box {
+          grid-template-columns: 1fr;
+        }
+
+        .motion-panel {
+          display: none;
+        }
+      }
+    </style>
+  </body>
+</html>

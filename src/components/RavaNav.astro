@@ -1,0 +1,577 @@
+---
+/**
+ * RavaNav — a self-contained morphing "pill" navigation, ported from
+ * docs/ideas/ravalabs-nav-artifact.html into a props-driven Astro component.
+ *
+ * Three shell states are driven by CSS classes on the <nav class="nav-shell"> root:
+ *   .is-intro   — tiny squircle (spark glyph only), shown for `introMs` on load
+ *   .is-compact — 43px bar: active section title + glyph
+ *   .is-open    — expanded panel: copy, rows, links (height measured at runtime)
+ *
+ * Page contract: the IntersectionObserver in the client script observes every
+ * element on the page carrying `data-nav-section="<id>"`. Those ids should match
+ * the `id`s in the `sections` prop. The host page owns those section elements;
+ * this component only reads them.
+ */
+export interface NavSection {
+  /** Must match a `data-nav-section` on the host page. First entry = hero/brand. */
+  id: string;
+  /** Label shown in the title reel. */
+  title: string;
+}
+export interface NavLink {
+  label: string;
+  href: string;
+}
+export interface NavRow {
+  label: string;
+  value: string;
+}
+
+interface Props {
+  sections?: NavSection[];
+  copy?: string;
+  rows?: NavRow[];
+  links?: NavLink[];
+  /** Hold time on the intro pill before auto-open (ms). */
+  introMs?: number;
+  /** Auto-open once after the intro. */
+  autoOpen?: boolean;
+}
+
+const {
+  sections = [
+    { id: "hero", title: "RAVA®" },
+    { id: "work", title: "Work Examples" },
+    { id: "about", title: "About" },
+    { id: "pricing", title: "Pricing" },
+  ],
+  copy = "Rava Labs is an independent design studio partnering with forward-thinking teams.",
+  rows = [
+    { label: "Retainer", value: "7.900$ / Month" },
+    { label: "One time", value: "based on project" },
+  ],
+  links = [
+    { label: "Mail", href: "mailto:gabrielobholz@gmail.com" },
+    { label: "Schedule a call", href: "https://cal.com/ravalabs/discovery" },
+  ],
+  introMs = 2100,
+  autoOpen = true,
+} = Astro.props;
+
+const heroId = sections[0]?.id ?? "hero";
+---
+
+<nav
+  class="nav-shell is-intro is-compact"
+  data-section={heroId}
+  data-progress="false"
+  data-intro-ms={String(introMs)}
+  data-auto-open={String(autoOpen)}
+  aria-label="Site navigation"
+>
+  <div class="nav-top" role="button" tabindex="0" aria-expanded="false">
+    <div class="title-window">
+      <div class="title-stack">
+        {sections.map((s) => (
+          <div class="title-line" data-id={s.id}>{s.title}</div>
+        ))}
+      </div>
+    </div>
+    <div class="nav-action" aria-hidden="true">
+      <div class="menu-glyph"><span class="spark"></span></div>
+      <div class="progress-glyph">
+        <svg viewBox="0 0 29 29">
+          <circle class="progress-track" cx="14.5" cy="14.5" r="12"></circle>
+          <circle class="progress-ring" cx="14.5" cy="14.5" r="12"></circle>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav-body" inert>
+    {copy && <div class="nav-copy">{copy}</div>}
+    {rows.length > 0 && (
+      <div class="nav-table">
+        {rows.map((row) => (
+          <div class="nav-row"><span>{row.label}</span><span>{row.value}</span></div>
+        ))}
+      </div>
+    )}
+    {links.length > 0 && (
+      <div class="nav-links">
+        {links.map((link) => (
+          <a href={link.href}>{link.label}</a>
+        ))}
+      </div>
+    )}
+  </div>
+
+  <span class="rava-live" aria-live="polite"></span>
+</nav>
+
+<style>
+  .nav-shell {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    z-index: 20;
+    width: min(350px, calc(100vw - 40px));
+    transform: translateX(-50%);
+    overflow: hidden;
+    border-radius: 20px;
+    background: var(--rava-panel, rgba(245, 245, 245, 0.82));
+    box-shadow: var(--rava-shadow, 0 18px 60px rgba(23, 23, 23, 0.08));
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: var(--rava-ink, #171717);
+    transition:
+      width 1000ms cubic-bezier(.44, 0, .08, 1),
+      height 1000ms cubic-bezier(.44, 0, .08, 1),
+      border-radius 1000ms cubic-bezier(.44, 0, .08, 1);
+  }
+
+  .nav-shell * {
+    box-sizing: border-box;
+  }
+
+  .nav-shell.is-intro {
+    width: 43px;
+    height: 43px;
+    border-radius: 18px;
+    transition-duration: 1400ms;
+  }
+
+  .nav-shell.is-compact {
+    height: 43px;
+  }
+
+  .nav-shell.is-open {
+    /* Measured from content at runtime; 286px is the artifact default fallback. */
+    height: var(--nav-open-height, 286px);
+  }
+
+  /* Only when content genuinely exceeds the viewport (set by the client script).
+     The base `overflow: hidden` otherwise keeps the morph-reveal clean — no
+     scrollbar flicker while the height animates open. */
+  .nav-shell.is-open[data-scroll="true"] {
+    overflow-y: auto;
+  }
+
+  .nav-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 43px;
+    padding: 8px 8px 8px 14px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .nav-shell.is-intro .nav-top {
+    justify-content: center;
+    padding: 0;
+  }
+
+  .title-window {
+    position: relative;
+    width: 113px;
+    height: 27px;
+    overflow: hidden;
+    mask: linear-gradient(180deg, rgba(0, 0, 0, 0), #000 15%);
+    -webkit-mask: linear-gradient(180deg, rgba(0, 0, 0, 0), #000 15%);
+  }
+
+  .nav-shell.is-intro .title-window {
+    display: none;
+  }
+
+  .title-stack {
+    position: absolute;
+    top: 1px;
+    left: 0;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    /* `top` is driven by the client script (offset = 1 - index * step). */
+    transition: top 300ms cubic-bezier(.5, 0, .88, .77);
+  }
+
+  .title-line {
+    height: 27px;
+    font-size: 13px;
+    line-height: 22px;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+  }
+
+  .nav-action {
+    position: relative;
+    width: 41px;
+    height: 27px;
+    overflow: hidden;
+  }
+
+  .nav-shell.is-intro .nav-action {
+    width: 27px;
+  }
+
+  .menu-glyph,
+  .progress-glyph {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    transition:
+      transform 400ms cubic-bezier(.44, 0, .08, 1),
+      opacity 250ms ease;
+  }
+
+  .menu-glyph {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .progress-glyph {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  /* Scrolled into a non-hero section → swap spark for progress ring. */
+  .nav-shell[data-progress="true"] .menu-glyph {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+
+  .nav-shell[data-progress="true"] .progress-glyph {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Open always shows the spark, regardless of section. */
+  .nav-shell.is-open .menu-glyph {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .nav-shell.is-open .progress-glyph {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  .spark {
+    position: relative;
+    width: 18px;
+    height: 18px;
+  }
+
+  .spark::before,
+  .spark::after {
+    position: absolute;
+    content: "";
+    top: 50%;
+    left: 50%;
+    width: 15px;
+    height: 1.4px;
+    border-radius: 999px;
+    background: var(--rava-muted, #868a8f);
+    transform-origin: center;
+  }
+
+  .spark::before {
+    transform: translate(-50%, -50%) rotate(45deg);
+  }
+
+  .spark::after {
+    transform: translate(-50%, -50%) rotate(-45deg);
+  }
+
+  .progress-glyph svg {
+    width: 29px;
+    height: 29px;
+    transform: rotate(-87deg);
+  }
+
+  .progress-track,
+  .progress-ring {
+    fill: none;
+    stroke-width: 2.3;
+  }
+
+  .progress-track {
+    stroke: #e5e5e5;
+  }
+
+  .progress-ring {
+    stroke: var(--rava-green, #31de4b);
+    stroke-linecap: round;
+    transition: stroke-dashoffset 80ms linear;
+  }
+
+  .nav-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    opacity: 0;
+    filter: blur(10px);
+    pointer-events: none;
+    transition:
+      opacity 300ms cubic-bezier(.5, 0, .88, .77),
+      filter 300ms cubic-bezier(.5, 0, .88, .77);
+  }
+
+  .nav-shell.is-open .nav-body {
+    opacity: 1;
+    filter: blur(0);
+    pointer-events: auto;
+  }
+
+  .nav-copy {
+    padding: 16px;
+    font-size: 20px;
+    font-weight: 650;
+    line-height: 1.16;
+    letter-spacing: 0;
+  }
+
+  .nav-table {
+    padding: 0 16px 16px;
+  }
+
+  .nav-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 0;
+    border-top: 1px solid var(--rava-line, rgba(134, 138, 143, 0.18));
+    font-size: 11px;
+  }
+
+  .nav-row span {
+    min-width: 0;
+  }
+
+  .nav-row span:last-child {
+    color: var(--rava-muted, #868a8f);
+    text-align: right;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 10px;
+    padding: 0 16px 16px;
+  }
+
+  .nav-links a {
+    flex: 1;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 36px;
+    border-radius: 14px;
+    color: rgba(23, 23, 23, 0.55);
+    background: rgba(255, 255, 255, 0.55);
+    font-size: 11px;
+    text-decoration: none;
+  }
+
+  .rava-live {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .nav-shell,
+    .title-stack,
+    .menu-glyph,
+    .progress-glyph,
+    .nav-body,
+    .progress-ring {
+      transition-duration: 1ms !important;
+    }
+  }
+</style>
+
+<script>
+  type NavState = "intro" | "open" | "compact";
+
+  function initRavaNav(nav: HTMLElement) {
+    const navTop = nav.querySelector<HTMLElement>(".nav-top");
+    const navBody = nav.querySelector<HTMLElement>(".nav-body");
+    const titleStack = nav.querySelector<HTMLElement>(".title-stack");
+    const ring = nav.querySelector<SVGCircleElement>(".progress-ring");
+    const live = nav.querySelector<HTMLElement>(".rava-live");
+    const lines = Array.from(nav.querySelectorAll<HTMLElement>(".title-line"));
+    const sectionIds = lines.map((l) => l.dataset.id ?? "");
+
+    if (!navTop || !navBody || !titleStack || !lines.length) return;
+
+    const heroId = sectionIds[0];
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const introMs = reduceMotion ? 0 : Number(nav.dataset.introMs) || 2100;
+    const autoOpen = nav.dataset.autoOpen !== "false";
+
+    // Progress ring geometry (r=12, matches the SVG markup).
+    const circumference = 2 * Math.PI * 12;
+    if (ring) {
+      ring.style.strokeDasharray = String(circumference);
+      ring.style.strokeDashoffset = String(circumference);
+    }
+
+    // Reel step is measured from the live line positions (no magic number),
+    // and only after the intro pill is removed (the title window is display:none
+    // during intro, which would yield a 0 offset).
+    let step = 35;
+
+    // Measure at the true open width (compact and open share the same width;
+    // only `is-intro` is 43px). We freeze transitions and momentarily drop
+    // `is-intro` so the content lays out at full width, read it, then restore
+    // the prior state — all synchronously, so no intermediate frame paints and
+    // the intro morph still plays normally afterwards. Measuring while the
+    // intro→compact width animation is mid-flight would inflate scrollHeight
+    // (narrow shell ⇒ text wraps tall) and leave dead space once it settles.
+    function measure() {
+      const prevTransition = nav.style.transition;
+      const wasIntro = nav.classList.contains("is-intro");
+      nav.style.transition = "none";
+      if (wasIntro) nav.classList.remove("is-intro");
+      void nav.offsetWidth; // reflow at full width
+
+      if (lines.length > 1) {
+        const delta = lines[1].offsetTop - lines[0].offsetTop;
+        if (delta > 0) step = delta;
+      }
+      const full = navTop!.offsetHeight + navBody!.scrollHeight;
+      const cap = window.innerHeight - 40;
+      nav.style.setProperty("--nav-open-height", `${Math.min(full, cap)}px`);
+      // Enable internal scrolling only when content truly overflows the viewport.
+      nav.dataset.scroll = String(full > cap);
+
+      if (wasIntro) {
+        nav.classList.add("is-intro");
+        void nav.offsetWidth; // snap back without animating
+      }
+      nav.style.transition = prevTransition;
+    }
+
+    function setReel() {
+      const open = nav.classList.contains("is-open");
+      const idx = open ? 0 : Math.max(0, sectionIds.indexOf(nav.dataset.section ?? heroId));
+      titleStack!.style.top = `${1 - idx * step}px`;
+    }
+
+    function currentState(): NavState {
+      if (nav.classList.contains("is-intro")) return "intro";
+      return nav.classList.contains("is-open") ? "open" : "compact";
+    }
+
+    function syncReadouts() {
+      if (live) {
+        const idx = sectionIds.indexOf(nav.dataset.section ?? heroId);
+        live.textContent = idx >= 0 ? lines[idx].textContent : (nav.dataset.section ?? "");
+      }
+      document.dispatchEvent(
+        new CustomEvent("rava-nav:change", {
+          detail: { state: currentState(), section: nav.dataset.section },
+        }),
+      );
+    }
+
+    function setExpanded(open: boolean) {
+      nav.classList.toggle("is-open", open);
+      nav.classList.toggle("is-compact", !open);
+      navTop!.setAttribute("aria-expanded", String(open));
+      navBody!.inert = !open;
+      setReel();
+      syncReadouts();
+    }
+
+    function toggleExpanded() {
+      if (nav.classList.contains("is-intro")) return;
+      setExpanded(!nav.classList.contains("is-open"));
+    }
+
+    navTop.addEventListener("click", toggleExpanded);
+    navTop.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        toggleExpanded();
+      }
+    });
+
+    // Cache the open height up front (width-safe), before the intro morph plays.
+    measure();
+
+    // Intro → settle into the target state (height var is already correct).
+    window.setTimeout(() => {
+      nav.classList.remove("is-intro");
+      setExpanded(autoOpen);
+    }, introMs);
+
+    // Scrollspy. Sections are owned by the host page; this is the documented
+    // [data-nav-section] contract.
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (!visible) return;
+
+        const target = visible.target as HTMLElement;
+        const id = target.dataset.navSection ?? heroId;
+        const known = sectionIds.includes(id);
+        if (!known) console.warn("[rava-nav] observed unknown section id:", id);
+
+        nav.dataset.section = known ? id : heroId;
+        nav.dataset.progress = String(known && id !== heroId);
+
+        if (known && id !== heroId) {
+          setExpanded(false);
+        } else {
+          setReel();
+          syncReadouts();
+        }
+      },
+      { threshold: [0.5] },
+    );
+    document
+      .querySelectorAll<HTMLElement>("[data-nav-section]")
+      .forEach((section) => observer.observe(section));
+
+    function updateProgress() {
+      if (!ring) return;
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = max <= 0 ? 0 : window.scrollY / max;
+      ring.style.strokeDashoffset = String(
+        circumference * (1 - Math.min(1, Math.max(0, progress))),
+      );
+    }
+
+    let resizeRaf = 0;
+    function onResize() {
+      window.cancelAnimationFrame(resizeRaf);
+      resizeRaf = window.requestAnimationFrame(() => {
+        if (!nav.classList.contains("is-intro")) measure();
+        updateProgress();
+      });
+    }
+
+    updateProgress();
+    syncReadouts();
+    window.addEventListener("scroll", updateProgress, { passive: true });
+    window.addEventListener("resize", onResize);
+  }
+
+  document.querySelectorAll<HTMLElement>(".nav-shell").forEach(initRavaNav);
+</script>
