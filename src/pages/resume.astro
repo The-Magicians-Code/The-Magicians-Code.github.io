@@ -18,11 +18,11 @@ import { resume } from '../data/resume';
   <main class="resume is-interactive" data-resume-scope>
     <header class="resume-toolbar">
       <ResumeModeToggle defaultMode="interactive" />
-      <button
-        id="resume-print"
-        type="button"
+      <a
+        href="/resume.pdf"
+        download="Tanel_Treuberg_Software_Engineer.pdf"
         class="resume-print-btn"
-        aria-label="Export resume as PDF"
+        aria-label="Download resume as PDF"
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M12 3v12" />
@@ -30,7 +30,7 @@ import { resume } from '../data/resume';
           <path d="M5 21h14" />
         </svg>
         <span>Export PDF</span>
-      </button>
+      </a>
     </header>
 
     <header class="resume-header">
@@ -167,27 +167,6 @@ import { resume } from '../data/resume';
       const open = entry.classList.toggle('resume-entry--open');
       btn.setAttribute('aria-expanded', String(open));
     });
-  });
-
-  // ── Export PDF via window.print() ──
-  // Set document.title temporarily so the browser's "Save as PDF" default
-  // filename matches the resume's intended filename. afterprint restores it.
-  const printBtn = document.getElementById('resume-print');
-  printBtn?.addEventListener('click', () => {
-    const originalTitle = document.title;
-    const pdfTitle = 'Tanel_Treuberg_Software_Engineer';
-    document.title = pdfTitle;
-
-    const restore = () => {
-      document.title = originalTitle;
-      window.removeEventListener('afterprint', restore);
-    };
-    window.addEventListener('afterprint', restore);
-    // Safety: some Safari flows don't fire afterprint reliably.
-    setTimeout(restore, 5000);
-
-    // Let the title swap commit before the print dialog snapshots it.
-    requestAnimationFrame(() => window.print());
   });
 </script>
 
