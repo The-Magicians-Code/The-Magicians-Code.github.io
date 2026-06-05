@@ -12,7 +12,7 @@
     "astro": "astro",
     "check": "astro check && npm run check:content",
     "check:content": "node scripts/check-content.mjs",
-    "resume:pdf": "astro build && node scripts/render-resume-pdf.mjs"
+    "resume:pdf": "tsx scripts/resume-pdf/generate.ts"
   },
   "dependencies": {
     "@iconify-json/lucide": "^1.2.105",
@@ -29,6 +29,7 @@
     "pdf-lib": "1.17.1",
     "playwright": "1.60.0",
     "sirv": "3.0.2",
+    "tsx": "4.22.4",
     "typescript": "^6.0.3"
   }
 }
