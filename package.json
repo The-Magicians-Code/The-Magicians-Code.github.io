@@ -14,9 +14,6 @@
     "check:content": "node scripts/check-content.mjs"
   },
   "dependencies": {
-    "@fontsource-variable/fraunces": "5.2.9",
-    "@fontsource-variable/geist": "5.2.9",
-    "@fontsource-variable/geist-mono": "5.2.8",
     "@iconify-json/lucide": "^1.2.105",
     "@tailwindcss/vite": "^4.2.4",
     "astro": "^6.2.2",
@@ -25,6 +22,9 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
+    "@fontsource-variable/fraunces": "5.2.9",
+    "@fontsource-variable/geist": "5.2.9",
+    "@fontsource-variable/geist-mono": "5.2.8",
     "typescript": "^6.0.3"
   }
 }
