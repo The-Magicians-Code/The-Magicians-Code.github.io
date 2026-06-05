@@ -30,7 +30,7 @@ import { normalizeForPdf, assertEncodable } from './sanitize';
 // ---------------------------------------------------------------------------
 const PAGE_W = 595.28; // A4 width in pt
 const PAGE_H = 841.89; // A4 height in pt
-const MARGIN = 50;
+const MARGIN = 44;
 const CONTENT_W = PAGE_W - MARGIN * 2;
 const CONTENT_BOTTOM = MARGIN; // y must stay above this
 
@@ -39,11 +39,11 @@ const BLACK = rgb(0, 0, 0);
 // Type scale
 const SIZE_NAME = 18;
 const SIZE_TITLE = 11;
-const SIZE_BODY = 10;
-const SIZE_SECTION = 12;
+const SIZE_BODY = 9.6;
+const SIZE_SECTION = 11.5;
 const SIZE_SMALL = 9;
 
-const LEADING = 1.32; // line-height multiplier
+const LEADING = 1.2; // line-height multiplier
 
 // ---------------------------------------------------------------------------
 // Fonts (set in main, used everywhere)
@@ -355,23 +355,10 @@ async function build(): Promise<{ bytes: Uint8Array; pageCount: number }> {
   });
   layout.gap(4);
 
-  // Contact line: draw each contact on its own line so link rects stay simple
-  // and reading order is unambiguous.
-  for (let i = 0; i < resume.contact.length; i += 1) {
-    const c = resume.contact[i];
-    const printed = c.printLabel ?? c.label;
-    const fieldPath = `contact[${i}]`;
-    if (isLinkHref(c.href)) {
-      drawWrapped(layout, printed, {
-        font: fonts.regular,
-        size: SIZE_BODY,
-        fieldPath,
-        linkUri: c.href,
-      });
-    } else {
-      drawWrapped(layout, printed, { font: fonts.regular, size: SIZE_BODY, fieldPath });
-    }
-  }
+  // Contact line: lay the contacts out inline on a single line, separated by
+  // " · ", with each segment getting its own clickable /Link rect so the three
+  // annotations don't overlap and each points to its own URI.
+  drawContactLine(layout, fonts);
   layout.gap(6);
 
   // --- Summary -----------------------------------------------------------
@@ -414,7 +401,7 @@ async function build(): Promise<{ bytes: Uint8Array; pageCount: number }> {
     }
 
     // Company · Location
-    const companyLine = `${job.company} - ${job.location.city}, ${job.location.country}`;
+    const companyLine = `${job.company} · ${job.location.city}, ${job.location.country}`;
     drawWrapped(layout, companyLine, {
       font: fonts.oblique,
       size: SIZE_SMALL,
@@ -437,7 +424,7 @@ async function build(): Promise<{ bytes: Uint8Array; pageCount: number }> {
     layout.ensureSpace(blockHeader + 4);
     layout.gap(4);
     drawWrapped(layout, ed.degree, { font: fonts.bold, size: SIZE_BODY, fieldPath: `${base}.degree` });
-    const instLine = `${ed.institution} - ${ed.location.city}, ${ed.location.country} - ${ed.dates.display}`;
+    const instLine = `${ed.institution} · ${ed.location.city}, ${ed.location.country} · ${ed.dates.display}`;
     drawWrapped(layout, instLine, { font: fonts.oblique, size: SIZE_SMALL, fieldPath: `${base}.institution` });
     if (ed.notes) {
       layout.gap(2);
@@ -452,7 +439,7 @@ async function build(): Promise<{ bytes: Uint8Array; pageCount: number }> {
   drawSectionHeader(layout, 'Skills', fonts);
   for (let i = 0; i < resume.skills.length; i += 1) {
     const group = resume.skills[i];
-    const line = `${group.label}: ${group.items.join(' - ')}`;
+    const line = `${group.label}: ${group.items.join(' · ')}`;
     drawWrapped(layout, line, {
       font: fonts.regular,
       size: SIZE_BODY,
@@ -474,6 +461,56 @@ async function build(): Promise<{ bytes: Uint8Array; pageCount: number }> {
 
   const bytes = await doc.save();
   return { bytes, pageCount: layout.pageCount };
+}
+
+/**
+ * Draw the contact links on a single line, separated by " · ", with each
+ * segment laid out at its own measured x-offset and given its own /Link
+ * annotation so the rects don't overlap. Segments flow left-to-right and wrap
+ * to a new line if the running x would exceed the content width.
+ */
+function drawContactLine(layout: Layout, fonts: Fonts): void {
+  const font = fonts.regular;
+  const size = SIZE_BODY;
+  const sep = ' · ';
+  const sepW = font.widthOfTextAtSize(sep, size);
+  const lh = layout.lineHeight(size);
+
+  layout.ensureSpace(lh);
+  let x = MARGIN;
+  let baselineY = layout.y - size;
+  let firstOnLine = true;
+
+  for (let i = 0; i < resume.contact.length; i += 1) {
+    const c = resume.contact[i];
+    const printed = safe(c.printLabel ?? c.label, font, `contact[${i}]`);
+    const segW = font.widthOfTextAtSize(printed, size);
+
+    // Wrap to a new line if this segment (plus a preceding separator) would
+    // overflow the content width — but never on the first segment of a line.
+    const needed = (firstOnLine ? 0 : sepW) + segW;
+    if (!firstOnLine && x - MARGIN + needed > CONTENT_W) {
+      layout.y -= lh;
+      layout.ensureSpace(lh);
+      x = MARGIN;
+      baselineY = layout.y - size;
+      firstOnLine = true;
+    }
+
+    if (!firstOnLine) {
+      layout.page.drawText(sep, { x, y: baselineY, size, font, color: BLACK });
+      x += sepW;
+    }
+
+    layout.page.drawText(printed, { x, y: baselineY, size, font, color: BLACK });
+    if (isLinkHref(c.href)) {
+      addLinkAnnotation(layout, x, baselineY, segW, size, c.href);
+    }
+    x += segW;
+    firstOnLine = false;
+  }
+
+  layout.y -= lh;
 }
 
 /**
@@ -513,6 +550,15 @@ async function main(): Promise<void> {
 
   await mkdir(distDir, { recursive: true });
   await writeFile(outPath, bytes);
+
+  // Soft single-page guard: the current content is tuned to fit one A4 page.
+  // Warn (don't fail) if it ever overflows so natural growth isn't blocked.
+  if (pageCount > 1) {
+    console.warn(
+      `⚠ resume-pdf: output is ${pageCount} pages — content overflowed the single A4 page. ` +
+        `Tighten spacing/sizes in scripts/resume-pdf/generate.ts or trim resume content to restore one page.`,
+    );
+  }
 
   if (process.argv.includes('--copy-public')) {
     const publicPath = path.join(repoRoot, 'public', 'resume.pdf');
