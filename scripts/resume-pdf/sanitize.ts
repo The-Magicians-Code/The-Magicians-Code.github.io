@@ -5,30 +5,27 @@
 // every WinAnsi-renderable character and normalize ONLY genuinely
 // non-renderable ones — chars that pdf-lib's WinAnsi encoder would throw on.
 //
-// Superscripts are NO LONGER flattened here. They are handled structurally by
-// the generator (`splitSuperscriptRuns`): each superscript run is drawn smaller
-// and raised above the baseline as a true typographic superscript, using the
-// ASCII equivalent glyphs (so "10⁻³" extracts as "10-3", not "10^-3"). The
-// generator maps the superscript code points to ASCII itself before drawing, so
-// they never reach `normalizeForPdf`/`assertEncodable` as superscript chars.
+// Superscripts are flattened to caret notation ("10⁻³" → "10^-3") so the exponent
+// stays unambiguous, extractable plain text (a visually-raised glyph would copy
+// as "10-3"). The website keeps the real raised Unicode superscript; only the PDF
+// flattens.
 //
 // Two responsibilities:
-//   1. `normalizeForPdf` — map the known non-WinAnsi characters (non-breaking
-//      space) to WinAnsi-safe equivalents. It does NOT enforce ASCII; accented
-//      letters (Ü, õ, ä…), °, ×, ·, dashes, smart quotes and ellipsis all pass
-//      through untouched because Helvetica renders them. Anything unexpected is
-//      caught by `assertEncodable`, not here.
+//   1. `normalizeForPdf` — flatten superscript runs to caret notation and map the
+//      known non-WinAnsi characters (non-breaking space) to WinAnsi-safe
+//      equivalents. It does NOT enforce ASCII; accented letters (Ü, õ, ä…), °, ×,
+//      ·, dashes, smart quotes and ellipsis all pass through untouched because
+//      Helvetica renders them. Anything unexpected is caught by `assertEncodable`.
 //   2. `assertEncodable` — the single source of truth for "can Helvetica render
 //      this": it calls `font.encodeText(text)` and throws with the field path
 //      and code point if any character is still non-WinAnsi after normalization.
 
 import type { PDFFont } from 'pdf-lib';
 
-// Superscript code point → ASCII equivalent. Used by the generator's run-splitter
-// to detect superscript runs and to map each char to the ASCII glyph it draws
-// (smaller + raised). U+00B9/B2/B3 (¹²³) are WinAnsi-renderable but are treated
-// as superscripts here for consistent exponent rendering; the rest (U+2070–2079,
-// U+207B) are non-WinAnsi.
+// Superscript code point → ASCII equivalent, used by `normalizeForPdf` to flatten
+// a superscript run to caret notation (e.g. "⁻³" → "^-3"). U+00B9/B2/B3 (¹²³) are
+// WinAnsi-renderable but are treated as superscripts here for consistent exponent
+// notation; the rest (U+2070–2079, U+207B) are non-WinAnsi.
 export const SUPERSCRIPT_TO_ASCII: Record<string, string> = {
   '⁰': '0', // U+2070
   '¹': '1', // U+00B9
@@ -52,34 +49,12 @@ export interface TextRun {
 }
 
 /**
- * Split a raw string into ordered runs of normal vs. superscript text.
- *
- * A superscript run is a maximal run of superscript code points (see
- * `SUPERSCRIPT_TO_ASCII`); its `text` is the ASCII-mapped equivalent. Normal
- * runs keep their raw text (the generator normalizes them via `normalizeForPdf`
- * at draw time). Adjacent runs of the same kind are merged.
+ * Wrap a raw string as a single normal run. (Superscripts are no longer drawn
+ * raised; they are flattened to caret notation by `normalizeForPdf` instead — see
+ * the file header. This shim keeps the generator's run-based wrapping pipeline.)
  */
 export function splitSuperscriptRuns(input: string): TextRun[] {
-  const chars = Array.from(input); // iterate by code point, not UTF-16 unit
-  const runs: TextRun[] = [];
-  let buf = '';
-  let bufSup = false;
-
-  const flush = () => {
-    if (buf.length > 0) runs.push({ text: buf, sup: bufSup });
-    buf = '';
-  };
-
-  for (const ch of chars) {
-    const mapped = SUPERSCRIPT_TO_ASCII[ch];
-    const isSup = mapped !== undefined;
-    if (buf.length > 0 && isSup !== bufSup) flush();
-    bufSup = isSup;
-    buf += isSup ? mapped : ch;
-  }
-  flush();
-
-  return runs;
+  return [{ text: input, sup: false }];
 }
 
 // Direct one-to-(zero-or-more) stylistic replacements. NBSP (U+00A0) below IS
@@ -109,10 +84,27 @@ function snippet(input: string): string {
 export function normalizeForPdf(input: string): string {
   const chars = Array.from(input); // iterate by code point, not UTF-16 unit
   let out = '';
+  let i = 0;
 
-  for (const ch of chars) {
+  while (i < chars.length) {
+    const ch = chars[i];
+
+    // Flatten a run of superscript code points to caret notation: "10⁻³" → "10^-3".
+    // Kept as plain extractable text (unambiguous for ATS/copy-paste) rather than
+    // a visually-raised glyph that would extract as "10-3".
+    if (SUPERSCRIPT_TO_ASCII[ch] !== undefined) {
+      let mapped = '';
+      while (i < chars.length && SUPERSCRIPT_TO_ASCII[chars[i]] !== undefined) {
+        mapped += SUPERSCRIPT_TO_ASCII[chars[i]];
+        i += 1;
+      }
+      out += `^${mapped}`;
+      continue;
+    }
+
     if (Object.prototype.hasOwnProperty.call(DIRECT, ch)) {
       out += DIRECT[ch];
+      i += 1;
       continue;
     }
 
@@ -120,6 +112,7 @@ export function normalizeForPdf(input: string): string {
     // natively; anything that slips through that is genuinely non-WinAnsi is
     // caught by assertEncodable before it is drawn.
     out += ch;
+    i += 1;
   }
 
   return out;

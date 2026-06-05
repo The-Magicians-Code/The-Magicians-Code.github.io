@@ -46,13 +46,6 @@ const SIZE_SMALL = 9;
 
 const LEADING = 1.2; // line-height multiplier
 
-// Superscript rendering: exponents (e.g. the "⁻³" in "10⁻³") are drawn at this
-// fraction of the surrounding size, raised by this fraction of the surrounding
-// size above the baseline. Tuned so the exponent's top roughly aligns with the
-// cap height of the preceding digits ("10⁻³" reads as a real superscript).
-const SUP_SCALE = 0.68;
-const SUP_RISE = 0.33;
-
 // ---------------------------------------------------------------------------
 // Fonts (set in main, used everywhere)
 // ---------------------------------------------------------------------------
@@ -188,20 +181,17 @@ function splitToken(token: string, font: PDFFont, size: number, maxWidth: number
 }
 
 // ---------------------------------------------------------------------------
-// Run-aware (mixed-size) text rendering.
+// Word-based text wrapping.
 //
-// A logical line may contain inline superscript runs drawn smaller and raised
-// (true typographic superscripts, no font embedding). We model the line as a
-// flat list of `Segment`s (each a piece of text with its own font/size/rise/
-// width) grouped into `Word`s (contiguous non-whitespace, possibly spanning a
-// normal→sup boundary like "10⁻³"). Words are the word-wrap break units; spaces
-// between them collapse to a single normal-size space.
+// We model a line as a flat list of `Segment`s (a piece of text with its font/
+// size/width) grouped into `Word`s (contiguous non-whitespace). Words are the
+// word-wrap break units; spaces between them collapse to a single space.
 // ---------------------------------------------------------------------------
 interface Segment {
   text: string; // ASCII-safe, ready to draw
   font: PDFFont;
   size: number;
-  rise: number; // baseline offset (positive = raised, for superscripts)
+  rise: number; // baseline offset (kept for the coalescing key; always 0 today)
   width: number; // advance width at `size`
 }
 
@@ -211,10 +201,9 @@ interface Word {
 }
 
 /**
- * Convert runs into words. Normal runs are normalized + encode-checked at the
- * base size/font; superscript runs are encode-checked (already ASCII-mapped) and
- * drawn smaller + raised using the same font family weight. Over-long single
- * words are force-split into multiple words (guaranteed progress).
+ * Convert runs into words: normalize + encode-check each run, split on whitespace
+ * so the surrounding words wrap correctly, and force-split any single word wider
+ * than maxWidth (with guaranteed progress).
  */
 function runsToWords(
   runs: TextRun[],
@@ -242,32 +231,23 @@ function runsToWords(
   };
 
   for (const run of runs) {
-    if (run.sup) {
-      // Superscript run: encode-check the ASCII text, draw smaller + raised.
-      assertEncodable(run.text, baseFont, `${fieldPath} (superscript)`);
-      const supSize = baseSize * SUP_SCALE;
-      const supRise = baseSize * SUP_RISE;
-      // Superscript runs contain only digits/minus (no spaces) — one segment.
-      addSegment(run.text, baseFont, supSize, supRise);
-    } else {
-      // Normal run: normalize + encode-check, then split on whitespace so the
-      // surrounding words wrap correctly. Whitespace flushes the current word.
-      const ascii = normalizeForPdf(run.text);
-      assertEncodable(ascii, baseFont, fieldPath);
-      let buf = '';
-      for (const ch of ascii) {
-        if (/\s/.test(ch)) {
-          if (buf.length > 0) {
-            addSegment(buf, baseFont, baseSize, 0);
-            buf = '';
-          }
-          pushWord();
-        } else {
-          buf += ch;
+    // Normalize + encode-check, then split on whitespace so the surrounding words
+    // wrap correctly. Whitespace flushes the current word.
+    const ascii = normalizeForPdf(run.text);
+    assertEncodable(ascii, baseFont, fieldPath);
+    let buf = '';
+    for (const ch of ascii) {
+      if (/\s/.test(ch)) {
+        if (buf.length > 0) {
+          addSegment(buf, baseFont, baseSize, 0);
+          buf = '';
         }
+        pushWord();
+      } else {
+        buf += ch;
       }
-      if (buf.length > 0) addSegment(buf, baseFont, baseSize, 0);
     }
+    if (buf.length > 0) addSegment(buf, baseFont, baseSize, 0);
   }
   pushWord();
 
@@ -362,51 +342,11 @@ interface DrawRunsOpts {
   firstMaxWidth?: number; // wrap width for the first line (defaults to maxWidth)
 }
 
-// Extra upward shift (as a fraction of the superscript size) applied to a '-'
-// inside a superscript so it sits centered on the exponent digits like a proper
-// minus, rather than low like a hyphen. The '-' stays real, extractable text.
-const SUP_MINUS_LIFT = 0.16;
-
 /**
- * Draw a superscript segment's text, lifting any '-' so it centers on the digits
- * like a minus sign. Each glyph is still drawn as real text (extractable), just
- * at adjusted baselines. Returns the total advance width (unchanged vs a plain
- * draw, so callers can advance the pen normally).
- */
-function drawSuperscriptText(
-  layout: Layout,
-  text: string,
-  penX: number,
-  baselineY: number,
-  rise: number,
-  size: number,
-  font: PDFFont
-): number {
-  const lift = size * SUP_MINUS_LIFT;
-  let x = penX;
-  let i = 0;
-  while (i < text.length) {
-    if (text[i] === '-') {
-      const w = font.widthOfTextAtSize('-', size);
-      layout.page.drawText('-', { x, y: baselineY + rise + lift, size, font, color: BLACK });
-      x += w;
-      i += 1;
-    } else {
-      let j = i;
-      while (j < text.length && text[j] !== '-') j += 1;
-      const chunk = text.slice(i, j);
-      layout.page.drawText(chunk, { x, y: baselineY + rise, size, font, color: BLACK });
-      x += font.widthOfTextAtSize(chunk, size);
-      i = j;
-    }
-  }
-  return x - penX;
-}
-
-/**
- * Draw a string that MAY contain Unicode superscripts as wrapped, mixed-size
- * lines, advancing layout.y. Superscript runs are drawn smaller and raised.
- * Falls back to plain inline rendering for strings with no superscripts.
+ * Draw a string as wrapped lines, advancing layout.y, with optional hanging indent
+ * (first line at hangX, continuations at x). Word-wraps and force-splits over-wide
+ * tokens. Superscripts are flattened to caret notation upstream, so this draws a
+ * single uniform run per line.
  */
 function drawRuns(layout: Layout, rawText: string, opts: DrawRunsOpts): void {
   const { font, size } = opts;
@@ -431,10 +371,9 @@ function drawRuns(layout: Layout, rawText: string, opts: DrawRunsOpts): void {
     const lineX = i === 0 ? hangX : x;
 
     // Flatten the line's words into a segment stream, re-inserting an inter-word
-    // space (a normal-baseline, base-size segment) between words. Then coalesce
-    // adjacent segments that share font/size/rise into a single drawText call so
-    // the common all-normal line emits ONE text op — keeping the content stream
-    // (and file size) tight. Only true superscript transitions break the batch.
+    // space between words. Then coalesce adjacent segments that share font/size
+    // into a single drawText call so a line emits one text op — keeping the
+    // content stream (and file size) tight.
     const stream: Segment[] = [];
     for (let w = 0; w < line.length; w += 1) {
       if (w > 0) {
@@ -460,18 +399,13 @@ function drawRuns(layout: Layout, rawText: string, opts: DrawRunsOpts): void {
         width += stream[bj].width;
         bj += 1;
       }
-      if (head.rise !== 0 && text.includes('-')) {
-        // Superscript containing a minus: lift the '-' to read as a proper minus.
-        drawSuperscriptText(layout, text, penX, baselineY, head.rise, head.size, head.font);
-      } else {
-        layout.page.drawText(text, {
-          x: penX,
-          y: baselineY + head.rise,
-          size: head.size,
-          font: head.font,
-          color: BLACK,
-        });
-      }
+      layout.page.drawText(text, {
+        x: penX,
+        y: baselineY,
+        size: head.size,
+        font: head.font,
+        color: BLACK,
+      });
       penX += width;
       bi = bj;
     }
@@ -592,10 +526,11 @@ function drawWrapped(layout: Layout, rawText: string, opts: DrawOpts): void {
 function drawSectionHeader(layout: Layout, title: string, fonts: Fonts): void {
   const headerLh = layout.lineHeight(SIZE_SECTION);
   const followLh = layout.lineHeight(SIZE_BODY);
-  // Orphan prevention: reserve space for the header line, its divider rule, plus one
-  // following body line so a section title is never stranded alone at the page bottom.
-  // Assumes a single-line header (section titles are short and never wrap).
-  layout.ensureSpace(headerLh + followLh + 8);
+  // Orphan prevention: reserve the full header block plus one following body line so a
+  // section title + divider is never stranded alone at the page bottom. The block's
+  // non-text gaps total 12 pt: the leading gap(4) below, plus the two SECTION_RULE_GAP
+  // (4 pt each) around the divider. Assumes a single-line header (titles never wrap).
+  layout.ensureSpace(headerLh + followLh + 12);
   layout.gap(4);
   drawWrapped(layout, title.toUpperCase(), {
     font: fonts.bold,
@@ -873,10 +808,10 @@ function drawBullet(layout: Layout, rawText: string, fonts: Fonts, fieldPath: st
   const textX = MARGIN + markerW;
   const textMaxW = CONTENT_W - markerW;
 
-  // Draw the hanging marker on the first line, then the (possibly superscripted)
-  // body text hung-indented. drawRuns handles wrapping + raised exponents.
-  // The marker is part of the first visible line; ensure the first line exists
-  // before stamping it by reserving space the same way drawRuns will.
+  // Draw the hanging marker on the first line, then the body text hung-indented.
+  // drawRuns handles the wrapping. The marker is part of the first visible line;
+  // ensure the first line exists before stamping it by reserving space the same
+  // way drawRuns will.
   const markerAscii = safe(marker, fonts.regular, `${fieldPath} (marker)`);
   const lh = layout.lineHeight(SIZE_BODY);
   layout.ensureSpace(lh);
