@@ -702,17 +702,22 @@ async function build(): Promise<{ bytes: Uint8Array; pageCount: number }> {
   drawSectionHeader(layout, 'Skills', fonts);
   for (let i = 0; i < resume.skills.length; i += 1) {
     const group = resume.skills[i];
-    // Single regular-weight line ("Label: items"). Keeping label + items in one
-    // font lets the viewer do all the spacing, so the label→items gap renders
-    // identically on every line/viewer (a bold label would need a second draw,
-    // and non-embedded font metric drift made that gap inconsistent).
-    const line = `${group.label}: ${group.items.join(' · ')}`;
-    drawWrapped(layout, line, {
+    // Bold subsection title on its own line (no colon), with its items on the line
+    // below. A title-on-its-own-line keeps the bold weight without the label→items
+    // horizontal spacing drift that a bold inline label suffered (non-embedded
+    // font metrics differ per viewer).
+    if (i > 0) layout.gap(4); // separate groups
+    drawWrapped(layout, group.label, {
+      font: fonts.bold,
+      size: SIZE_BODY,
+      fieldPath: `skills[${i}] (title)`,
+    });
+    layout.gap(-3); // pull the items up tight under their title
+    drawWrapped(layout, group.items.join(' · '), {
       font: fonts.regular,
       size: SIZE_BODY,
       fieldPath: `skills[${i}]`,
     });
-    layout.gap(1);
   }
 
   // --- Interests ---------------------------------------------------------
