@@ -362,6 +362,47 @@ interface DrawRunsOpts {
   firstMaxWidth?: number; // wrap width for the first line (defaults to maxWidth)
 }
 
+// Extra upward shift (as a fraction of the superscript size) applied to a '-'
+// inside a superscript so it sits centered on the exponent digits like a proper
+// minus, rather than low like a hyphen. The '-' stays real, extractable text.
+const SUP_MINUS_LIFT = 0.16;
+
+/**
+ * Draw a superscript segment's text, lifting any '-' so it centers on the digits
+ * like a minus sign. Each glyph is still drawn as real text (extractable), just
+ * at adjusted baselines. Returns the total advance width (unchanged vs a plain
+ * draw, so callers can advance the pen normally).
+ */
+function drawSuperscriptText(
+  layout: Layout,
+  text: string,
+  penX: number,
+  baselineY: number,
+  rise: number,
+  size: number,
+  font: PDFFont
+): number {
+  const lift = size * SUP_MINUS_LIFT;
+  let x = penX;
+  let i = 0;
+  while (i < text.length) {
+    if (text[i] === '-') {
+      const w = font.widthOfTextAtSize('-', size);
+      layout.page.drawText('-', { x, y: baselineY + rise + lift, size, font, color: BLACK });
+      x += w;
+      i += 1;
+    } else {
+      let j = i;
+      while (j < text.length && text[j] !== '-') j += 1;
+      const chunk = text.slice(i, j);
+      layout.page.drawText(chunk, { x, y: baselineY + rise, size, font, color: BLACK });
+      x += font.widthOfTextAtSize(chunk, size);
+      i = j;
+    }
+  }
+  return x - penX;
+}
+
 /**
  * Draw a string that MAY contain Unicode superscripts as wrapped, mixed-size
  * lines, advancing layout.y. Superscript runs are drawn smaller and raised.
@@ -419,13 +460,18 @@ function drawRuns(layout: Layout, rawText: string, opts: DrawRunsOpts): void {
         width += stream[bj].width;
         bj += 1;
       }
-      layout.page.drawText(text, {
-        x: penX,
-        y: baselineY + head.rise,
-        size: head.size,
-        font: head.font,
-        color: BLACK,
-      });
+      if (head.rise !== 0 && text.includes('-')) {
+        // Superscript containing a minus: lift the '-' to read as a proper minus.
+        drawSuperscriptText(layout, text, penX, baselineY, head.rise, head.size, head.font);
+      } else {
+        layout.page.drawText(text, {
+          x: penX,
+          y: baselineY + head.rise,
+          size: head.size,
+          font: head.font,
+          color: BLACK,
+        });
+      }
       penX += width;
       bi = bj;
     }
@@ -507,6 +553,8 @@ interface DrawOpts {
   linkUri?: string;
   /** Reserve space so the FIRST line is kept with `keepWithNext` following lines. */
   keepWithNext?: number;
+  /** Horizontal alignment within the content width (default left). */
+  align?: 'left' | 'center';
 }
 
 /**
@@ -526,10 +574,11 @@ function drawWrapped(layout: Layout, rawText: string, opts: DrawOpts): void {
     layout.ensureSpace(lh);
     const baselineY = layout.y - size; // baseline sits `size` below the top of the line box
     if (line.length > 0) {
-      layout.page.drawText(line, { x, y: baselineY, size, font, color: BLACK });
+      const lineW = font.widthOfTextAtSize(line, size);
+      const lineX = opts.align === 'center' ? MARGIN + (CONTENT_W - lineW) / 2 : x;
+      layout.page.drawText(line, { x: lineX, y: baselineY, size, font, color: BLACK });
       if (opts.linkUri) {
-        const w = font.widthOfTextAtSize(line, size);
-        addLinkAnnotation(layout, x, baselineY, w, size, opts.linkUri);
+        addLinkAnnotation(layout, lineX, baselineY, lineW, size, opts.linkUri);
       }
     }
     layout.y -= lh;
@@ -617,17 +666,20 @@ async function build(): Promise<{ bytes: Uint8Array; pageCount: number }> {
     font: fonts.bold,
     size: SIZE_NAME,
     fieldPath: 'name',
+    align: 'center',
   });
   layout.gap(2);
   drawWrapped(layout, resume.title, {
     font: fonts.regular,
     size: SIZE_TITLE,
     fieldPath: 'title',
+    align: 'center',
   });
   drawWrapped(layout, `${resume.baseLocation.city}, ${resume.baseLocation.country}`, {
     font: fonts.regular,
     size: SIZE_BODY,
     fieldPath: 'baseLocation',
+    align: 'center',
   });
   layout.gap(4);
 
@@ -715,6 +767,10 @@ async function build(): Promise<{ bytes: Uint8Array; pageCount: number }> {
   drawSectionHeader(layout, 'Skills', fonts);
   for (let i = 0; i < resume.skills.length; i += 1) {
     const group = resume.skills[i];
+    // Single regular-weight line ("Label: items"). Keeping label + items in one
+    // font lets the viewer do all the spacing, so the label→items gap renders
+    // identically on every line/viewer (a bold label would need a second draw,
+    // and non-embedded font metric drift made that gap inconsistent).
     const line = `${group.label}: ${group.items.join(' · ')}`;
     drawWrapped(layout, line, {
       font: fonts.regular,
@@ -752,19 +808,44 @@ function drawContactLine(layout: Layout, fonts: Fonts): void {
   const sepW = font.widthOfTextAtSize(sep, size);
   const lh = layout.lineHeight(size);
 
+  // Precompute printed segments and the full one-line width.
+  const segs = resume.contact.map((c, i) => {
+    const printed = safe(c.printLabel ?? c.label, font, `contact[${i}]`);
+    return { printed, href: c.href, w: font.widthOfTextAtSize(printed, size) };
+  });
+  const totalW =
+    segs.reduce((acc, s) => acc + s.w, 0) + sepW * Math.max(0, segs.length - 1);
+
+  const drawSeg = (s: { printed: string; href: string; w: number }, x: number, by: number) => {
+    layout.page.drawText(s.printed, { x, y: by, size, font, color: BLACK });
+    if (isLinkHref(s.href)) addLinkAnnotation(layout, x, by, s.w, size, s.href);
+  };
+
   layout.ensureSpace(lh);
+
+  // Common case: the whole line fits — draw it centered within the content width.
+  if (totalW <= CONTENT_W) {
+    const baselineY = layout.y - size;
+    let x = MARGIN + (CONTENT_W - totalW) / 2;
+    for (let i = 0; i < segs.length; i += 1) {
+      if (i > 0) {
+        layout.page.drawText(sep, { x, y: baselineY, size, font, color: BLACK });
+        x += sepW;
+      }
+      drawSeg(segs[i], x, baselineY);
+      x += segs[i].w;
+    }
+    layout.y -= lh;
+    return;
+  }
+
+  // Fallback: left-aligned with wrapping if the contacts ever exceed one line.
   let x = MARGIN;
   let baselineY = layout.y - size;
   let firstOnLine = true;
-
-  for (let i = 0; i < resume.contact.length; i += 1) {
-    const c = resume.contact[i];
-    const printed = safe(c.printLabel ?? c.label, font, `contact[${i}]`);
-    const segW = font.widthOfTextAtSize(printed, size);
-
-    // Wrap to a new line if this segment (plus a preceding separator) would
-    // overflow the content width — but never on the first segment of a line.
-    const needed = (firstOnLine ? 0 : sepW) + segW;
+  for (let i = 0; i < segs.length; i += 1) {
+    const s = segs[i];
+    const needed = (firstOnLine ? 0 : sepW) + s.w;
     if (!firstOnLine && x - MARGIN + needed > CONTENT_W) {
       layout.y -= lh;
       layout.ensureSpace(lh);
@@ -772,20 +853,14 @@ function drawContactLine(layout: Layout, fonts: Fonts): void {
       baselineY = layout.y - size;
       firstOnLine = true;
     }
-
     if (!firstOnLine) {
       layout.page.drawText(sep, { x, y: baselineY, size, font, color: BLACK });
       x += sepW;
     }
-
-    layout.page.drawText(printed, { x, y: baselineY, size, font, color: BLACK });
-    if (isLinkHref(c.href)) {
-      addLinkAnnotation(layout, x, baselineY, segW, size, c.href);
-    }
-    x += segW;
+    drawSeg(s, x, baselineY);
+    x += s.w;
     firstOnLine = false;
   }
-
   layout.y -= lh;
 }
 
@@ -793,7 +868,7 @@ function drawContactLine(layout: Layout, fonts: Fonts): void {
  * Draw a "- " bulleted, hanging-indented paragraph.
  */
 function drawBullet(layout: Layout, rawText: string, fonts: Fonts, fieldPath: string): void {
-  const marker = '- ';
+  const marker = '• '; // • bullet dot (WinAnsi 0x95 — stays extractable)
   const markerW = fonts.regular.widthOfTextAtSize(marker, SIZE_BODY);
   const textX = MARGIN + markerW;
   const textMaxW = CONTENT_W - markerW;
