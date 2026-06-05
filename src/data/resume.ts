@@ -62,14 +62,9 @@ export const resume: ResumeData = {
   contact: [
     { label: 'tanel.treuberg@gmail.com', href: 'mailto:tanel.treuberg@gmail.com' },
     {
-      label: 'GitHub',
-      href: 'https://github.com/The-Magicians-Code',
-      printLabel: 'github.com/The-Magicians-Code',
-    },
-    {
-      label: 'LinkedIn',
-      href: 'https://www.linkedin.com/in/taneltreuberg/',
-      printLabel: 'linkedin.com/in/taneltreuberg',
+      label: 'Portfolio',
+      href: 'https://themagicianscode.dev',
+      printLabel: 'themagicianscode.dev',
     },
   ],
   summary:
