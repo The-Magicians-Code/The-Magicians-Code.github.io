@@ -81,7 +81,6 @@ export const resume: ResumeData = {
         'Built and maintained Python automation scripts executed via GitLab CI/CD, eliminating ~15 hours/month of manual data processing across operations teams.',
         'Developed and tested features for the internal Balancing Market System (BMS), reducing message delivery latency and processing time by 30% for Estonia’s national energy grid operations.',
         'Containerised monolithic applications using Docker, enabling consistent deployments across development and test environments.',
-        'Managed Jenkins-based process automations with monitoring via Grafana and ELK stack, reducing incident detection time for critical pipelines.',
       ],
     },
     {
