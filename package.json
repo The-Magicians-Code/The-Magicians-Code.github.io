@@ -11,7 +11,8 @@
     "preview": "astro preview",
     "astro": "astro",
     "check": "astro check && npm run check:content",
-    "check:content": "node scripts/check-content.mjs"
+    "check:content": "node scripts/check-content.mjs",
+    "resume:pdf": "astro build && node scripts/render-resume-pdf.mjs"
   },
   "dependencies": {
     "@iconify-json/lucide": "^1.2.105",
@@ -22,6 +23,12 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
+    "@fontsource-variable/fraunces": "5.2.9",
+    "@fontsource-variable/geist": "5.2.9",
+    "@fontsource-variable/geist-mono": "5.2.8",
+    "pdf-lib": "1.17.1",
+    "playwright": "1.60.0",
+    "sirv": "3.0.2",
     "typescript": "^6.0.3"
   }
 }
