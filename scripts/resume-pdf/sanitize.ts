@@ -35,12 +35,13 @@ const SUPERSCRIPTS: Record<string, string> = {
   '⁻': '-', // U+207B superscript minus
 };
 
-// Direct one-to-(zero-or-more) replacements for genuinely non-WinAnsi chars.
-// Deliberately small: only characters that Helvetica's WinAnsi encoder cannot
-// render. WinAnsi-encodable chars (accented Latin letters, °, ×, ·, en/em
+// Direct one-to-(zero-or-more) stylistic replacements. NBSP (U+00A0) below IS
+// WinAnsi-encodable, so folding it to a normal space is a deliberate stylistic
+// choice (predictable wrapping), not an encodability fix. Other WinAnsi chars
+// (accented Latin letters, °, ×, ·, en/em
 // dashes, smart quotes, …) are intentionally absent so they pass through.
 const DIRECT: Record<string, string> = {
-  ' ': ' ', // non-breaking space → normal space
+  ' ': ' ', // non-breaking space (U+00A0, WinAnsi) → normal space (stylistic)
 };
 
 function snippet(input: string): string {

@@ -183,9 +183,12 @@ function splitToken(token: string, font: PDFFont, size: number, maxWidth: number
 // Link annotation. Builds a real /Link annot with a PDF-string URI.
 // ---------------------------------------------------------------------------
 function percentEncodeUri(uri: string): string {
-  // mailto: keep as-is except space; http(s): encodeURI handles most.
-  // encodeURI preserves :/?#[]@!$&'()*+,;= and alphanumerics, which is what we want.
-  return encodeURI(uri);
+  // Idempotent encode: leave existing valid %XX escapes intact, and encode only
+  // characters that are actually unsafe in a PDF /URI. A bare "%" not followed by
+  // two hex digits is treated as a literal and encoded; "%20" and friends are
+  // preserved as-is (so re-running never turns "%20" into "%2520"). encodeURI
+  // preserves :/?#[]@!$&'()*+,;= and alphanumerics, which is what we want.
+  return uri.replace(/%(?![0-9A-Fa-f]{2})|[^\x21-\x7E]/g, (c) => encodeURI(c));
 }
 
 function addLinkAnnotation(
@@ -286,7 +289,9 @@ function drawWrapped(layout: Layout, rawText: string, opts: DrawOpts): void {
 function drawSectionHeader(layout: Layout, title: string, fonts: Fonts): void {
   const headerLh = layout.lineHeight(SIZE_SECTION);
   const followLh = layout.lineHeight(SIZE_BODY);
-  // Header + at least one following line must fit.
+  // Orphan prevention: reserve space for the header line plus one following body
+  // line so a section title is never stranded alone at the page bottom. Assumes a
+  // single-line header (section titles are short and never wrap).
   layout.ensureSpace(headerLh + followLh + 6);
   layout.gap(4);
   drawWrapped(layout, title.toUpperCase(), {
@@ -326,8 +331,14 @@ async function build(): Promise<{ bytes: Uint8Array; pageCount: number }> {
   }
   const fixedDate = new Date(Date.UTC(year, monthIndex, 1, 0, 0, 0, 0));
 
-  doc.setTitle(`${normalizeForPdf(resume.name)} - Resume`);
-  doc.setAuthor(normalizeForPdf(resume.name));
+  // Metadata strings go through the same normalize + encode gate as on-page
+  // text, so a stray non-WinAnsi char in the name can't silently bypass it.
+  const metaTitle = normalizeForPdf(`${resume.name} - Resume`);
+  const metaAuthor = normalizeForPdf(resume.name);
+  assertEncodable(metaTitle, fonts.regular, 'meta.title');
+  assertEncodable(metaAuthor, fonts.regular, 'meta.author');
+  doc.setTitle(metaTitle);
+  doc.setAuthor(metaAuthor);
   doc.setSubject('Resume');
   doc.setCreator('resume-pdf generator');
   doc.setProducer('pdf-lib');
