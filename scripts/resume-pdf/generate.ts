@@ -23,7 +23,7 @@ import {
   type PDFPage,
 } from 'pdf-lib';
 import { resume } from '../../src/data/resume';
-import { normalizeToAscii, assertEncodable } from './sanitize';
+import { normalizeForPdf, assertEncodable } from './sanitize';
 
 // ---------------------------------------------------------------------------
 // Page geometry
@@ -104,9 +104,9 @@ class Layout {
 // Text safety: normalize then encode-check against the font that will draw it.
 // ---------------------------------------------------------------------------
 function safe(text: string, font: PDFFont, fieldPath: string): string {
-  const ascii = normalizeToAscii(text);
-  assertEncodable(ascii, font, fieldPath);
-  return ascii;
+  const normalized = normalizeForPdf(text);
+  assertEncodable(normalized, font, fieldPath);
+  return normalized;
 }
 
 // ---------------------------------------------------------------------------
@@ -326,8 +326,8 @@ async function build(): Promise<{ bytes: Uint8Array; pageCount: number }> {
   }
   const fixedDate = new Date(Date.UTC(year, monthIndex, 1, 0, 0, 0, 0));
 
-  doc.setTitle(`${normalizeToAscii(resume.name)} — Resume`.replace('—', '-'));
-  doc.setAuthor(normalizeToAscii(resume.name));
+  doc.setTitle(`${normalizeForPdf(resume.name)} - Resume`);
+  doc.setAuthor(normalizeForPdf(resume.name));
   doc.setSubject('Resume');
   doc.setCreator('resume-pdf generator');
   doc.setProducer('pdf-lib');
