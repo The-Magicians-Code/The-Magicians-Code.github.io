@@ -706,13 +706,14 @@ async function build(): Promise<{ bytes: Uint8Array; pageCount: number }> {
     // below. A title-on-its-own-line keeps the bold weight without the label→items
     // horizontal spacing drift that a bold inline label suffered (non-embedded
     // font metrics differ per viewer).
-    if (i > 0) layout.gap(4); // separate groups
+    // Bold subsection title on its own line (no colon), items on the line below,
+    // all at the document's normal line spacing. The bold titles delineate the
+    // groups (no extra inter-group gap), so the spacing stays uniform throughout.
     drawWrapped(layout, group.label, {
       font: fonts.bold,
       size: SIZE_BODY,
       fieldPath: `skills[${i}] (title)`,
     });
-    layout.gap(-3); // pull the items up tight under their title
     drawWrapped(layout, group.items.join(' · '), {
       font: fonts.regular,
       size: SIZE_BODY,
