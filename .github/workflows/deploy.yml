@@ -26,8 +26,9 @@ jobs:
       - uses: actions/configure-pages@v5
       - run: npm ci
       - run: npm run build
-      - run: npx playwright install --with-deps chromium
-      - run: node scripts/render-resume-pdf.mjs
+      - run: sudo apt-get update && sudo apt-get install -y poppler-utils
+      - run: npm run resume:pdf
+      - run: npm run resume:pdf:verify
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
