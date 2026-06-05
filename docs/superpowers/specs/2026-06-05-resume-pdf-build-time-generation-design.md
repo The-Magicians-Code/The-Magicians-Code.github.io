@@ -1,5 +1,7 @@
 # Resume PDF — Build-Time Generation Design
 
+> **⚠️ Superseded (2026-06-05):** the headless-Chromium render approach described below was implemented, then replaced by a direct `pdf-lib` ATS-minimal generator (non-embedded Helvetica, no browser). See [docs/superpowers/plans/2026-06-05-resume-pdf-ats-rework.md](../plans/2026-06-05-resume-pdf-ats-rework.md) for the current pipeline. This document is retained for historical context only.
+
 **Date:** 2026-06-05
 **Status:** Approved design, pending implementation plan
 **Supersedes:** `docs/resume/cv-to-pdf-handover.md` (a rejected alternative — standalone Cloudflare Worker + on-demand headless render; see "Rejected alternatives")
