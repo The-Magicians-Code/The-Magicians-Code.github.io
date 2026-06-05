@@ -19,6 +19,9 @@ pnpm-debug.log*
 dist/
 .astro/
 
+# Build-time generated resume PDF (dev convenience copy; CI writes dist/resume.pdf)
+public/resume.pdf
+
 # IDE / editor
 .vscode/*
 !.vscode/extensions.json
