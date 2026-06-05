@@ -34,12 +34,13 @@ const REQUIRED_FONTS = [
 const REQUIRED_TEXT = ['Tanel', 'Experience', 'Skills'];
 
 function fail(msg) {
-  console.error(`✗ render-resume-pdf: ${msg}`);
-  process.exit(1);
+  throw new Error(msg);
 }
 
 if (!existsSync(path.join(DIST, 'resume', 'index.html'))) {
-  fail('dist/resume/index.html not found — run `astro build` first.');
+  // Nothing is open yet at this point — direct early exit is safe.
+  console.error('✗ render-resume-pdf: dist/resume/index.html not found — run `astro build` first.');
+  process.exit(1);
 }
 
 const serve = sirv(DIST, { dev: false, etag: true });
@@ -53,8 +54,10 @@ await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
 const { port } = server.address();
 const url = `http://127.0.0.1:${port}/resume/`;
 
-const browser = await chromium.launch();
+let code = 0;
+let browser;
 try {
+  browser = await chromium.launch();
   const page = await browser.newPage();
   const response = await page.goto(url, { waitUntil: 'load' });
 
@@ -94,18 +97,17 @@ try {
     fail(`page MediaBox not A4: ${width.toFixed(1)}x${height.toFixed(1)}pt`);
   }
 
-  // Non-gating fill telemetry: A4 print width ~794px @96dpi; usable height ~1056px.
-  const contentPx = await page.evaluate(() => {
-    const el = document.querySelector('.resume');
-    return el ? Math.round(el.getBoundingClientRect().height) : 0;
-  });
-  console.log(`✓ render-resume-pdf: 1 A4 page; .resume height ~${contentPx}px`);
+  console.log(`✓ render-resume-pdf: 1 A4 page (${width.toFixed(0)}x${height.toFixed(0)}pt) → ${OUT}`);
 
   if (process.argv.includes('--copy-public')) {
     await copyFile(OUT, path.join(ROOT, 'public', 'resume.pdf'));
     console.log('✓ copied to public/resume.pdf (dev convenience, gitignored)');
   }
+} catch (err) {
+  console.error(`✗ render-resume-pdf: ${err.message}`);
+  code = 1;
 } finally {
-  await browser.close();
+  await browser?.close();
   server.close();
 }
+process.exit(code);
