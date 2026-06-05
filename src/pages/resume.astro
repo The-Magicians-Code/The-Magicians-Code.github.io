@@ -20,7 +20,7 @@ import { resume } from '../data/resume';
       <ResumeModeToggle defaultMode="interactive" />
       <a
         href="/resume.pdf"
-        download="Tanel_Treuberg_Software_Engineer.pdf"
+        download={`${resume.meta.pdfFilename}.pdf`}
         class="resume-print-btn"
         aria-label="Download resume as PDF"
       >

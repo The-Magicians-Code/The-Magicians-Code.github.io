@@ -50,7 +50,7 @@ export interface ResumeData {
   interests?: string;
   meta: {
     updatedAt: string; // "2026-05" — month-level is enough for a CV
-    pdfFilename: string; // suggested filename for window.print()
+    pdfFilename: string; // download filename (no extension) for the static /resume.pdf export
     sourceArtifact: string; // path to the docx, kept in repo
   };
 }
