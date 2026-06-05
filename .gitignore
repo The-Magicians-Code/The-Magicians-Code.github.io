@@ -37,3 +37,9 @@ logs/
 
 # Brainstorming visual companion scratch
 .superpowers/
+
+# impeccable live-mode local config (per-machine dev tooling: HTML entries,
+# CSP-checked flag, dev-server paths). The canonical design spec
+# (DESIGN.md and .impeccable/design.json) IS committed — the live/
+# subdirectory is the only impeccable artifact that's local-only.
+.impeccable/live/
