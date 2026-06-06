@@ -5,8 +5,8 @@
 // deterministic: fixed metadata, fixed creation/mod dates derived from
 // resume.meta.updatedAt, no Date.now()/Math.random().
 //
-// Run: `npm run resume:pdf` (writes dist/resume.pdf). Pass `--copy-public` to
-// also write public/resume.pdf.
+// Run: `npm run resume:pdf` (writes dist/<PDF_FILENAME>). Pass `--copy-public` to
+// also write public/<PDF_FILENAME>.
 
 import { mkdir, writeFile, copyFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -36,6 +36,11 @@ const CONTENT_BOTTOM = MARGIN; // y must stay above this
 
 const BLACK = rgb(0, 0, 0);
 const RULE = rgb(0, 0, 0); // black divider under section headers
+
+// Output filename. On GitHub Pages this also becomes the download filename (no
+// Content-Disposition is possible), so it's named after the person rather than
+// "resume.pdf". Must match the button href, robots.txt, .gitignore and verify script.
+const PDF_FILENAME = 'Tanel_Treuberg_Software_Engineer.pdf';
 
 // Type scale
 const SIZE_NAME = 18;
@@ -584,7 +589,7 @@ async function build(): Promise<{ bytes: Uint8Array; pageCount: number }> {
   // text, so a stray non-WinAnsi char in the name can't silently bypass it.
   // Window/tab title: the name + role joined with underscores (no extension), e.g.
   // "Tanel_Treuberg_Software_Engineer". Paired with showInWindowTitleBar below so
-  // viewers use this instead of the "resume.pdf" filename.
+  // viewers use this (without the .pdf) instead of the URL filename.
   const metaTitle = normalizeForPdf(`${resume.name} ${resume.title}`.replace(/\s+/g, '_'));
   const metaAuthor = normalizeForPdf(resume.name);
   assertEncodable(metaTitle, fonts.regular, 'meta.title');
@@ -851,7 +856,10 @@ async function main(): Promise<void> {
   const here = path.dirname(fileURLToPath(import.meta.url));
   const repoRoot = path.resolve(here, '..', '..');
   const distDir = path.join(repoRoot, 'dist');
-  const outPath = path.join(distDir, 'resume.pdf');
+  // The served filename IS the download name on GitHub Pages (no Content-Disposition
+  // header is possible), so name it after the person, not "resume.pdf". Keep this in
+  // sync with the button href, robots.txt, .gitignore and verify script.
+  const outPath = path.join(distDir, PDF_FILENAME);
 
   const { bytes, pageCount } = await build();
 
@@ -868,13 +876,13 @@ async function main(): Promise<void> {
   }
 
   if (process.argv.includes('--copy-public')) {
-    const publicPath = path.join(repoRoot, 'public', 'resume.pdf');
+    const publicPath = path.join(repoRoot, 'public', PDF_FILENAME);
     await mkdir(path.dirname(publicPath), { recursive: true });
     await copyFile(outPath, publicPath);
-    console.log(`✓ resume-pdf: also copied → public/resume.pdf`);
+    console.log(`✓ resume-pdf: also copied → public/${PDF_FILENAME}`);
   }
 
-  console.log(`✓ resume-pdf: ${pageCount} page(s) → dist/resume.pdf`);
+  console.log(`✓ resume-pdf: ${pageCount} page(s) → dist/${PDF_FILENAME}`);
 }
 
 main().catch((err) => {

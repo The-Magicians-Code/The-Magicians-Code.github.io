@@ -1,4 +1,4 @@
-// Machine-readability gate for dist/resume.pdf, using poppler (pdfinfo + pdftotext).
+// Machine-readability gate for dist/Tanel_Treuberg_Software_Engineer.pdf, using poppler (pdfinfo + pdftotext).
 // Asserts the PDF is A4, has selectable text, and that key content extracts in the
 // correct reading order. Exits non-zero (fails CI) on any miss. Run AFTER the generator.
 import { execFileSync } from 'node:child_process';
@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
 const ROOT = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
-const PDF = path.join(ROOT, 'dist', 'resume.pdf');
+const PDF = path.join(ROOT, 'dist', 'Tanel_Treuberg_Software_Engineer.pdf');
 
 // Substrings that must be present, in this extraction order (reading order).
 const ORDERED = ['Tanel', 'EXPERIENCE', 'EDUCATION', 'SKILLS'];
