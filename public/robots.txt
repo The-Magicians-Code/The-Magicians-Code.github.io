@@ -1,3 +1,2 @@
 User-agent: *
-Disallow: /resume/
 Disallow: /Tanel_Treuberg_Software_Engineer.pdf
