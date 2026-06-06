@@ -117,6 +117,14 @@ export const resume: ResumeData = {
       ],
     },
   ],
+  // ATS-minimal, text-only skill curation for the resume PDF. This is
+  // INTENTIONALLY a separate list from the website's visual stack in
+  // src/data/techStack.ts (which carries logo slugs + `featured` rings and a
+  // different, brand-mark-driven curation). The two overlap but are not the
+  // same: items like TypeScript/NumPy/Pandas/GNU+Linux/macOS live only here;
+  // ONNX/OpenCV/GStreamer/Kubernetes/Grafana/ELK/Postman/Scrapy live only there.
+  // Shared items (Python, Docker, Jenkins, GitLab CI/CD, Flask, PostgreSQL, Git,
+  // …) must be kept in sync by hand across both files.
   skills: [
     {
       label: 'Languages',
