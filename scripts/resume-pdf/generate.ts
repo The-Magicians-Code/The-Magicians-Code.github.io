@@ -535,15 +535,15 @@ function drawSectionHeader(layout: Layout, title: string, fonts: Fonts): void {
     size: SIZE_SECTION,
     fieldPath: `section:${title}`,
   });
-  // Bold divider rule, centered vertically between the section header and the first
-  // content line (equal gap above and below). Mirrors the web heading underline.
+  // Hairline divider rule, centered vertically between the section header and the
+  // first content line (equal gap above and below). Mirrors the web heading underline.
   const SECTION_RULE_GAP = 4;
   layout.gap(SECTION_RULE_GAP);
   const ruleY = layout.y;
   layout.page.drawLine({
     start: { x: MARGIN, y: ruleY },
     end: { x: PAGE_W - MARGIN, y: ruleY },
-    thickness: 1.2,
+    thickness: 0.6,
     color: RULE,
   });
   layout.gap(SECTION_RULE_GAP);
@@ -599,7 +599,7 @@ async function build(): Promise<{ bytes: Uint8Array; pageCount: number }> {
 
   const layout = new Layout(doc, fonts);
 
-  // --- Header: name → title → location → contact -------------------------
+  // --- Header: name → location → contact links ----------------------------
   drawWrapped(layout, resume.name, {
     font: fonts.bold,
     size: SIZE_NAME,
@@ -607,12 +607,6 @@ async function build(): Promise<{ bytes: Uint8Array; pageCount: number }> {
     align: 'center',
   });
   layout.gap(2);
-  drawWrapped(layout, resume.title, {
-    font: fonts.regular,
-    size: SIZE_TITLE,
-    fieldPath: 'title',
-    align: 'center',
-  });
   drawWrapped(layout, `${resume.baseLocation.city}, ${resume.baseLocation.country}`, {
     font: fonts.regular,
     size: SIZE_BODY,
@@ -621,9 +615,9 @@ async function build(): Promise<{ bytes: Uint8Array; pageCount: number }> {
   });
   layout.gap(4);
 
-  // Contact line: lay the contacts out inline on a single line, separated by
-  // " · ", with each segment getting its own clickable /Link rect so the three
-  // annotations don't overlap and each points to its own URI.
+  // Contact line: the contact links laid out inline on a single line separated by
+  // " · ", each getting its own clickable /Link rect so the annotations don't
+  // overlap and each points to its own URI.
   drawContactLine(layout, fonts);
   layout.gap(6);
 
@@ -701,8 +695,10 @@ async function build(): Promise<{ bytes: Uint8Array; pageCount: number }> {
     layout.gap(4);
   }
 
-  // --- Skills ------------------------------------------------------------
-  drawSectionHeader(layout, 'Skills', fonts);
+  // --- Skills & Interests ------------------------------------------------
+  // Interests are the final group in resume.skills, so they render inline under
+  // this combined heading (no separate section).
+  drawSectionHeader(layout, 'Skills & Interests', fonts);
   for (let i = 0; i < resume.skills.length; i += 1) {
     const group = resume.skills[i];
     // Bold subsection title on its own line (no colon), with its items on the line
@@ -721,17 +717,6 @@ async function build(): Promise<{ bytes: Uint8Array; pageCount: number }> {
       font: fonts.regular,
       size: SIZE_BODY,
       fieldPath: `skills[${i}]`,
-    });
-  }
-
-  // --- Interests ---------------------------------------------------------
-  if (resume.interests) {
-    layout.gap(4);
-    drawSectionHeader(layout, 'Interests', fonts);
-    drawWrapped(layout, resume.interests, {
-      font: fonts.regular,
-      size: SIZE_BODY,
-      fieldPath: 'interests',
     });
   }
 
