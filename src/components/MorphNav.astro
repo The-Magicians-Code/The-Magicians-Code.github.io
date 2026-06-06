@@ -25,6 +25,8 @@ export interface NavSection {
 export interface NavLink {
   label: string;
   href: string;
+  /** Open in a new tab (e.g. the build-time resume PDF). */
+  external?: boolean;
 }
 
 interface Props {
@@ -51,7 +53,7 @@ const {
     { label: "About", href: "/#about" },
     { label: "Work", href: "/#projects" },
     { label: "Stack", href: "/#skills-tools" },
-    { label: "Resume", href: "/resume/" },
+    { label: "Resume", href: "/Tanel_Treuberg_Software_Engineer.pdf", external: true },
     { label: "Contact", href: "/#contact" },
   ],
   introMs = 2100,
@@ -93,7 +95,11 @@ const heroId = sections[0]?.id ?? "hero";
     {links.length > 0 && (
       <div class="morph-links">
         {links.map((link) => (
-          <a class="morph-link" href={link.href}>{link.label}</a>
+          <a
+            class="morph-link"
+            href={link.href}
+            {...(link.external ? { target: "_blank", rel: "noopener" } : {})}
+          >{link.label}</a>
         ))}
       </div>
     )}
