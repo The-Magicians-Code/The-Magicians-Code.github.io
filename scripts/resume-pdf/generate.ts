@@ -582,7 +582,7 @@ async function build(): Promise<{ bytes: Uint8Array; pageCount: number }> {
 
   // Metadata strings go through the same normalize + encode gate as on-page
   // text, so a stray non-WinAnsi char in the name can't silently bypass it.
-  const metaTitle = normalizeForPdf(`${resume.name} - Resume`);
+  const metaTitle = normalizeForPdf(`${resume.name} — ${resume.title}`);
   const metaAuthor = normalizeForPdf(resume.name);
   assertEncodable(metaTitle, fonts.regular, 'meta.title');
   assertEncodable(metaAuthor, fonts.regular, 'meta.author');
