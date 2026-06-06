@@ -40,23 +40,6 @@ export const SUPERSCRIPT_TO_ASCII: Record<string, string> = {
   '⁻': '-', // U+207B superscript minus
 };
 
-/** A logical text run: a span of text drawn either inline or as a raised superscript. */
-export interface TextRun {
-  /** Drawable text. For `sup` runs this is already ASCII-mapped; for normal runs it is raw. */
-  text: string;
-  /** True if this run should be drawn smaller and raised above the baseline. */
-  sup: boolean;
-}
-
-/**
- * Wrap a raw string as a single normal run. (Superscripts are no longer drawn
- * raised; they are flattened to caret notation by `normalizeForPdf` instead — see
- * the file header. This shim keeps the generator's run-based wrapping pipeline.)
- */
-export function splitSuperscriptRuns(input: string): TextRun[] {
-  return [{ text: input, sup: false }];
-}
-
 // Direct one-to-(zero-or-more) stylistic replacements. NBSP (U+00A0) below IS
 // WinAnsi-encodable, so folding it to a normal space is a deliberate stylistic
 // choice (predictable wrapping), not an encodability fix. Other WinAnsi chars
