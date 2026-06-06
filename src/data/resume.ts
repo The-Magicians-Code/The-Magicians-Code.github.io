@@ -47,11 +47,8 @@ export interface ResumeData {
   experience: ExperienceEntry[];
   education: EducationEntry[];
   skills: SkillGroup[];
-  interests?: string;
   meta: {
     updatedAt: string; // "2026-05" — month-level is enough for a CV
-    pdfFilename: string; // suggested filename for window.print()
-    sourceArtifact: string; // path to the docx, kept in repo
   };
 }
 
@@ -62,8 +59,13 @@ export const resume: ResumeData = {
   contact: [
     { label: 'tanel.treuberg@gmail.com', href: 'mailto:tanel.treuberg@gmail.com' },
     {
+      label: 'Portfolio',
+      href: 'https://themagicianscode.dev',
+      printLabel: 'themagicianscode.dev',
+    },
+    {
       label: 'GitHub',
-      href: 'https://github.com/The-Magicians-Code',
+      href: 'https://github.com/The-Magicians-Code/',
       printLabel: 'github.com/The-Magicians-Code',
     },
     {
@@ -73,8 +75,31 @@ export const resume: ResumeData = {
     },
   ],
   summary:
-    'Software Engineer with 3 years of experience in backend development, infrastructure automation, and applied machine learning. Proven track record of delivering measurable performance improvements in energy-sector web applications and building production computer vision pipelines for autonomous marine vessels. Proficient in Python, Docker, and CI/CD, with a strong foundation in embedded ML deployment.',
+    'Software Engineer with 6 years of experience across backend development, infrastructure automation, applied machine learning, and data analytics. Track record of measurable performance gains in energy-sector web apps and production computer vision for autonomous marine vessels, plus game-telemetry dashboards and self-hosted LLM analytics that drive product decisions — fluent in Python, Docker, and CI/CD.',
   experience: [
+    {
+      company: 'Lionbridge Games',
+      role: 'Principal Data Analyst',
+      location: { city: 'Remote', country: 'Poland' },
+      dates: { start: '2024-07', end: null, display: 'Jul 2024 – Present' },
+      tagline: 'Data pipelines, dashboards, and self-hosted LLM analytics for game studios.',
+      bullets: [
+        'Migrated the sentiment-analysis pipeline from a third-party external service to a self-hosted, internal, locally-run LLM, eliminating per-call vendor cost and keeping review data in-house.',
+        'Partner with game-studio clients to refine data-extraction pipelines and build dashboards that surface immediately actionable insights, improving game balance and performance.',
+        'Refactored the codebase of a player-review sentiment-analysis application and optimised its ingestion engine, increasing the speed at which game reviews are pulled and processed.',
+      ],
+    },
+    {
+      company: 'Organic Flow (Freelance)',
+      role: 'Freelance Web Developer',
+      location: { city: 'Remote', country: 'Poland' },
+      dates: { start: '2026-02', end: null, display: 'Feb 2026 – Present' },
+      tagline: 'Ground-up rebuild of a dance school’s WordPress/WooCommerce site as an edge-native commerce stack.',
+      bullets: [
+        'Rebuilt a Polish dance school’s WordPress + WooCommerce booking site as a custom edge-native stack (Astro SSR on Cloudflare Workers, Supabase, Przelewy24), cutting homepage HTML 5× with sub-500ms TTFB.',
+        'Delivered a self-serve admin so the owner edits products, prices, and copy without a developer (changes live in ~60s), and layered abuse defense (Turnstile, rate limits, CSRF, signed webhooks) from Cloudflare primitives.',
+      ],
+    },
     {
       company: 'Elering',
       role: 'Software Engineer',
@@ -85,8 +110,6 @@ export const resume: ResumeData = {
         'Refactored an internal web application (backend and frontend) that pulls data from the SCADA ISR database, reducing data export time by 10× and cutting average UI load time from ~8s to under 2s.',
         'Built and maintained Python automation scripts executed via GitLab CI/CD, eliminating ~15 hours/month of manual data processing across operations teams.',
         'Developed and tested features for the internal Balancing Market System (BMS), reducing message delivery latency and processing time by 30% for Estonia’s national energy grid operations.',
-        'Containerised monolithic applications using Docker, enabling consistent deployments across development and test environments.',
-        'Managed Jenkins-based process automations with monitoring via Grafana and ELK stack, reducing incident detection time for critical pipelines.',
       ],
     },
     {
@@ -97,20 +120,8 @@ export const resume: ResumeData = {
       tagline: 'Real-time computer vision for an autonomous Navy patrol vessel.',
       bullets: [
         'Designed and deployed a real-time computer vision system for an autonomous Navy patrol vessel (Navy 18 WP), enabling automated maritime object detection for unmanned maneuvering trials.',
-        'Selected YOLOv5 (Ultralytics) for optimal speed–accuracy trade-off; containerised the full pipeline with Docker on Nvidia NGC for reproducible deployment on Jetson AGX Xavier (32 GB).',
-        'Optimised inference pipeline using TensorRT FP16 quantisation, ONNX conversion, and NVDEC hardware video decoding, achieving an average 3.5× speed increase (best case 4.3×).',
-        'Negligible accuracy loss (1.7 × 10⁻³ mAP), 26.8% lower energy consumption, and 3.3°C temperature reduction, enabling sustained autonomous operation at sea.',
-        'Built multi-camera support (3 simultaneous inputs via GStreamer + OpenCV), reaching 1.4× throughput over single-input at the same resolution, with architecture-aware code paths for x86_64 dev and aarch64 production.',
-      ],
-    },
-    {
-      company: 'SP Engineers OÜ',
-      role: 'Electrical Engineering Intern',
-      location: { city: 'Tallinn', country: 'Estonia' },
-      dates: { start: '2021-07', end: '2021-10', display: 'Jul 2021 – Oct 2021' },
-      tagline: 'Firmware for ESP32-based sensor-monitoring prototypes.',
-      bullets: [
-        'Developed firmware for ESP32 microcontrollers powering sensor-aided monitoring prototypes, gaining hands-on experience with embedded C++ and hardware-software integration.',
+        'Optimised the inference pipeline (TensorRT FP16, ONNX, NVDEC decoding) for a 3.5× average speed-up with negligible accuracy loss (1.7 × 10⁻³ mAP), 26.8% lower energy use, and a 3.3°C temperature drop.',
+        'Built a containerised inference system (YOLOv5 / Ultralytics, Docker on Nvidia NGC) deploying reproducibly to Jetson AGX Xavier (32 GB), with x86_64/aarch64 code paths and multi-camera support (3 inputs via GStreamer + OpenCV).',
       ],
     },
   ],
@@ -122,37 +133,50 @@ export const resume: ResumeData = {
       dates: { start: '2020-09', end: '2023-06', display: 'Graduated Jun 2023' },
       notes: [
         'Thesis: “Improving Situational Awareness of Autonomous Vessels Using Computer Vision” — developed and benchmarked 10 YOLOv5 model variants on Jetson AGX Xavier for real-time maritime object detection.',
-        'Organised TalTech Energy Conference 2020; former member of Faculty of Engineering Student Council (INSÜK).',
       ],
     },
   ],
+  // ATS-minimal, text-only skill curation for the resume PDF. This is
+  // INTENTIONALLY a separate list from the website's visual stack in
+  // src/data/techStack.ts (which carries logo slugs + `featured` rings and a
+  // different, brand-mark-driven curation). The two overlap but are not the
+  // same: items like TypeScript/NumPy/Pandas/GNU+Linux/macOS live only here;
+  // ONNX/OpenCV/GStreamer/Kubernetes/Grafana/ELK/Postman/Scrapy live only there.
+  // Shared items (Python, Docker, Jenkins, GitLab CI/CD, Flask, PostgreSQL, Git,
+  // …) must be kept in sync by hand across both files.
   skills: [
     {
       label: 'Languages',
-      items: ['Python', 'C++', 'JavaScript', 'SQL', 'Bash', 'Swift'],
+      items: ['Python', 'TypeScript', 'Swift', 'C++', 'JavaScript', 'SQL', 'Bash'],
     },
     {
       label: 'ML / AI',
-      items: ['PyTorch', 'TensorFlow', 'TensorRT', 'NumPy', 'Pandas', 'Nvidia Jetson'],
+      items: ['PyTorch', 'TensorFlow', 'TensorRT', 'NumPy', 'Pandas', 'Nvidia Jetson', 'LLMs (self-hosted)', 'LM Studio'],
     },
     {
-      label: 'Infrastructure & DevOps',
-      items: ['Docker', 'Jenkins', 'GitLab CI/CD', 'AWS S3', 'Grafana', 'ELK', 'Kubernetes (basic)'],
+      label: 'Infrastructure, Frameworks & Tools',
+      items: [
+        'Docker',
+        'GitHub Actions',
+        'Azure DevOps',
+        'Power BI',
+        'AWS S3',
+        'Flask',
+        'PostgreSQL',
+        'Git',
+        'Astro',
+        'Supabase',
+        'Cloudflare Workers',
+        'GNU/Linux',
+        'macOS',
+      ],
     },
     {
-      label: 'Frameworks & Tools',
-      items: ['Flask', 'REST API', 'Selenium', 'Scrapy', 'PostgreSQL', 'Postman', 'Git', 'Jira', 'Confluence'],
-    },
-    {
-      label: 'Platforms',
-      items: ['GNU/Linux', 'macOS'],
+      label: 'Interests',
+      items: ['Social dancing (tango argentino, Brazilian zouk)', 'guitar and piano', 'physics'],
     },
   ],
-  interests:
-    'Social dancing (tango argentino, Brazilian zouk), guitar and piano, physics.',
   meta: {
-    updatedAt: '2026-05',
-    pdfFilename: 'Tanel_Treuberg_Software_Engineer',
-    sourceArtifact: 'docs/resume/Tanel_Treuberg_Software_Engineer_Revised.docx',
+    updatedAt: '2026-06',
   },
 };

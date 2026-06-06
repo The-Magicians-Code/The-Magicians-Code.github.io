@@ -23,6 +23,8 @@
 - https://www.radix-ui.com
 - https://www.awwwards.com/awwwards/collections/css-js-animations/
 - https://www.hover.dev/components/heros
+- https://github.com/chenglou/chenglou.github.io
+- https://github.com/AndrewPrifer/liquid-dom
 
 ### Design
 - https://emilkowal.ski/ui/7-practical-animation-tips
@@ -72,12 +74,14 @@
 - In each project box extended content: "For all the nerds out there, this one's for you", with the detailed or "extravagant" button with deepwiki links
 - https://huggingface.co/NemoStation/Marlin-2B
 - https://github.com/lottiefiles/dotlottie-web
+- https://www.workforce.ai/
+- Tab title animated text and animated favicon SVG? [Studio Gusto](https://www.studiogusto.com/studio)
 
 ### Performance
 - WebGPU or WebGL
 - Web Animaions API
 - Lottie animations
-- GSAP
+- [GSAP](https://gsap.com)
 - https://performance.dev/how-is-linear-so-fast-a-technical-breakdown
 - https://www.npmjs.com/package/html-in-canvas-polyfill
 - https://performance.dev
