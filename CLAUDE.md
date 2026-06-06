@@ -24,6 +24,7 @@ Precedent: the bento card morph-jump ("expands right, then jumps to center", Saf
 - GitHub Actions workflow at [.github/workflows/deploy.yml](.github/workflows/deploy.yml) runs on push to `main`. The `build` job is explicit (it does not use `withastro/action`): `checkout` → `setup-node` (Node 22, npm cache) → `configure-pages` → `npm ci` → `npm run build` → install `poppler-utils` → `npm run resume:pdf` → `npm run resume:pdf:verify` → `upload-pages-artifact (path: dist)`. The `deploy` job then runs `actions/deploy-pages@v5`. The PDF is generated (and verified) **between** build and artifact upload, so it ships inside the Pages artifact.
 - Custom domain `themagicianscode.dev` is bound via repo Settings → Pages — read directly by `actions/deploy-pages`. There is intentionally no `public/CNAME`; do not re-add one.
 - Workflow convention from recent history: feature branch → PR → `chatgpt-codex-connector` bot auto-reviews on PR open → merge with a merge commit + branch delete. Match that pattern; don't push directly to `main`.
+- **Netlify (`netlify.toml`, project `earnest-gumdrop-996726`) is for dev-branch build previews only — NOT production.** Each PR gets a deploy preview at `https://deploy-preview-<PR#>--earnest-gumdrop-996726.netlify.app` that rebuilds on every push, used for remote testing (e.g. Safari/iOS parity on a real device). A green Netlify preview ≠ a prod deploy; **prod only updates when the branch merges to `main` and the Pages Action runs.**
 
 ### Resume PDF (build-time, ATS-minimal, deterministic)
 
