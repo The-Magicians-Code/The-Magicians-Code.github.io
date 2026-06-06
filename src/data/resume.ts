@@ -50,7 +50,6 @@ export interface ResumeData {
   interests?: string;
   meta: {
     updatedAt: string; // "2026-05" — month-level is enough for a CV
-    pdfFilename: string; // download filename (no extension) for the static /resume.pdf export
   };
 }
 
@@ -144,6 +143,5 @@ export const resume: ResumeData = {
     'Social dancing (tango argentino, Brazilian zouk), guitar and piano, physics.',
   meta: {
     updatedAt: '2026-06',
-    pdfFilename: 'Tanel_Treuberg_Software_Engineer',
   },
 };
