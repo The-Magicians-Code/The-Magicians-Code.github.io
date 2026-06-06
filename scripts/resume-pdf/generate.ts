@@ -21,6 +21,7 @@ import {
   StandardFonts,
   rgb,
   type PDFPage,
+  type PDFRef,
 } from 'pdf-lib';
 import { resume } from '../../src/data/resume';
 import { normalizeForPdf, assertEncodable } from './sanitize';
@@ -600,6 +601,36 @@ async function build(): Promise<{ bytes: Uint8Array; pageCount: number }> {
   doc.setModificationDate(fixedDate);
 
   const layout = new Layout(doc, fonts);
+
+  // Collapse pdf-lib's per-draw font resource keys. setFont() mints a fresh
+  // random-suffixed /Font key on every call via node.newFontDictionary(), and
+  // drawText() calls setFont twice (set + restore) — so a one-page resume accrues
+  // ~76 duplicate /Font entries that all alias the same 3 font objects, bloating
+  // both the /Font dict and the content stream (76 unique long names compress
+  // poorly). We override only the page node's key allocator to reuse one stable
+  // key per font ref (preseeded F0/F1/F2), leaving pdf-lib's public setFont
+  // validation untouched. Deterministic by construction. Only layout.page is
+  // patched; an overflow page (already surfaced by the page-count warning) would
+  // fall back to the default allocator — acceptable for that error path.
+  const fontKeyByRef = new Map<string, PDFName>([
+    [fonts.regular.ref.toString(), PDFName.of('F0')],
+    [fonts.bold.ref.toString(), PDFName.of('F1')],
+    [fonts.oblique.ref.toString(), PDFName.of('F2')],
+  ]);
+  const pageNode = layout.page.node as unknown as {
+    newFontDictionary(tag: string, ref: PDFRef): PDFName;
+    setFontDictionary(name: PDFName, ref: PDFRef): void;
+  };
+  pageNode.newFontDictionary = (_tag: string, ref: PDFRef): PDFName => {
+    const refStr = ref.toString();
+    let key = fontKeyByRef.get(refStr);
+    if (!key) {
+      key = PDFName.of(`F${fontKeyByRef.size}`);
+      fontKeyByRef.set(refStr, key);
+    }
+    pageNode.setFontDictionary(key, ref);
+    return key;
+  };
 
   // --- Header: name → location → contact links ----------------------------
   drawWrapped(layout, resume.name, {
