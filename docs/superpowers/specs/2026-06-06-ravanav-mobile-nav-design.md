@@ -172,3 +172,81 @@ No automated test suite. Gate is:
    sections; dropdown links navigate + collapse; theme toggle flips theme from
    inside the dropdown and stays in sync with the (hidden) desktop toggle;
    reduced-motion honoured.
+
+---
+
+## Revisions after Codex pre-implementation review (2026-06-06)
+
+### Rename: RavaNav → MorphNav
+
+All "rava" naming is dropped. The rename also resolves the `.nav-shell` /
+`.nav-links` collisions Codex flagged (the desktop `Nav.astro` uses both class
+names, and `global.css` hides `.nav-links` on mobile — which would have hidden
+MorphNav's dropdown links). Fixed naming contract, used verbatim by every unit:
+
+| Thing | Old | New |
+|-------|-----|-----|
+| Component / file | `RavaNav` / `RavaNav.astro` | `MorphNav` / `MorphNav.astro` (`git mv`) |
+| Root element class | `.nav-shell` | `.morph-nav` |
+| Internal classes | `.nav-top`, `.title-window/-stack/-line`, `.nav-action`, `.menu-glyph`, `.progress-glyph`, `.spark`, `.progress-track/-ring`, `.nav-body`, `.nav-links` (+`a`), `.rava-live` | `.morph-top`, `.morph-title-window/-stack/-line`, `.morph-action`, `.morph-menu-glyph`, `.morph-progress-glyph`, `.morph-spark`, `.morph-progress-track/-ring`, `.morph-body`, `.morph-links`/`.morph-link`, `.morph-live` |
+| CSS tokens | `--rava-panel/-ink/-muted/-line/-shadow/-green` | `--morph-panel/-ink/-muted/-line/-shadow/-accent` |
+| Open-height var | `--nav-open-height` | `--morph-open-height` |
+| Change event | `rava-nav:change` | `morph-nav:change` |
+| State classes | `.is-intro/.is-compact/.is-open` | unchanged (scoped under `.morph-nav`) |
+| Scrollspy hook | `data-nav-section` | unchanged (already neutral; the page-contract attribute) |
+| `data-*` on root | `data-section/-progress/-intro-ms/-auto-open/-scroll` | unchanged (element-scoped, no collision) |
+
+The original source artifact `docs/ideas/ravalabs-nav-artifact.html` keeps its
+name (historical reference, not shipped).
+
+### Must-fix items folded in (from Codex)
+
+1. **measure() while hidden caches a bad height.** On desktop MorphNav is
+   `display:none`; `measure()` would read `offsetHeight: 0` and bake
+   `--morph-open-height: 0px`, never re-measuring on shrink to mobile.
+   Fix: at the top of `measure()`, bail when the element isn't rendered using
+   **`nav.getClientRects().length === 0`** — NOT `offsetParent === null`, which
+   is always null for a `position: fixed` element even when visible (Codex's
+   suggested check would misfire). The existing `onResize` handler re-runs
+   `measure()` when the window crosses into mobile width (resize fires across the
+   breakpoint), so a desktop→mobile resize measures correctly once visible. A
+   device that loads at mobile width measures correctly at init.
+2. **Unique root** — `.morph-nav` (above); the document-level
+   `querySelectorAll('.nav-shell')` becomes `querySelectorAll('.morph-nav')`, so
+   it no longer scans the desktop `Nav.astro` shell.
+3. **Remove `<MobileMenu />` from `BaseLayout`** (import + mount). It's hidden
+   only via opacity/max-height (`global.css` ~423-449), so its links stay in tab
+   order; and it's fully redundant once MorphNav owns mobile. `MobileMenu.astro`
+   becomes an unused file — left in place (not deleted) and noted for a possible
+   follow-up cleanup. `Nav.astro` (incl. its now-never-shown hamburger) is left
+   untouched to keep desktop byte-identical.
+4. **Collapse-on-link-click:** delegate a click handler on the dropdown's
+   `.morph-link` anchors → `setExpanded(false)` (mirrors MobileMenu's behaviour),
+   so tapping a link closes the panel before the in-page anchor scroll.
+5. **Init idempotency guard:** set `data-morph-ready` on the root before binding;
+   bail if already present.
+6. **`data-nav-section`** added to the five homepage sections (already in §3).
+
+### Corrections to the original draft
+
+- **Resume href is `/resume/`** — Codex confirmed `src/pages/resume.astro` is a
+  real, live route and both existing navs link to it. (CLAUDE.md's "no styled
+  /resume/ page" note is stale.) The dropdown uses `/resume/`.
+- **resume.astro print-hide:** add `.morph-nav` to the print `display:none`
+  selector group at `src/pages/resume.astro` (~511-519) alongside `#site-nav` /
+  `#mobile-menu` / tuner.
+
+### Final file-ownership map (for the implementation workflow)
+
+Each unit owns a disjoint set of files so the work parallelises without edit
+collisions; all shared names come from the contract table above.
+
+| Unit | Files |
+|------|-------|
+| component | `src/components/RavaNav.astro` → `MorphNav.astro` (rename + repurpose + theming + measure fix + collapse + root + guard) |
+| theme | `src/components/ThemeToggle.astro` (id `theme-toggle-button` → class `theme-toggle-btn`, `querySelectorAll` bind) |
+| global-css | `src/styles/global.css` (theme-toggle selector migration; add `@media(max-width:640px){#site-nav,#mobile-menu{display:none}}`; remove dead mobile `#nav-pill` block ~461-550) |
+| sections | `Hero.astro`, `About.astro`, `BentoProjectsSection.astro`, `BentoStackSection.astro`, `Contact.astro` (`data-nav-section`) |
+| layout | `src/layouts/BaseLayout.astro` (import + mount `MorphNav` with site sections/links + `themeToggle`, `autoOpen={false}`; remove `MobileMenu` import + mount) |
+| resume | `src/pages/resume.astro` (print-hide adds `.morph-nav`) |
+| demo | `src/pages/nav-test.astro` (update to `MorphNav` + new props/markup) |
