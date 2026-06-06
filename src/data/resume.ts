@@ -51,7 +51,6 @@ export interface ResumeData {
   meta: {
     updatedAt: string; // "2026-05" — month-level is enough for a CV
     pdfFilename: string; // download filename (no extension) for the static /resume.pdf export
-    sourceArtifact: string; // path to the docx, kept in repo
   };
 }
 
@@ -80,7 +79,6 @@ export const resume: ResumeData = {
         'Refactored an internal web application (backend and frontend) that pulls data from the SCADA ISR database, reducing data export time by 10× and cutting average UI load time from ~8s to under 2s.',
         'Built and maintained Python automation scripts executed via GitLab CI/CD, eliminating ~15 hours/month of manual data processing across operations teams.',
         'Developed and tested features for the internal Balancing Market System (BMS), reducing message delivery latency and processing time by 30% for Estonia’s national energy grid operations.',
-        'Containerised monolithic applications using Docker, enabling consistent deployments across development and test environments.',
       ],
     },
     {
@@ -91,7 +89,7 @@ export const resume: ResumeData = {
       tagline: 'Real-time computer vision for an autonomous Navy patrol vessel.',
       bullets: [
         'Designed and deployed a real-time computer vision system for an autonomous Navy patrol vessel (Navy 18 WP), enabling automated maritime object detection for unmanned maneuvering trials.',
-        'Selected YOLOv5 (Ultralytics) for optimal speed–accuracy trade-off; containerised the full pipeline with Docker on Nvidia NGC for reproducible deployment on Jetson AGX Xavier (32 GB).',
+        'Developed a unified, containerised inference system (YOLOv5 / Ultralytics, Docker on Nvidia NGC) that deploys reproducibly and dynamically adapts to the target hardware for edge operation on Jetson AGX Xavier (32 GB).',
         'Optimised inference pipeline using TensorRT FP16 quantisation, ONNX conversion, and NVDEC hardware video decoding, achieving an average 3.5× speed increase (best case 4.3×).',
         'Negligible accuracy loss (1.7 × 10⁻³ mAP), 26.8% lower energy consumption, and 3.3°C temperature reduction, enabling sustained autonomous operation at sea.',
         'Built multi-camera support (3 simultaneous inputs via GStreamer + OpenCV), reaching 1.4× throughput over single-input at the same resolution, with architecture-aware code paths for x86_64 dev and aarch64 production.',
@@ -123,7 +121,7 @@ export const resume: ResumeData = {
   skills: [
     {
       label: 'Languages',
-      items: ['Python', 'C++', 'JavaScript', 'SQL', 'Bash', 'Swift'],
+      items: ['Python', 'C++', 'JavaScript', 'TypeScript', 'SQL', 'Bash', 'Swift'],
     },
     {
       label: 'ML / AI',
@@ -131,11 +129,11 @@ export const resume: ResumeData = {
     },
     {
       label: 'Infrastructure & DevOps',
-      items: ['Docker', 'Jenkins', 'GitLab CI/CD', 'AWS S3', 'Grafana', 'ELK', 'Kubernetes (basic)'],
+      items: ['Docker', 'Jenkins', 'GitLab CI/CD', 'AWS S3'],
     },
     {
       label: 'Frameworks & Tools',
-      items: ['Flask', 'REST API', 'Selenium', 'Scrapy', 'PostgreSQL', 'Postman', 'Git', 'Jira', 'Confluence'],
+      items: ['Flask', 'Selenium', 'PostgreSQL', 'Git'],
     },
     {
       label: 'Platforms',
@@ -145,8 +143,7 @@ export const resume: ResumeData = {
   interests:
     'Social dancing (tango argentino, Brazilian zouk), guitar and piano, physics.',
   meta: {
-    updatedAt: '2026-05',
+    updatedAt: '2026-06',
     pdfFilename: 'Tanel_Treuberg_Software_Engineer',
-    sourceArtifact: 'docs/resume/Tanel_Treuberg_Software_Engineer_Revised.docx',
   },
 };
