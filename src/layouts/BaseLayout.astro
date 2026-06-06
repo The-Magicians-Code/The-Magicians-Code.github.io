@@ -3,7 +3,7 @@ import '../styles/global.css';
 import '../styles/liquid-glass.css';
 
 import Nav from '../components/Nav.astro';
-import MobileMenu from '../components/MobileMenu.astro';
+import MorphNav from '../components/MorphNav.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 
 interface Props {
@@ -149,7 +149,24 @@ const personSchema = {
   </head>
   <body class="pt-28">
     <Nav />
-    <MobileMenu />
+    <MorphNav
+      sections={[
+        { id: 'hero', title: 'Home' },
+        { id: 'about', title: 'About' },
+        { id: 'projects', title: 'Work' },
+        { id: 'skills-tools', title: 'Stack' },
+        { id: 'contact', title: 'Contact' },
+      ]}
+      links={[
+        { label: 'About', href: '/#about' },
+        { label: 'Work', href: '/#projects' },
+        { label: 'Stack', href: '/#skills-tools' },
+        { label: 'Resume', href: '/resume/' },
+        { label: 'Contact', href: '/#contact' },
+      ]}
+      themeToggle={true}
+      autoOpen={false}
+    />
     <slot />
     <SiteFooter />
   </body>

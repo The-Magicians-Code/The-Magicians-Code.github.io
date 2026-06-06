@@ -1,14 +1,21 @@
 ---
-// Standalone test harness for the RavaNav component. Deliberately renders its
+// Standalone test harness for the MorphNav component. Deliberately renders its
 // own <html> rather than using BaseLayout — BaseLayout mounts the real site nav
 // + liquid-glass runtime, which would collide with this demo.
-import RavaNav from "../components/RavaNav.astro";
+import MorphNav from "../components/MorphNav.astro";
 
 const sections = [
-  { id: "hero", title: "RAVA®" },
-  { id: "work", title: "Work Examples" },
+  { id: "hero", title: "Home" },
+  { id: "work", title: "Work" },
   { id: "about", title: "About" },
-  { id: "pricing", title: "Pricing" },
+  { id: "pricing", title: "Stack" },
+];
+
+const links = [
+  { label: "About", href: "#about" },
+  { label: "Work", href: "#work" },
+  { label: "Stack", href: "#pricing" },
+  { label: "Home", href: "#hero" },
 ];
 ---
 
@@ -17,10 +24,10 @@ const sections = [
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>RavaNav — test harness</title>
+    <title>MorphNav — test harness</title>
   </head>
   <body>
-    <RavaNav sections={sections} />
+    <MorphNav sections={sections} links={links} themeToggle={true} />
 
     <aside class="motion-panel" aria-label="Motion mapping">
       <strong>Motion Mapping</strong>
@@ -34,7 +41,7 @@ const sections = [
     <main>
       <section id="hero" class="page-section" data-nav-section="hero">
         <div class="section-inner">
-          <div class="eyebrow">Rava®</div>
+          <div class="eyebrow">Home</div>
           <h1>Raw ideas into refined digital design.</h1>
           <p>Scroll the page and watch the pill title, compact state, and progress ring react to the active section.</p>
         </div>
@@ -76,7 +83,7 @@ const sections = [
     <script>
       const stateReadout = document.querySelector('[data-readout="state"]');
       const sectionReadout = document.querySelector('[data-readout="section"]');
-      document.addEventListener("rava-nav:change", (event) => {
+      document.addEventListener("morph-nav:change", (event) => {
         const { state, section } = (event as CustomEvent).detail;
         if (stateReadout) stateReadout.textContent = state;
         if (sectionReadout && section) sectionReadout.textContent = section;
