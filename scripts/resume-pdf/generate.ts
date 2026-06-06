@@ -582,11 +582,16 @@ async function build(): Promise<{ bytes: Uint8Array; pageCount: number }> {
 
   // Metadata strings go through the same normalize + encode gate as on-page
   // text, so a stray non-WinAnsi char in the name can't silently bypass it.
-  const metaTitle = normalizeForPdf(`${resume.name} — ${resume.title}`);
+  // Window/tab title: the name + role joined with underscores (no extension), e.g.
+  // "Tanel_Treuberg_Software_Engineer". Paired with showInWindowTitleBar below so
+  // viewers use this instead of the "resume.pdf" filename.
+  const metaTitle = normalizeForPdf(`${resume.name} ${resume.title}`.replace(/\s+/g, '_'));
   const metaAuthor = normalizeForPdf(resume.name);
   assertEncodable(metaTitle, fonts.regular, 'meta.title');
   assertEncodable(metaAuthor, fonts.regular, 'meta.author');
-  doc.setTitle(metaTitle);
+  // showInWindowTitleBar sets the ViewerPreferences /DisplayDocTitle flag so viewers
+  // use /Title for the window/tab title instead of the filename (defaults to false).
+  doc.setTitle(metaTitle, { showInWindowTitleBar: true });
   doc.setAuthor(metaAuthor);
   doc.setSubject('Resume');
   doc.setCreator('resume-pdf generator');
