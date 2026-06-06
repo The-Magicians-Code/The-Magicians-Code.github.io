@@ -18,6 +18,7 @@ import {
   PDFNumber,
   PDFString,
   PDFArray,
+  PDFDict,
   StandardFonts,
   rgb,
   type PDFPage,
@@ -593,12 +594,21 @@ async function build(): Promise<{ bytes: Uint8Array; pageCount: number }> {
   doc.setTitle(metaTitle, { showInWindowTitleBar: true });
   doc.setAuthor(metaAuthor);
   doc.setSubject('Resume');
-  // Blank Creator/Producer so the Info dict advertises no authoring tooling.
-  // (Leaving them unset would make pdf-lib fall back to its own default strings.)
-  doc.setCreator('');
-  doc.setProducer('');
   doc.setCreationDate(fixedDate);
   doc.setModificationDate(fixedDate);
+
+  // Drop /Creator and /Producer from the Info dict entirely. They can't just be
+  // left unset: PDFDocument.create() runs updateInfoDict() once at construction,
+  // seeding both with pdf-lib's own default string ("pdf-lib (https://…)").
+  // Setting them to '' only leaves empty-string entries. Deleting the keys is the
+  // only true omission — and save() never re-adds them (updateInfoDict runs at
+  // construction, not on save). /Title, /Author, /Subject and the deterministic
+  // dates are kept.
+  const infoDict = doc.context.lookup(doc.context.trailerInfo.Info);
+  if (infoDict instanceof PDFDict) {
+    infoDict.delete(PDFName.of('Creator'));
+    infoDict.delete(PDFName.of('Producer'));
+  }
 
   const layout = new Layout(doc, fonts);
 
