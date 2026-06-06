@@ -592,8 +592,10 @@ async function build(): Promise<{ bytes: Uint8Array; pageCount: number }> {
   doc.setTitle(metaTitle, { showInWindowTitleBar: true });
   doc.setAuthor(metaAuthor);
   doc.setSubject('Resume');
-  doc.setCreator('resume-pdf generator');
-  doc.setProducer('pdf-lib');
+  // Blank Creator/Producer so the Info dict advertises no authoring tooling.
+  // (Leaving them unset would make pdf-lib fall back to its own default strings.)
+  doc.setCreator('');
+  doc.setProducer('');
   doc.setCreationDate(fixedDate);
   doc.setModificationDate(fixedDate);
 
