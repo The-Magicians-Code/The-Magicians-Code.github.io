@@ -23,7 +23,7 @@ import {
   type PDFPage,
 } from 'pdf-lib';
 import { resume } from '../../src/data/resume';
-import { normalizeForPdf, assertEncodable, splitSuperscriptRuns, type TextRun } from './sanitize';
+import { normalizeForPdf, assertEncodable } from './sanitize';
 
 // ---------------------------------------------------------------------------
 // Page geometry
@@ -196,7 +196,6 @@ interface Segment {
   text: string; // ASCII-safe, ready to draw
   font: PDFFont;
   size: number;
-  rise: number; // baseline offset (kept for the coalescing key; always 0 today)
   width: number; // advance width at `size`
 }
 
@@ -206,19 +205,18 @@ interface Word {
 }
 
 /**
- * Convert runs into words: normalize + encode-check each run, split on whitespace
- * so the surrounding words wrap correctly, and force-split any single word wider
- * than maxWidth (with guaranteed progress).
+ * Convert a string into words: normalize + encode-check, split on whitespace so the
+ * surrounding words wrap correctly, and force-split any single word wider than
+ * maxWidth (with guaranteed progress).
  */
-function runsToWords(
-  runs: TextRun[],
+function textToWords(
+  text: string,
   baseFont: PDFFont,
   baseSize: number,
   maxWidth: number,
   fieldPath: string,
 ): Word[] {
-  // Build a flat segment stream, tracking whitespace as word boundaries.
-  // We accumulate the current word's segments; a space flushes the word.
+  // Accumulate the current word's segments; a space flushes the word.
   const words: Word[] = [];
   let curSegs: Segment[] = [];
 
@@ -230,30 +228,28 @@ function runsToWords(
     curSegs = [];
   };
 
-  const addSegment = (text: string, font: PDFFont, size: number, rise: number) => {
-    if (text.length === 0) return;
-    curSegs.push({ text, font, size, rise, width: font.widthOfTextAtSize(text, size) });
+  const addSegment = (segText: string, font: PDFFont, size: number) => {
+    if (segText.length === 0) return;
+    curSegs.push({ text: segText, font, size, width: font.widthOfTextAtSize(segText, size) });
   };
 
-  for (const run of runs) {
-    // Normalize + encode-check, then split on whitespace so the surrounding words
-    // wrap correctly. Whitespace flushes the current word.
-    const ascii = normalizeForPdf(run.text);
-    assertEncodable(ascii, baseFont, fieldPath);
-    let buf = '';
-    for (const ch of ascii) {
-      if (/\s/.test(ch)) {
-        if (buf.length > 0) {
-          addSegment(buf, baseFont, baseSize, 0);
-          buf = '';
-        }
-        pushWord();
-      } else {
-        buf += ch;
+  // Normalize + encode-check, then split on whitespace so the surrounding words
+  // wrap correctly. Whitespace flushes the current word.
+  const ascii = normalizeForPdf(text);
+  assertEncodable(ascii, baseFont, fieldPath);
+  let buf = '';
+  for (const ch of ascii) {
+    if (/\s/.test(ch)) {
+      if (buf.length > 0) {
+        addSegment(buf, baseFont, baseSize);
+        buf = '';
       }
+      pushWord();
+    } else {
+      buf += ch;
     }
-    if (buf.length > 0) addSegment(buf, baseFont, baseSize, 0);
   }
+  if (buf.length > 0) addSegment(buf, baseFont, baseSize);
   pushWord();
 
   // Force-split any word wider than maxWidth (segment-by-segment, char-by-char),
@@ -292,7 +288,7 @@ function forceSplitWord(word: Word, maxWidth: number): Word[] {
     let bufW = 0;
     const flushSeg = () => {
       if (buf.length > 0) {
-        segs.push({ text: buf, font: seg.font, size: seg.size, rise: seg.rise, width: bufW });
+        segs.push({ text: buf, font: seg.font, size: seg.size, width: bufW });
         width += bufW;
         buf = '';
         bufW = 0;
@@ -350,8 +346,7 @@ interface DrawRunsOpts {
 /**
  * Draw a string as wrapped lines, advancing layout.y, with optional hanging indent
  * (first line at hangX, continuations at x). Word-wraps and force-splits over-wide
- * tokens. Superscripts are flattened to caret notation upstream, so this draws a
- * single uniform run per line.
+ * tokens.
  */
 function drawRuns(layout: Layout, rawText: string, opts: DrawRunsOpts): void {
   const { font, size } = opts;
@@ -362,11 +357,10 @@ function drawRuns(layout: Layout, rawText: string, opts: DrawRunsOpts): void {
   const spaceWidth = font.widthOfTextAtSize(' ', size);
   const lh = layout.lineHeight(size);
 
-  const runs = splitSuperscriptRuns(rawText);
   // Wrap against the tighter of the two widths so the first (narrower) line is
   // never overset; this is conservative but keeps the layout simple and safe.
   const wrapWidth = Math.min(firstMaxWidth, maxWidth);
-  const words = runsToWords(runs, font, size, wrapWidth, opts.fieldPath);
+  const words = textToWords(rawText, font, size, wrapWidth, opts.fieldPath);
   const lines = layoutLines(words, spaceWidth, wrapWidth);
 
   for (let i = 0; i < lines.length; i += 1) {
@@ -382,7 +376,7 @@ function drawRuns(layout: Layout, rawText: string, opts: DrawRunsOpts): void {
     const stream: Segment[] = [];
     for (let w = 0; w < line.length; w += 1) {
       if (w > 0) {
-        stream.push({ text: ' ', font, size, rise: 0, width: spaceWidth });
+        stream.push({ text: ' ', font, size, width: spaceWidth });
       }
       for (const seg of line[w].segments) stream.push(seg);
     }
@@ -397,8 +391,7 @@ function drawRuns(layout: Layout, rawText: string, opts: DrawRunsOpts): void {
       while (
         bj < stream.length &&
         stream[bj].font === head.font &&
-        stream[bj].size === head.size &&
-        stream[bj].rise === head.rise
+        stream[bj].size === head.size
       ) {
         text += stream[bj].text;
         width += stream[bj].width;
