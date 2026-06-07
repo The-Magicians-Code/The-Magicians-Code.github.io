@@ -88,7 +88,6 @@ const heroId = sections[0]?.id ?? "hero";
       </div>
     </div>
     <div class="morph-action" aria-hidden="true">
-      <div class="morph-menu-glyph"><span class="morph-spark"></span></div>
       <div class="morph-progress-glyph">
         <svg viewBox="0 0 29 29">
           <circle class="morph-progress-track" cx="14.5" cy="14.5" r="12"></circle>
@@ -253,67 +252,20 @@ const heroId = sections[0]?.id ?? "hero";
     width: 27px;
   }
 
-  .morph-menu-glyph,
+  /* The progress ring is the only glyph: hidden at the top of the page, it
+     fades in once the user starts scrolling (and out again at the top, or while
+     the panel is open). is-scrolled is toggled from the scroll rAF loop. */
   .morph-progress-glyph {
     position: absolute;
     inset: 0;
     display: grid;
     place-items: center;
-    transition:
-      transform 400ms cubic-bezier(.44, 0, .08, 1),
-      opacity 250ms ease;
-  }
-
-  /* Spark is the resting glyph: shown at the top of the page, when the panel is
-     open (its ✕ close mark), and during the intro pill. */
-  .morph-menu-glyph {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  .morph-progress-glyph {
     opacity: 0;
-    transform: translateY(20px);
+    transition: opacity 250ms ease;
   }
 
-  /* Once the user starts scrolling (panel closed), cross-fade the spark out and
-     the global scroll-progress ring in. The is-scrolled flag is toggled from
-     the scroll rAF loop (see updateProgress). */
-  .morph-nav.is-scrolled:not(.is-open):not(.is-intro) .morph-menu-glyph {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-
-  .morph-nav.is-scrolled:not(.is-open):not(.is-intro) .morph-progress-glyph {
+  .morph-nav.is-scrolled:not(.is-open) .morph-progress-glyph {
     opacity: 1;
-    transform: translateY(0);
-  }
-
-  .morph-spark {
-    position: relative;
-    width: 18px;
-    height: 18px;
-  }
-
-  .morph-spark::before,
-  .morph-spark::after {
-    position: absolute;
-    content: "";
-    top: 50%;
-    left: 50%;
-    width: 15px;
-    height: 1.4px;
-    border-radius: 999px;
-    background: var(--morph-muted);
-    transform-origin: center;
-  }
-
-  .morph-spark::before {
-    transform: translate(-50%, -50%) rotate(45deg);
-  }
-
-  .morph-spark::after {
-    transform: translate(-50%, -50%) rotate(-45deg);
   }
 
   .morph-progress-glyph svg {
@@ -432,8 +384,7 @@ const heroId = sections[0]?.id ?? "hero";
 
   @media (prefers-reduced-motion: reduce) {
     .morph-nav,
-    .morph-title-stack,
-    .morph-menu-glyph,
+    .morph-title-line,
     .morph-progress-glyph,
     .morph-body {
       transition-duration: 1ms !important;
