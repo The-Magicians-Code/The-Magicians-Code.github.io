@@ -261,31 +261,29 @@ const heroId = sections[0]?.id ?? "hero";
       opacity 250ms ease;
   }
 
-  /* Default (compact bar): show the global scroll-progress ring at all times;
-     park the spark above. The ring fill tracks whole-page scroll, not the
-     current section (see updateProgress). */
+  /* Spark is the resting glyph: shown at the top of the page, when the panel is
+     open (its ✕ close mark), and during the intro pill. */
   .morph-menu-glyph {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .morph-progress-glyph {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  /* Once the user starts scrolling (panel closed), cross-fade the spark out and
+     the global scroll-progress ring in. The is-scrolled flag is toggled from
+     the scroll rAF loop (see updateProgress). */
+  .morph-nav.is-scrolled:not(.is-open):not(.is-intro) .morph-menu-glyph {
     opacity: 0;
     transform: translateY(-20px);
   }
 
-  .morph-progress-glyph {
+  .morph-nav.is-scrolled:not(.is-open):not(.is-intro) .morph-progress-glyph {
     opacity: 1;
     transform: translateY(0);
-  }
-
-  /* Open panel (and the intro pill): show the spark — it doubles as the ✕ close
-     mark — and hide the ring. */
-  .morph-nav.is-open .morph-menu-glyph,
-  .morph-nav.is-intro .morph-menu-glyph {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  .morph-nav.is-open .morph-progress-glyph,
-  .morph-nav.is-intro .morph-progress-glyph {
-    opacity: 0;
-    transform: translateY(20px);
   }
 
   .morph-spark {
@@ -615,6 +613,9 @@ const heroId = sections[0]?.id ?? "hero";
 
     function updateProgress() {
       if (!ring) return;
+      // Reveal the ring only once the user has actually started scrolling; at the
+      // very top show the resting spark instead (small dead-zone avoids flicker).
+      nav.classList.toggle("is-scrolled", window.scrollY > 8);
       const max = document.documentElement.scrollHeight - window.innerHeight;
       const progress = max <= 0 ? 0 : window.scrollY / max;
       ring.style.strokeDashoffset = String(
