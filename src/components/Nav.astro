@@ -55,7 +55,11 @@ const isDev = import.meta.env.DEV;
     const onHome = window.location.pathname === '/' || window.location.pathname === '/index.html';
     if (!onHome) return;
     e.preventDefault();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Prefer Lenis (it owns smooth scroll); fall back to native when it's absent
+    // (reduced-motion path, where an instant jump is the correct behaviour).
+    const lenis = (window as any).lenis as { scrollTo: (t: number) => void } | undefined;
+    if (lenis) lenis.scrollTo(0);
+    else window.scrollTo({ top: 0, behavior: 'auto' });
     // Drop any anchor hash so the URL stays clean.
     if (window.location.hash) {
       history.replaceState(null, '', window.location.pathname);

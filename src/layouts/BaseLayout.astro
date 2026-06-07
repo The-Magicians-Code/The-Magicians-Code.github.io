@@ -45,7 +45,7 @@ const personSchema = {
 ---
 
 <!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta
@@ -126,6 +126,12 @@ const personSchema = {
           }
         } catch (_) {}
       })();
+    </script>
+
+    <script>
+      // Mounted first so Lenis drives window scroll before the scroll-coupled
+      // consumers (liquid-glass, MorphNav ring/scrollspy, scroll-parallax) read it.
+      import '../scripts/smooth-scroll';
     </script>
 
     <script>

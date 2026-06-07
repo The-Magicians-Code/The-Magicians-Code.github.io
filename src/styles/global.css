@@ -506,9 +506,10 @@ body {
   overflow-x: clip;
 }
 
-/* Fixed nav offset so smooth-scroll hash jumps don't land targets under the nav.
-   scroll-padding-top on the scroll container covers all anchors (incl. the hero)
-   and pairs with html.scroll-smooth — no per-id upkeep. */
+/* Fixed nav offset so hash jumps don't land targets under the nav. Lenis
+   replicates this via a matching scrollTo offset (see smooth-scroll.ts); this
+   covers the native fallback (reduced-motion) for all anchors incl. the hero —
+   no per-id upkeep. */
 html {
   scroll-padding-top: 7rem;
 }
