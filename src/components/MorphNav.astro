@@ -83,7 +83,7 @@ const heroId = sections[0]?.id ?? "hero";
     <div class="morph-title-window">
       <div class="morph-title-stack">
         {sections.map((s) => (
-          <div class="morph-title-line" data-id={s.id}>{s.title}</div>
+          <div class:list={["morph-title-line", { "is-active": s.id === heroId }]} data-id={s.id}>{s.title}</div>
         ))}
       </div>
     </div>
@@ -210,33 +210,39 @@ const heroId = sections[0]?.id ?? "hero";
     width: 113px;
     height: 27px;
     overflow: hidden;
-    mask: linear-gradient(180deg, rgba(0, 0, 0, 0), #000 15%);
-    -webkit-mask: linear-gradient(180deg, rgba(0, 0, 0, 0), #000 15%);
   }
 
   .morph-nav.is-intro .morph-title-window {
     display: none;
   }
 
+  /* All titles overlap in one cell; only the active one is shown. Switching
+     section blur-cross-fades between them (no vertical slide). */
   .morph-title-stack {
-    position: absolute;
-    top: 1px;
-    left: 0;
-    right: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    /* `top` is driven by the client script (offset = 1 - index * step). */
-    transition: top 300ms cubic-bezier(.5, 0, .88, .77);
+    display: grid;
   }
 
   .morph-title-line {
+    grid-area: 1 / 1;
     height: 27px;
     font-size: 1rem;
     line-height: 22px;
     white-space: nowrap;
     display: flex;
     align-items: center;
+    opacity: 0;
+    filter: blur(2px);
+    transform: scale(0.94);
+    transition:
+      opacity 0.22s ease-out,
+      transform 0.22s ease-out,
+      filter 0.22s ease-out;
+  }
+
+  .morph-title-line.is-active {
+    opacity: 1;
+    filter: blur(0);
+    transform: scale(1);
   }
 
   .morph-action {
@@ -474,11 +480,6 @@ const heroId = sections[0]?.id ?? "hero";
       ring.style.strokeDashoffset = String(circumference);
     }
 
-    // Reel step is measured from the live line positions (no magic number),
-    // and only after the intro pill is removed (the title window is display:none
-    // during intro, which would yield a 0 offset).
-    let step = 35;
-
     // Measure at the true open width (compact and open share the same width;
     // only `is-intro` is 43px). We freeze transitions and momentarily drop
     // `is-intro` so the content lays out at full width, read it, then restore
@@ -498,10 +499,6 @@ const heroId = sections[0]?.id ?? "hero";
       if (wasIntro) nav.classList.remove("is-intro");
       void nav.offsetWidth; // reflow at full width
 
-      if (lines.length > 1) {
-        const delta = lines[1].offsetTop - lines[0].offsetTop;
-        if (delta > 0) step = delta;
-      }
       const full = navTop!.offsetHeight + navBody!.scrollHeight;
       const cap = window.innerHeight - 40;
       nav.style.setProperty("--morph-open-height", `${Math.min(full, cap)}px`);
@@ -517,8 +514,10 @@ const heroId = sections[0]?.id ?? "hero";
 
     function setReel() {
       const open = nav.classList.contains("is-open");
-      const idx = open ? 0 : Math.max(0, sectionIds.indexOf(nav.dataset.section ?? heroId));
-      titleStack!.style.top = `${1 - idx * step}px`;
+      const activeId = open ? heroId : (nav.dataset.section ?? heroId);
+      lines.forEach((line) => {
+        line.classList.toggle("is-active", line.dataset.id === activeId);
+      });
     }
 
     function currentState(): NavState {
@@ -605,7 +604,10 @@ const heroId = sections[0]?.id ?? "hero";
           syncReadouts();
         }
       },
-      { threshold: [0.5] },
+      // Active section = whichever crosses the viewport's vertical centre line,
+      // not whichever is 50% of its own area in view (which flipped to a short
+      // section while it was still only peeking up from the bottom).
+      { rootMargin: "-50% 0px -50% 0px", threshold: 0 },
     );
     document
       .querySelectorAll<HTMLElement>("[data-nav-section]")
