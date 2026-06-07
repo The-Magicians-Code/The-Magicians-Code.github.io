@@ -65,6 +65,10 @@ html {
      font sizes on orientation change) so the layout reads like a native app. */
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  /* Suppress the elastic overscroll bounce at the top/bottom of the page.
+     Honoured by Chromium and macOS Safari (16+); iOS Safari ignores it for the
+     document, but the rubber-band there is wanted/native anyway. */
+  overscroll-behavior-y: none;
 }
 
 /* Hide scrollbars globally while keeping scroll functionality.
