@@ -475,9 +475,6 @@ const heroId = sections[0]?.id ?? "hero";
       nav.style.setProperty("--morph-open-height", `${Math.min(full, cap)}px`);
       // Enable internal scrolling only when content truly overflows the viewport.
       nav.dataset.scroll = String(full > cap);
-      // Diagnostic (inspectable via Web Inspector on the live element) — lets us
-      // read the raw numbers when a measurement looks wrong on a real device.
-      nav.dataset.measure = `t${navTop!.offsetHeight} b${Math.round(navBody!.scrollHeight)} h${window.innerHeight} cap${cap} scroll${full > cap}`;
 
       if (wasIntro) {
         nav.classList.add("is-intro");
