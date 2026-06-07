@@ -58,6 +58,8 @@
 - https://www.hover.dev
 - https://gridportfolio.sites.blink.new
 - https://rauno.me
+- https://www.killerportfolio.com
+- https://www.youtube.com/@samselikoff
 
 ### Glass
 - https://themagicianscode.dev/prototypes/liquid-glass-pill/
