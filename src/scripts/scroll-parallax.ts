@@ -18,6 +18,13 @@ interface Stage {
   el: HTMLElement;
   layers: Layer[];
   mobile: boolean;
+  // Cached document-relative geometry (top from the document origin, + height).
+  // Unlike a viewport-relative getBoundingClientRect(), these change only on
+  // layout (resize/fonts/etc.), NOT on scroll — so update() can derive the
+  // viewport position from a single window.scrollY read, with zero per-frame
+  // layout queries (was the dominant forced-reflow source during scroll).
+  docTop: number;
+  height: number;
 }
 
 const reduceMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -47,7 +54,29 @@ function collect(): Stage[] {
         depth: parseDepth(layer.dataset.depth),
         lastY: Number.NaN,
       })),
+    docTop: 0,
+    height: 0,
   }));
+}
+
+// Read each stage's resting geometry ONCE and cache it (document-relative, so
+// scroll-independent). Skips a stage mid-expand/collapse so a bento card's
+// modal (position:fixed) geometry never overwrites its resting cache.
+function measure(): void {
+  const scrollY = window.scrollY;
+  for (const stage of stages) {
+    const cl = stage.el.classList;
+    if (
+      cl.contains('is-expanding') ||
+      cl.contains('is-expanded') ||
+      cl.contains('is-collapsing')
+    ) {
+      continue;
+    }
+    const r = stage.el.getBoundingClientRect();
+    stage.docTop = r.top + scrollY;
+    stage.height = r.height;
+  }
 }
 
 function clearTransforms(): void {
@@ -64,13 +93,16 @@ function update(): void {
   if (!listening) return; // disabled (reduced-motion): don't re-apply transforms
   const vh = window.innerHeight;
   const isMobile = window.innerWidth < MOBILE_BP;
+  // One layout read for the whole frame (no per-stage getBoundingClientRect),
+  // then pure compute + transform writes — transforms are composited, so this
+  // never forces a synchronous reflow.
+  const scrollY = window.scrollY;
   for (const stage of stages) {
-    // Skip a stage mid-expand/collapse (bento cover cards). While the card
-    // is position:fixed as a modal, its rect is the modal geometry, not the
-    // resting stage — applying a transform here would strand a wrong offset
-    // on the (faded-out) cover layer that survives into the close. The body
-    // scroll-lock preserves scroll position, so the pre-open transform stays
-    // valid; drift resumes once the card returns to rest.
+    // Skip a stage mid-expand/collapse (bento cover cards). While the card is
+    // position:fixed as a modal, its drift would strand a wrong offset on the
+    // (faded-out) cover layer that survives into the close. The body scroll-lock
+    // preserves scroll position, so the pre-open transform stays valid; drift
+    // resumes once the card returns to rest.
     const cl = stage.el.classList;
     if (
       cl.contains('is-expanding') ||
@@ -79,13 +111,14 @@ function update(): void {
     ) {
       continue;
     }
-    const r = stage.el.getBoundingClientRect();
-    if (r.bottom < -vh * 0.3 || r.top > vh * 1.3) continue; // off-screen
+    const top = stage.docTop - scrollY; // viewport-relative, from the cache
+    const bottom = top + stage.height;
+    if (bottom < -vh * 0.3 || top > vh * 1.3) continue; // off-screen
     const active = !isMobile || stage.mobile;
     const progress = active
       ? Math.max(
           -1.2,
-          Math.min(1.2, (r.top + r.height / 2 - vh / 2) / (vh / 2 + r.height / 2)),
+          Math.min(1.2, (top + stage.height / 2 - vh / 2) / (vh / 2 + stage.height / 2)),
         )
       : 0;
     for (const layer of stage.layers) {
@@ -104,25 +137,39 @@ function requestTick(): void {
   }
 }
 
+// Layout-affecting events re-measure the cached geometry (rAF-coalesced) then
+// repaint. Kept off the scroll path so scrolling stays layout-read-free.
+let measuring = false;
+function requestMeasure(): void {
+  if (measuring) return;
+  measuring = true;
+  requestAnimationFrame(() => {
+    measuring = false;
+    if (!listening) return;
+    measure();
+    update();
+  });
+}
+
 function startListening(): void {
   if (listening) return;
   listening = true;
   window.addEventListener('scroll', requestTick, { passive: true });
-  window.addEventListener('resize', requestTick);
-  window.addEventListener('orientationchange', requestTick);
+  window.addEventListener('resize', requestMeasure);
+  window.addEventListener('orientationchange', requestMeasure);
+  window.addEventListener('pageshow', requestMeasure);
   window.addEventListener('hashchange', requestTick);
-  window.addEventListener('pageshow', requestTick);
-  requestTick();
+  requestMeasure(); // initial measure + paint
 }
 
 function stopListening(): void {
   if (!listening) return;
   listening = false;
   window.removeEventListener('scroll', requestTick);
-  window.removeEventListener('resize', requestTick);
-  window.removeEventListener('orientationchange', requestTick);
+  window.removeEventListener('resize', requestMeasure);
+  window.removeEventListener('orientationchange', requestMeasure);
+  window.removeEventListener('pageshow', requestMeasure);
   window.removeEventListener('hashchange', requestTick);
-  window.removeEventListener('pageshow', requestTick);
   clearTransforms();
 }
 
@@ -156,8 +203,10 @@ function init(): void {
   setupReveal();
   applyMotionPref();
   reduceMQ.addEventListener('change', applyMotionPref);
-  // Re-tick once fonts settle — layout shift changes stage geometry.
-  document.fonts?.ready.then(requestTick);
+  // Re-measure once fonts / late resources settle — layout shifts move the
+  // cached stage geometry.
+  document.fonts?.ready.then(requestMeasure);
+  window.addEventListener('load', requestMeasure, { once: true });
 }
 
 if (document.readyState === 'loading') {
