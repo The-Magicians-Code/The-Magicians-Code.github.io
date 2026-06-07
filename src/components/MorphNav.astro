@@ -133,8 +133,6 @@ const heroId = sections[0]?.id ?? "hero";
     --morph-line: var(--rule, rgba(26, 26, 28, 0.12));
     --morph-shadow: 0 18px 60px rgba(26, 26, 28, 0.12);
     --morph-accent: var(--accent, oklch(64% 0.18 28));
-    /* Background tint for the tappable link rows on hover/press. */
-    --morph-link-bg: rgba(26, 26, 28, 0.04);
 
     position: fixed;
     top: 20px;
@@ -165,7 +163,6 @@ const heroId = sections[0]?.id ?? "hero";
     --morph-line: var(--rule, rgba(255, 255, 255, 0.10));
     --morph-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
     --morph-accent: var(--accent, oklch(72% 0.16 28));
-    --morph-link-bg: rgba(255, 255, 255, 0.05);
   }
 
   .morph-nav * {
@@ -350,6 +347,9 @@ const heroId = sections[0]?.id ?? "hero";
     display: flex;
     flex-direction: column;
     gap: 0;
+    /* Inset padding so each item's rounded hit-area floats clear of the panel
+       edges (like prod's mobile menu / the theme toggle's pill). */
+    padding: 8px;
     opacity: 0;
     filter: blur(10px);
     pointer-events: none;
@@ -364,7 +364,7 @@ const heroId = sections[0]?.id ?? "hero";
     pointer-events: auto;
   }
 
-  /* Vertical nav list: full-width tappable rows with hairline separators. */
+  /* Vertical nav list: each item is its own rounded clickable area. */
   .morph-links {
     display: flex;
     flex-direction: column;
@@ -377,6 +377,7 @@ const heroId = sections[0]?.id ?? "hero";
     gap: 7px;
     min-height: 44px;
     padding: 12px 16px;
+    border-radius: 12px;
     color: var(--morph-ink);
     font-size: 1rem;
     font-weight: 500;
@@ -395,7 +396,7 @@ const heroId = sections[0]?.id ?? "hero";
 
   .morph-link:hover,
   .morph-link:active {
-    background: var(--morph-link-bg);
+    background: rgba(128, 128, 128, 0.15);
   }
 
   .morph-theme-row {
@@ -404,15 +405,15 @@ const heroId = sections[0]?.id ?? "hero";
     padding: 0;
   }
 
-  /* Make the toggle a full-width row tap target like the links (instead of a
-     content-hugging pill): its icon lands on the same 16px gutter, its hover
-     fill spans the whole row, and the label matches the dropdown's 1rem size. */
+  /* Give the toggle the same rounded clickable area as the link items: it fills
+     the inset row width, its icon shares the link icons' gutter, and the label
+     matches the dropdown's 1rem size. */
   .morph-theme-row :global(.theme-toggle-btn) {
     width: 100%;
     height: 44px;
     justify-content: flex-start;
     padding: 0 16px;
-    border-radius: 0;
+    border-radius: 12px;
   }
 
   .morph-theme-row :global(.tt-label) {
