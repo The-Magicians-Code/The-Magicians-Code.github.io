@@ -573,36 +573,52 @@ const heroId = sections[0]?.id ?? "hero";
 
     // Scrollspy. Sections are owned by the host page; this is the documented
     // [data-nav-section] contract.
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        if (!visible) return;
+    function onSectionCross(entries: IntersectionObserverEntry[]) {
+      const visible = entries
+        .filter((entry) => entry.isIntersecting)
+        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (!visible) return;
 
-        const target = visible.target as HTMLElement;
-        const id = target.dataset.navSection ?? heroId;
-        const known = sectionIds.includes(id);
-        if (!known) console.warn("[morph-nav] observed unknown section id:", id);
+      const target = visible.target as HTMLElement;
+      const id = target.dataset.navSection ?? heroId;
+      const known = sectionIds.includes(id);
+      if (!known) console.warn("[morph-nav] observed unknown section id:", id);
 
-        nav.dataset.section = known ? id : heroId;
+      nav.dataset.section = known ? id : heroId;
 
-        if (known && id !== heroId) {
-          setExpanded(false);
-        } else {
-          setReel();
-          syncReadouts();
-        }
-      },
-      // Active section = whichever crosses a line near the top of the viewport,
-      // so the header changes as a section reaches the top (not its 50%-of-area,
-      // which flipped to a short section while it was still peeking up from the
-      // bottom).
-      { rootMargin: "-10% 0px -90% 0px", threshold: 0 },
-    );
-    document
-      .querySelectorAll<HTMLElement>("[data-nav-section]")
-      .forEach((section) => observer.observe(section));
+      if (known && id !== heroId) {
+        setExpanded(false);
+      } else {
+        setReel();
+        syncReadouts();
+      }
+    }
+
+    // Active section = the one crossing a thin line at scroll-padding-top — the
+    // exact offset an anchored section lands at (clearing the fixed nav; Lenis
+    // and native both honour it). So the header flips the instant a section's
+    // top reaches that line, and a section tapped from the menu reads as active
+    // immediately instead of the one before it. (The previous %-of-viewport line
+    // sat above the landing point, so after a jump the prior section stayed
+    // selected.) The bottom inset tracks innerHeight, so it rebuilds on resize.
+    let observer: IntersectionObserver | null = null;
+    function buildObserver() {
+      observer?.disconnect();
+      const padTop = Math.round(
+        Number.parseFloat(
+          getComputedStyle(document.documentElement).scrollPaddingTop,
+        ) || 112,
+      );
+      const bottom = Math.max(0, window.innerHeight - padTop - 1);
+      observer = new IntersectionObserver(onSectionCross, {
+        rootMargin: `-${padTop}px 0px -${bottom}px 0px`,
+        threshold: 0,
+      });
+      document
+        .querySelectorAll<HTMLElement>("[data-nav-section]")
+        .forEach((section) => observer!.observe(section));
+    }
+    buildObserver();
 
     function updateProgress() {
       if (!ring) return;
@@ -614,6 +630,19 @@ const heroId = sections[0]?.id ?? "hero";
       ring.style.strokeDashoffset = String(
         circumference * (1 - Math.min(1, Math.max(0, progress))),
       );
+      // The last section can sit too low to ever bring its top to the active
+      // line (not enough scroll runway below it), so the observer would leave
+      // the previous section selected at the page bottom. When scrolled to the
+      // bottom, treat the final section as active. Scrolling back up re-crosses
+      // the line and the observer takes over again.
+      if (max > 0 && window.scrollY >= max - 2) {
+        const lastId = sectionIds[sectionIds.length - 1];
+        if (nav.dataset.section !== lastId) {
+          nav.dataset.section = lastId;
+          setReel();
+          syncReadouts();
+        }
+      }
     }
 
     let resizeRaf = 0;
@@ -621,6 +650,7 @@ const heroId = sections[0]?.id ?? "hero";
       window.cancelAnimationFrame(resizeRaf);
       resizeRaf = window.requestAnimationFrame(() => {
         if (!nav.classList.contains("is-intro")) measure();
+        buildObserver(); // bottom inset depends on innerHeight
         updateProgress();
       });
     }
