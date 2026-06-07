@@ -260,6 +260,10 @@ const heroId = sections[0]?.id ?? "hero";
     inset: 0;
     display: grid;
     place-items: center;
+    /* Optical nudge: pull the ring ~2px off the rounded right edge. Mathematically
+       it's concentric with the cap, but a curve recedes, so equal gaps read as
+       too-tight on the curved side — this gives it a touch more room to look centred. */
+    transform: translateX(-2px);
     opacity: 0;
     transition: opacity 250ms ease;
   }
