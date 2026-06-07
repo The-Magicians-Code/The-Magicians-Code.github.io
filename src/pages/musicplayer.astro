@@ -40,10 +40,15 @@ import '../styles/liquid-glass.css';
       </section>
 
       <!-- The player bar — this is the liquid-glass surface. -->
+      <!-- Glass tuning: blur/saturate/svg-saturate/spec-alpha match the old nav
+           pill (blur 4, saturate 100, svg-saturate 4, spec-alpha 0.4 — fixes the
+           "too blurry" look). Thickness/bezel are dialled down from the nav's
+           defaults (80/20) because the player's wide, thin geometry over-displaces
+           at those values and the refraction build bails to the blurry fallback. -->
       <div
         id="player"
         class="player liquid-glass"
-        style="--lg-thickness: 70; --lg-bezel: 16; --lg-ior: 1.5; --lg-blur: 6; --lg-saturate: 130; --lg-svg-saturate: 3.5; --lg-spec-alpha: 0.45;"
+        style="--lg-thickness: 70; --lg-bezel: 16; --lg-ior: 1.5; --lg-blur: 3; --lg-saturate: 100; --lg-svg-saturate: 4; --lg-spec-alpha: 0.4;"
       >
         <div class="art" role="img" aria-label="Album artwork"></div>
 
@@ -172,10 +177,14 @@ import '../styles/liquid-glass.css';
         gap: 12px;
         color: #fff;
         box-shadow: 0 18px 50px rgba(0, 0, 0, 0.4);
-        /* subtle inner tint + rim so it reads as glass even before/without the
-           SVG refraction (fallback engines) */
-        background: rgba(255, 255, 255, 0.08);
-        border: 1px solid rgba(255, 255, 255, 0.16);
+        /* Fallback glass — overrides the .liquid-glass base blur(18px) with a
+           lighter frosted blur so the bar never reads as a heavy smear; the SVG
+           refraction (when it applies) replaces this via inline backdrop-filter. */
+        -webkit-backdrop-filter: blur(12px) saturate(1.2);
+        backdrop-filter: blur(12px) saturate(1.2);
+        /* a touch more tint + rim so it reads as glass over the vivid wallpaper */
+        background: rgba(255, 255, 255, 0.11);
+        border: 1px solid rgba(255, 255, 255, 0.18);
         -webkit-user-select: none;
         user-select: none;
       }
