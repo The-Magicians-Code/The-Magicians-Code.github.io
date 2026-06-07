@@ -60,6 +60,22 @@ const personSchema = {
     <link rel="preload" href="/fonts/fraunces-latin-full-italic.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/geist-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
 
+    {/* Hide the page until it's styled + settled, then fade in — kills the cold-load
+        flash of unstyled / not-yet-positioned content. Render-blocking inline so it
+        applies before any other CSS or paint; the themed <html> background still
+        shows (a calm colour, not blank). Revealed by the script below on
+        fonts.ready + 2 frames; the 2.5s CSS animation + 1.8s JS timeout are the
+        no-JS / failure safety nets so it can never stay hidden. */}
+    <style is:inline>
+      body { opacity: 0; animation: site-reveal 0.4s ease 2.5s forwards; }
+      html.is-ready body { opacity: 1; animation: none; transition: opacity 0.4s ease; }
+      @keyframes site-reveal { to { opacity: 1; } }
+      @media (prefers-reduced-motion: reduce) {
+        body { animation-duration: 0.01s; }
+        html.is-ready body { transition: none; }
+      }
+    </style>
+
     <title>{title}</title>
     <meta name="description" content={description} />
     <meta name="author" content="Tanel Treuberg" />
@@ -132,6 +148,29 @@ const personSchema = {
             document.documentElement.classList.add('lg-no-svg-backdrop');
           }
         } catch (_) {}
+      })();
+    </script>
+
+    <script is:inline>
+      // Reveal the page (see the hide style above) once it's styled + the layout
+      // has settled: on document.fonts.ready (the font-swap reflow + bento-title
+      // positioning gate) plus two frames so the first parallax/layout pass has
+      // run. Hard 1.8s timeout so a slow/failed font load never blocks paint.
+      (function () {
+        var revealed = false;
+        function reveal() {
+          if (revealed) return;
+          revealed = true;
+          document.documentElement.classList.add('is-ready');
+        }
+        function settle() {
+          requestAnimationFrame(function () { requestAnimationFrame(reveal); });
+        }
+        try {
+          if (document.fonts && document.fonts.ready) document.fonts.ready.then(settle, reveal);
+          else settle();
+        } catch (_) { reveal(); }
+        setTimeout(reveal, 1800);
       })();
     </script>
 
