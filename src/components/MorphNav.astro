@@ -201,6 +201,12 @@ const heroId = sections[0]?.id ?? "hero";
     cursor: pointer;
   }
 
+  /* No focus ring for pointer activation (it clipped to a stray line under the
+     title on iOS); keep it for keyboard users via :focus-visible. */
+  .morph-top:focus:not(:focus-visible) {
+    outline: none;
+  }
+
   .morph-nav.is-intro .morph-top {
     justify-content: center;
     padding: 0;
@@ -531,18 +537,19 @@ const heroId = sections[0]?.id ?? "hero";
     // iOS Safari scrolls the document toward a focusable element's in-flow
     // position when a tap focuses it — and morph-top is position:fixed, so its
     // in-flow position is near the top of <body>. The result: every pill tap
-    // (open or close) nudges the page upward in a ~one-frame jump. Two guards,
-    // because WebKit can focus-scroll on pointer*up*, past a pre-emptive focus:
-    //   1. take focus with preventScroll on pointerdown (pre-empts the default
-    //      scrolling focus where it can), and
-    //   2. pin the scroll position across the toggle: capture it on pointerdown
-    //      (before any jump) and restore it for a few frames after the tap. A
-    //      pill tap never legitimately scrolls, so this is always safe; on
-    //      engines without the bug it's a no-op (no drift to correct).
+    // (open or close) nudged the page upward in a ~one-frame jump. Guard: pin the
+    // scroll position across the toggle — capture it on pointerdown (before any
+    // jump) and restore it for a few frames after the tap. A pill tap never
+    // legitimately scrolls, so this is always safe; on engines without the bug
+    // it's a no-op (no drift to correct).
+    //
+    // We deliberately do NOT call navTop.focus() ourselves: a programmatic focus
+    // makes WebKit paint the :focus-visible outline (it showed as a stray line
+    // under the title on iOS), whereas native pointer focus doesn't. Native focus
+    // still fires for a11y; the pin catches the scroll it triggers.
     let tapScrollY = 0;
     navTop.addEventListener("pointerdown", () => {
       tapScrollY = window.scrollY;
-      navTop.focus({ preventScroll: true });
     });
 
     function pinScrollAfterTap() {
