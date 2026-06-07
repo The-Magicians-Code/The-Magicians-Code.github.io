@@ -37,6 +37,45 @@ if (!reduceMotion) {
     attributeFilter: ['class'],
   });
 
+  // ── Nested smooth scroll for an expanded bento card ──────────────────────
+  // The page-level Lenis is stopped while a card is open (above), so the card's
+  // own scroll gets its own Lenis bound to `.card-body` (which is both the
+  // scroll wrapper and content — overflow-y:auto). One card open at a time.
+  // Lifecycle is tied to `.is-expanded`: attach when it appears, detach the
+  // instant it's removed (collapse start) — before the morph resets scrollTop.
+  let cardLenis: Lenis | null = null;
+  let cardLenisRaf = 0;
+  let cardLenisFor: HTMLElement | null = null;
+
+  const detachCardLenis = () => {
+    if (cardLenisRaf) cancelAnimationFrame(cardLenisRaf);
+    cardLenisRaf = 0;
+    cardLenis?.destroy();
+    cardLenis = null;
+    cardLenisFor = null;
+  };
+
+  const attachCardLenis = (card: HTMLElement) => {
+    const body = card.querySelector<HTMLElement>('.card-body');
+    if (!body) return;
+    detachCardLenis();
+    cardLenis = new Lenis({ wrapper: body, content: body, smoothWheel: true, syncTouch: false });
+    cardLenisFor = card;
+    const loop = (time: number) => {
+      cardLenis?.raf(time);
+      cardLenisRaf = requestAnimationFrame(loop);
+    };
+    cardLenisRaf = requestAnimationFrame(loop);
+  };
+
+  document.querySelectorAll<HTMLElement>('.bento-card').forEach((card) => {
+    new MutationObserver(() => {
+      const expanded = card.classList.contains('is-expanded');
+      if (expanded && cardLenisFor !== card) attachCardLenis(card);
+      else if (!expanded && cardLenisFor === card) detachCardLenis();
+    }).observe(card, { attributes: true, attributeFilter: ['class'] });
+  });
+
   // Route same-page hash links through Lenis (it owns smooth scroll now that the
   // native `scroll-behavior: smooth` is gone). Lenis honours the page's
   // `scroll-padding-top: 7rem`, so targets clear the fixed nav with no extra
