@@ -1,4 +1,5 @@
-/* Liquid-glass module — extracted from src/components/Nav.astro.
+/* Liquid-glass module — now consumed by src/pages/musicplayer.astro (the player
+   bar), repurposed from the former nav pill.
    Spec: docs/superpowers/specs/2026-05-08-liquid-glass-module-design.md
    Technique: kube.io/blog/liquid-glass-css-svg + Atlas Pup pattern. */
 
