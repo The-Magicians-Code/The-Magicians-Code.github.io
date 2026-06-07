@@ -4,6 +4,11 @@
 // + liquid-glass runtime, which would collide with this demo.
 import MorphNav from "../components/MorphNav.astro";
 
+// Dev-only: never ship this harness to production. In a prod build this page
+// becomes a redirect to home instead of a public /nav-test/ route with
+// placeholder marketing copy. The full harness still renders under `astro dev`.
+if (!import.meta.env.DEV) return Astro.redirect("/");
+
 const sections = [
   { id: "hero", title: "Home" },
   { id: "work", title: "Work" },

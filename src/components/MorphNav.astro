@@ -79,8 +79,18 @@ const heroId = sections[0]?.id ?? "hero";
   data-auto-open={String(autoOpen)}
   aria-label="Site navigation"
 >
-  <div class="morph-top" role="button" tabindex="0" aria-expanded="false">
-    <div class="morph-title-window">
+  <div
+    class="morph-top"
+    role="button"
+    tabindex="0"
+    aria-expanded="false"
+    aria-controls="morph-nav-panel"
+    aria-label="Navigation menu"
+  >
+    {/* The title reel is a decorative scrollspy readout; without aria-hidden the
+        button's accessible name would be the concatenation of every section
+        title. The active section is announced via the .morph-live region. */}
+    <div class="morph-title-window" aria-hidden="true">
       <div class="morph-title-stack">
         {sections.map((s) => (
           <div class:list={["morph-title-line", { "is-active": s.id === heroId }]} data-id={s.id}>{s.title}</div>
@@ -97,7 +107,7 @@ const heroId = sections[0]?.id ?? "hero";
     </div>
   </div>
 
-  <div class="morph-body" inert>
+  <div class="morph-body" id="morph-nav-panel" inert>
     {links.length > 0 && (
       <div class="morph-links">
         {links.map((link) => (
