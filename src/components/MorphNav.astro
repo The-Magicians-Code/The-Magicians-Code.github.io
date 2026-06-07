@@ -464,6 +464,9 @@ const heroId = sections[0]?.id ?? "hero";
       nav.style.setProperty("--morph-open-height", `${Math.min(full, cap)}px`);
       // Enable internal scrolling only when content truly overflows the viewport.
       nav.dataset.scroll = String(full > cap);
+      // Diagnostic (inspectable via Web Inspector on the live element) — lets us
+      // read the raw numbers when a measurement looks wrong on a real device.
+      nav.dataset.measure = `t${navTop!.offsetHeight} b${Math.round(navBody!.scrollHeight)} h${window.innerHeight} cap${cap} scroll${full > cap}`;
 
       if (wasIntro) {
         nav.classList.add("is-intro");
@@ -498,6 +501,12 @@ const heroId = sections[0]?.id ?? "hero";
     }
 
     function setExpanded(open: boolean) {
+      // Re-measure at the moment we open: layout is now stable and visible
+      // (post-reveal, post-fonts), so the panel animates to the true content
+      // height instead of a value cached once at init — which, on WebKit, could
+      // read an inflated scrollHeight while the page was still opacity:0 and
+      // clamp the panel to the full-viewport cap (dead space below the items).
+      if (open) measure();
       nav.classList.toggle("is-open", open);
       nav.classList.toggle("is-compact", !open);
       navTop!.setAttribute("aria-expanded", String(open));
@@ -526,7 +535,20 @@ const heroId = sections[0]?.id ?? "hero";
     });
 
     // Cache the open height up front (width-safe), before any intro morph plays.
+    // setExpanded(true) re-measures at open time too; these keep an already-open
+    // panel correct as the viewport (cap) or content reflows.
     measure();
+    let measureRaf = 0;
+    function requestMeasure() {
+      if (measureRaf) return;
+      measureRaf = window.requestAnimationFrame(() => {
+        measureRaf = 0;
+        measure();
+      });
+    }
+    window.addEventListener("resize", requestMeasure);
+    window.addEventListener("orientationchange", requestMeasure);
+    document.fonts?.ready.then(() => measure());
 
     if (nav.classList.contains("is-intro")) {
       // Intro morph → after the hold, drop the squircle and settle into the
