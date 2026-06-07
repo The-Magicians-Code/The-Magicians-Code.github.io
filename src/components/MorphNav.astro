@@ -232,17 +232,14 @@ const heroId = sections[0]?.id ?? "hero";
     align-items: center;
     opacity: 0;
     filter: blur(2px);
-    transform: scale(0.94);
     transition:
       opacity 0.22s ease-out,
-      transform 0.22s ease-out,
       filter 0.22s ease-out;
   }
 
   .morph-title-line.is-active {
     opacity: 1;
     filter: blur(0);
-    transform: scale(1);
   }
 
   .morph-action {
@@ -604,10 +601,11 @@ const heroId = sections[0]?.id ?? "hero";
           syncReadouts();
         }
       },
-      // Active section = whichever crosses the viewport's vertical centre line,
-      // not whichever is 50% of its own area in view (which flipped to a short
-      // section while it was still only peeking up from the bottom).
-      { rootMargin: "-50% 0px -50% 0px", threshold: 0 },
+      // Active section = whichever crosses a line near the top of the viewport,
+      // so the header changes as a section reaches the top (not its 50%-of-area,
+      // which flipped to a short section while it was still peeking up from the
+      // bottom).
+      { rootMargin: "-10% 0px -90% 0px", threshold: 0 },
     );
     document
       .querySelectorAll<HTMLElement>("[data-nav-section]")
