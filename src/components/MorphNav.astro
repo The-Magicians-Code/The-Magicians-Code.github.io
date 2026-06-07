@@ -528,6 +528,18 @@ const heroId = sections[0]?.id ?? "hero";
       setExpanded(!nav.classList.contains("is-open"));
     }
 
+    // iOS Safari scrolls the document toward a focusable element's in-flow
+    // position when it's focused by a tap — and morph-top is position:fixed, so
+    // its in-flow position is near the top of <body>. The result: every pill tap
+    // (open or close) nudges the page upward in a ~one-frame jump. Take focus
+    // ourselves with preventScroll during pointerdown — which runs before the
+    // browser's default (scrolling) focus, so the element is already focused and
+    // the default no-ops. Keyboard focus is unaffected (Tab onto an in-view
+    // element doesn't scroll), so the keydown activation path needs no change.
+    navTop.addEventListener("pointerdown", () => {
+      navTop.focus({ preventScroll: true });
+    });
+
     navTop.addEventListener("click", toggleExpanded);
     navTop.addEventListener("keydown", (event) => {
       if (event.key === "Enter" || event.key === " ") {
