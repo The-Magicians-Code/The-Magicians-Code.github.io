@@ -401,13 +401,18 @@ const heroId = sections[0]?.id ?? "hero";
   .morph-theme-row {
     display: flex;
     align-items: center;
-    padding: 8px 16px;
+    padding: 0;
   }
 
-  /* Drop the toggle's own left padding so its icon lands on the same 16px gutter
-     as the link icons, and match the dropdown's 1rem label size. */
+  /* Make the toggle a full-width row tap target like the links (instead of a
+     content-hugging pill): its icon lands on the same 16px gutter, its hover
+     fill spans the whole row, and the label matches the dropdown's 1rem size. */
   .morph-theme-row :global(.theme-toggle-btn) {
-    padding-left: 0;
+    width: 100%;
+    height: 44px;
+    justify-content: flex-start;
+    padding: 0 16px;
+    border-radius: 0;
   }
 
   .morph-theme-row :global(.tt-label) {
