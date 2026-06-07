@@ -462,17 +462,6 @@ body.bento-open .nav-progressive-blur {
 
 .panel a:hover { background: rgba(128, 128, 128, .15); }
 
-/* ===== Responsive Layout ===== */
-/* Below the mobile breakpoint the desktop liquid-glass nav (#site-nav) and the
-   old mobile dropdown (#mobile-menu) are replaced by MorphNav; hide both so
-   only MorphNav renders on mobile. */
-@media (max-width: 640px) {
-  #site-nav,
-  #mobile-menu {
-    display: none;
-  }
-}
-
 /* ===== Section Fade-in (delay via CSS variable, not :nth-of-type) ===== */
 .section-fade-in {
   opacity: 0;
