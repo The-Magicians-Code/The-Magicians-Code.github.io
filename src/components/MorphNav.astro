@@ -241,15 +241,13 @@ const heroId = sections[0]?.id ?? "hero";
     filter: blur(0);
   }
 
+  /* Square box sized to the ring: width pulls it in so its gap to the pill's
+     rounded right end matches its top/bottom gap (equidistant); height fits the
+     29px SVG cleanly so it's vertically centred (no negative-space rounding). */
   .morph-action {
     position: relative;
-    width: 41px;
-    height: 27px;
-    overflow: hidden;
-  }
-
-  .morph-nav.is-intro .morph-action {
     width: 27px;
+    height: 29px;
   }
 
   /* The progress ring is the only glyph: hidden at the top of the page, it
@@ -269,6 +267,7 @@ const heroId = sections[0]?.id ?? "hero";
   }
 
   .morph-progress-glyph svg {
+    display: block;
     width: 29px;
     height: 29px;
     transform: rotate(-87deg);
