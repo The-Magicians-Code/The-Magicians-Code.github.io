@@ -453,11 +453,22 @@ const heroId = sections[0]?.id ?? "hero";
       // getClientRects() instead.
       if (nav.getClientRects().length === 0) return;
 
-      const prevTransition = nav.style.transition;
+      // The transition-freeze + is-intro drop is ONLY needed during the intro
+      // morph: there the shell is 43px wide, so we must momentarily lay the
+      // content out at full width to read a non-wrapped scrollHeight. Outside
+      // intro the shell is already full width, so we read directly and DON'T
+      // touch `transition` — otherwise a re-measure mid open/close animation
+      // (rapid toggling) would snap the height to its class target instead of
+      // smoothly reversing. scrollHeight is layout, unaffected by the in-flight
+      // height transition, so reading it directly is safe.
       const wasIntro = nav.classList.contains("is-intro");
-      nav.style.transition = "none";
-      if (wasIntro) nav.classList.remove("is-intro");
-      void nav.offsetWidth; // reflow at full width
+      let prevTransition: string | undefined;
+      if (wasIntro) {
+        prevTransition = nav.style.transition;
+        nav.style.transition = "none";
+        nav.classList.remove("is-intro");
+        void nav.offsetWidth; // reflow at full width
+      }
 
       const full = navTop!.offsetHeight + navBody!.scrollHeight;
       const cap = window.innerHeight - 40;
@@ -471,8 +482,8 @@ const heroId = sections[0]?.id ?? "hero";
       if (wasIntro) {
         nav.classList.add("is-intro");
         void nav.offsetWidth; // snap back without animating
+        nav.style.transition = prevTransition!;
       }
-      nav.style.transition = prevTransition;
     }
 
     function setReel() {
