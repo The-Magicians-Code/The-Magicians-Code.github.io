@@ -55,10 +55,13 @@ const personSchema = {
     {/* Preload the above-the-fold fonts so they're ready at first paint. The
         bento card-title positioning (syncTitleRestY) gates on document.fonts.ready,
         so a late font load makes those titles snap into place — preloading shrinks
-        that wait. The Estonian `-ext` subsets aren't above-the-fold, so we skip them. */}
+        that wait (and, with the hide-until-ready below, the hidden window). The
+        Estonian `-ext` subsets aren't above-the-fold, so we skip them. Geist Mono
+        is included: the hero tech pills (.hero-pill) use it above the fold. */}
     <link rel="preload" href="/fonts/fraunces-latin-full-normal.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/fraunces-latin-full-italic.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/geist-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/geist-mono-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
 
     {/* Hide the page until it's styled + settled, then fade in — kills the cold-load
         flash of unstyled / not-yet-positioned content. Render-blocking inline so it
@@ -71,7 +74,12 @@ const personSchema = {
       html.is-ready body { opacity: 1; animation: none; transition: opacity 0.4s ease; }
       @keyframes site-reveal { to { opacity: 1; } }
       @media (prefers-reduced-motion: reduce) {
-        body { animation-duration: 0.01s; }
+        /* Reduced motion: keep hide-until-ready (opacity gating isn't motion, so
+           it still prevents the FOUC) but never fade — reveal is an instant
+           opacity flip in both paths. The JS path flips via .is-ready with no
+           transition; the no-JS failsafe flips at the same 2.5s safety mark with
+           a ~0s animation (not a shortened fade). */
+        body { animation: site-reveal 0.01s linear 2.5s forwards; }
         html.is-ready body { transition: none; }
       }
     </style>
