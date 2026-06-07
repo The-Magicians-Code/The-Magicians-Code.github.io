@@ -33,7 +33,10 @@ interface Props {
   sections?: NavSection[];
   /** Dropdown nav list rendered as full-width tappable rows. */
   links?: NavLink[];
-  /** Hold time on the intro pill before auto-open (ms). */
+  /** Play the on-load morph (squircle pill → compact bar). When false the nav
+   *  renders directly in its compact resting shape with no entrance animation. */
+  intro?: boolean;
+  /** Hold time on the intro pill before auto-open (ms). Ignored when intro is false. */
   introMs?: number;
   /** Auto-open once after the intro. */
   autoOpen?: boolean;
@@ -56,6 +59,7 @@ const {
     { label: "Resume", href: "/Tanel_Treuberg_Software_Engineer.pdf", external: true },
     { label: "Contact", href: "/#contact" },
   ],
+  intro = true,
   introMs = 2100,
   autoOpen = true,
   themeToggle = false,
@@ -65,7 +69,7 @@ const heroId = sections[0]?.id ?? "hero";
 ---
 
 <nav
-  class="morph-nav is-intro is-compact"
+  class:list={["morph-nav", { "is-intro": intro }, "is-compact"]}
   data-section={heroId}
   data-progress="false"
   data-intro-ms={String(introMs)}
@@ -537,14 +541,21 @@ const heroId = sections[0]?.id ?? "hero";
       link.addEventListener("click", () => setExpanded(false));
     });
 
-    // Cache the open height up front (width-safe), before the intro morph plays.
+    // Cache the open height up front (width-safe), before any intro morph plays.
     measure();
 
-    // Intro → settle into the target state (height var is already correct).
-    window.setTimeout(() => {
-      nav.classList.remove("is-intro");
+    if (nav.classList.contains("is-intro")) {
+      // Intro morph → after the hold, drop the squircle and settle into the
+      // target state (the height var is already correct).
+      window.setTimeout(() => {
+        nav.classList.remove("is-intro");
+        setExpanded(autoOpen);
+      }, introMs);
+    } else {
+      // Intro disabled: the nav is already in its compact resting shape; just
+      // settle aria/reel state (and auto-open if the host requested it).
       setExpanded(autoOpen);
-    }, introMs);
+    }
 
     // Scrollspy. Sections are owned by the host page; this is the documented
     // [data-nav-section] contract.
