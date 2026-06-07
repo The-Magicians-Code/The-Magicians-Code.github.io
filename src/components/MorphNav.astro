@@ -139,7 +139,9 @@ const heroId = sections[0]?.id ?? "hero";
     width: min(350px, calc(100vw - 40px));
     transform: translateX(-50%);
     overflow: hidden;
-    border-radius: 20px;
+    /* = compact bar height (43px) / 2 → fully semicircular ends, so the progress
+       ring (centred at pill.right − 21.5) sits concentric with the right cap. */
+    border-radius: 21.5px;
     background: var(--morph-panel);
     box-shadow: var(--morph-shadow);
     backdrop-filter: blur(14px);
