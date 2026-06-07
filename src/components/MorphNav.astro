@@ -529,18 +529,38 @@ const heroId = sections[0]?.id ?? "hero";
     }
 
     // iOS Safari scrolls the document toward a focusable element's in-flow
-    // position when it's focused by a tap — and morph-top is position:fixed, so
-    // its in-flow position is near the top of <body>. The result: every pill tap
-    // (open or close) nudges the page upward in a ~one-frame jump. Take focus
-    // ourselves with preventScroll during pointerdown — which runs before the
-    // browser's default (scrolling) focus, so the element is already focused and
-    // the default no-ops. Keyboard focus is unaffected (Tab onto an in-view
-    // element doesn't scroll), so the keydown activation path needs no change.
+    // position when a tap focuses it — and morph-top is position:fixed, so its
+    // in-flow position is near the top of <body>. The result: every pill tap
+    // (open or close) nudges the page upward in a ~one-frame jump. Two guards,
+    // because WebKit can focus-scroll on pointer*up*, past a pre-emptive focus:
+    //   1. take focus with preventScroll on pointerdown (pre-empts the default
+    //      scrolling focus where it can), and
+    //   2. pin the scroll position across the toggle: capture it on pointerdown
+    //      (before any jump) and restore it for a few frames after the tap. A
+    //      pill tap never legitimately scrolls, so this is always safe; on
+    //      engines without the bug it's a no-op (no drift to correct).
+    let tapScrollY = 0;
     navTop.addEventListener("pointerdown", () => {
+      tapScrollY = window.scrollY;
       navTop.focus({ preventScroll: true });
     });
 
-    navTop.addEventListener("click", toggleExpanded);
+    function pinScrollAfterTap() {
+      const y = tapScrollY;
+      let frames = 0;
+      const hold = () => {
+        if (Math.abs(window.scrollY - y) > 1) window.scrollTo(0, y);
+        if (++frames < 10) window.requestAnimationFrame(hold);
+      };
+      hold();
+    }
+
+    navTop.addEventListener("click", () => {
+      toggleExpanded();
+      pinScrollAfterTap(); // absorb iOS's pointerup focus-scroll
+    });
+    // Keyboard activation doesn't focus-scroll (the element is already focused),
+    // so it needs no pin.
     navTop.addEventListener("keydown", (event) => {
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
