@@ -75,7 +75,6 @@ const heroId = sections[0]?.id ?? "hero";
 <nav
   class:list={["morph-nav", { "is-intro": intro }, "is-compact"]}
   data-section={heroId}
-  data-progress="false"
   data-intro-ms={String(introMs)}
   data-auto-open={String(autoOpen)}
   aria-label="Site navigation"
@@ -262,34 +261,29 @@ const heroId = sections[0]?.id ?? "hero";
       opacity 250ms ease;
   }
 
+  /* Default (compact bar): show the global scroll-progress ring at all times;
+     park the spark above. The ring fill tracks whole-page scroll, not the
+     current section (see updateProgress). */
   .morph-menu-glyph {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  .morph-progress-glyph {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-
-  /* Scrolled into a non-hero section → swap spark for progress ring. */
-  .morph-nav[data-progress="true"] .morph-menu-glyph {
     opacity: 0;
     transform: translateY(-20px);
   }
 
-  .morph-nav[data-progress="true"] .morph-progress-glyph {
+  .morph-progress-glyph {
     opacity: 1;
     transform: translateY(0);
   }
 
-  /* Open always shows the spark, regardless of section. */
-  .morph-nav.is-open .morph-menu-glyph {
+  /* Open panel (and the intro pill): show the spark — it doubles as the ✕ close
+     mark — and hide the ring. */
+  .morph-nav.is-open .morph-menu-glyph,
+  .morph-nav.is-intro .morph-menu-glyph {
     opacity: 1;
     transform: translateY(0);
   }
 
-  .morph-nav.is-open .morph-progress-glyph {
+  .morph-nav.is-open .morph-progress-glyph,
+  .morph-nav.is-intro .morph-progress-glyph {
     opacity: 0;
     transform: translateY(20px);
   }
@@ -604,7 +598,6 @@ const heroId = sections[0]?.id ?? "hero";
         if (!known) console.warn("[morph-nav] observed unknown section id:", id);
 
         nav.dataset.section = known ? id : heroId;
-        nav.dataset.progress = String(known && id !== heroId);
 
         if (known && id !== heroId) {
           setExpanded(false);
