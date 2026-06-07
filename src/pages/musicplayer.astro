@@ -1,14 +1,49 @@
 ---
-// musicplayer — a standalone showcase for the liquid-glass module, repurposed
-// from the old nav pill into an Apple-Music-iOS-style "Now Playing" player bar.
-// Deliberately renders its own <html> (not BaseLayout) so it's an isolated demo
-// with full control over the backdrop the glass refracts.
+// musicplayer — the liquid-glass module showcased as a player bar. Ported 1:1
+// from the old prod nav pill (#nav-pill geometry + glass treatment + the module
+// defaults, which is exactly what made the refraction work in production), with
+// the nav text-buttons dropped. A scrollable sample music library sits behind it
+// so the glass refracts live content as you scroll — the Apple-Music feel.
 import { Icon } from 'astro-icon/components';
 import '../styles/liquid-glass.css';
+
+const library = [
+  { title: 'Liquid Motion', artist: 'The Magicians Code' },
+  { title: 'Refraction', artist: 'Nova Atlas' },
+  { title: 'Glass Houses', artist: 'Marlowe Vance' },
+  { title: 'Specular', artist: 'Ivo Kessler' },
+  { title: 'Snell’s Law', artist: 'The Bezels' },
+  { title: 'Backdrop', artist: 'Cassia Vale' },
+  { title: 'Displacement Map', artist: 'Orla Finch' },
+  { title: 'Index of Refraction', artist: 'Hale & Crane' },
+  { title: 'Frosted', artist: 'Lune' },
+  { title: 'Caustics', artist: 'Theo Marsh' },
+  { title: 'Total Internal', artist: 'Sable Wren' },
+  { title: 'Rim Light', artist: 'Juniper Ash' },
+  { title: 'Aperture', artist: 'The Meridian' },
+  { title: 'Chromatic', artist: 'Dorian Frost' },
+  { title: 'Parallax', artist: 'Vesper Lane' },
+  { title: 'Saturate', artist: 'Kit Halloran' },
+  { title: 'Inner Glow', artist: 'Mara Quill' },
+  { title: 'Tilt Shift', artist: 'August Reyes' },
+  { title: 'Soft Edges', artist: 'Linnea Cole' },
+  { title: 'Highlight', artist: 'The Atlas Pup' },
+  { title: 'Translucent', artist: 'Wren & Oak' },
+  { title: 'Bevel', artist: 'Cyan Mercer' },
+  { title: 'Dispersion', artist: 'Nori Vale' },
+  { title: 'Light Path', artist: 'Halcyon Drift' },
+  { title: 'Ambient Occlusion', artist: 'Esme Lark' },
+  { title: 'Bloom', artist: 'The Quiet Lens' },
+  { title: 'Reflectance', artist: 'Otis Vane' },
+  { title: 'Falloff', artist: 'Petra Sol' },
+  { title: 'Roughness', artist: 'Calder Ng' },
+  { title: 'Sheen', artist: 'The Magicians Code' },
+];
+const cover = (i: number) => `oklch(70% 0.2 ${(i * 47) % 360})`;
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en" class="dark">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -29,228 +64,181 @@ import '../styles/liquid-glass.css';
   </head>
 
   <body>
-    <main class="stage" aria-label="Now playing">
-      <!-- Backdrop the glass refracts: the blurred "album art" wallpaper. -->
-      <div class="wall" aria-hidden="true"></div>
+    <!-- Scrollable library — the live backdrop the glass refracts. -->
+    <main class="library">
+      <h1 class="lib-title">Library</h1>
+      <ul class="tracks">
+        {library.map((t, i) => (
+          <li class="track">
+            <span class="t-art" style={`--c: ${cover(i)}`}></span>
+            <span class="t-meta">
+              <span class="t-title">{t.title}</span>
+              <span class="t-artist">{t.artist}</span>
+            </span>
+            <span class="t-dur">{`${2 + (i % 3)}:${String((i * 17) % 60).padStart(2, '0')}`}</span>
+          </li>
+        ))}
+      </ul>
+    </main>
 
-      <section class="nowplaying">
-        <div class="cover" role="img" aria-label="Album artwork"></div>
-        <h1 class="np-title">Liquid Motion</h1>
-        <p class="np-artist">The Magicians Code</p>
-      </section>
+    <!-- The glass player bar — prod nav pill, 1:1, text-buttons dropped. -->
+    <div class="player-dock">
+      <div id="player-pill" class="liquid-glass">
+        <span class="np-art" style="--c: oklch(72% 0.2 18)"></span>
+        <span class="np-meta">
+          <span class="np-title">Liquid Motion</span>
+          <span class="np-artist">The Magicians Code</span>
+        </span>
 
-      <!-- The player bar — this is the liquid-glass surface. -->
-      <!-- Glass tuning: blur/saturate/svg-saturate/spec-alpha match the old nav
-           pill (blur 4, saturate 100, svg-saturate 4, spec-alpha 0.4 — fixes the
-           "too blurry" look). Thickness/bezel are dialled down from the nav's
-           defaults (80/20) because the player's wide, thin geometry over-displaces
-           at those values and the refraction build bails to the blurry fallback. -->
-      <div
-        id="player"
-        class="player liquid-glass"
-        style="--lg-thickness: 70; --lg-bezel: 16; --lg-ior: 1.5; --lg-blur: 3; --lg-saturate: 100; --lg-svg-saturate: 4; --lg-spec-alpha: 0.4;"
-      >
-        <div class="art" role="img" aria-label="Album artwork"></div>
-
-        <div class="meta">
-          <div class="title">Liquid Motion</div>
-          <div class="artist">The Magicians Code</div>
-        </div>
-
-        <div class="controls">
-          <button class="ctl" type="button" aria-label="Previous">
-            <Icon name="lucide:skip-back" />
-          </button>
-          <button class="ctl play" id="play" type="button" aria-label="Play" aria-pressed="false">
+        <div class="np-controls">
+          <button class="np-ctl" type="button" aria-label="Previous"><Icon name="lucide:skip-back" /></button>
+          <button class="np-ctl np-play" id="play" type="button" aria-label="Play" aria-pressed="false">
             <Icon name="lucide:play" class="i-play" />
             <Icon name="lucide:pause" class="i-pause" />
           </button>
-          <button class="ctl" type="button" aria-label="Next">
-            <Icon name="lucide:skip-forward" />
-          </button>
-        </div>
-
-        <div class="scrubber" aria-hidden="true">
-          <div class="scrubber-fill" id="fill"></div>
+          <button class="np-ctl" type="button" aria-label="Next"><Icon name="lucide:skip-forward" /></button>
         </div>
       </div>
-    </main>
+    </div>
 
     <script>
       import '../scripts/liquid-glass';
-
-      // Tiny demo behaviour: play/pause toggle + a fake progress drift.
       const play = document.getElementById('play');
-      const fill = document.getElementById('fill');
-      let playing = false;
-      let progress = 0.28;
-      let raf = 0;
-      let last = 0;
-
-      const render = () => {
-        if (fill) fill.style.width = (progress * 100).toFixed(2) + '%';
-      };
-      render();
-
-      const loop = (t: number) => {
-        if (last) progress = Math.min(1, progress + (t - last) / 180000); // ~3 min track
-        last = t;
-        render();
-        if (progress >= 1) { progress = 0; }
-        if (playing) raf = requestAnimationFrame(loop);
-      };
-
       play?.addEventListener('click', () => {
-        playing = !playing;
-        play.classList.toggle('is-playing', playing);
-        play.setAttribute('aria-pressed', String(playing));
-        play.setAttribute('aria-label', playing ? 'Pause' : 'Play');
-        if (playing) { last = 0; raf = requestAnimationFrame(loop); }
-        else { cancelAnimationFrame(raf); }
+        const on = play.classList.toggle('is-playing');
+        play.setAttribute('aria-pressed', String(on));
+        play.setAttribute('aria-label', on ? 'Pause' : 'Play');
       });
     </script>
 
     <style is:global>
       :root {
         color-scheme: dark;
+        --bg: #0a0a0d;
+        --ink: #f0f0f5;
+        --ink-dim: #a0a0aa;
         font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       }
       * { box-sizing: border-box; }
-      html, body { margin: 0; height: 100%; }
+      html, body { margin: 0; }
+      body { background: var(--bg); color: var(--ink); }
 
-      .stage {
-        position: relative;
-        min-height: 100svh;
-        overflow: hidden;
-        display: grid;
-        place-items: center;
-        background: #0b0b12;
-        color: #f4f4f7;
+      /* ── Scrollable library ─────────────────────────────────────────────── */
+      .library {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 28px 20px 160px; /* bottom room so the last rows clear the dock */
       }
-
-      /* Vibrant "album art" wallpaper — gives the glass something rich to bend. */
-      .wall {
-        position: absolute;
-        inset: -10%;
+      .lib-title { font-size: clamp(28px, 6vw, 44px); font-weight: 800; letter-spacing: -0.02em; margin: 24px 4px 18px; }
+      .tracks { list-style: none; margin: 0; padding: 0; }
+      .track {
+        display: flex; align-items: center; gap: 14px;
+        padding: 10px 8px;
+        border-radius: 12px;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .track:first-child { border-top: 0; }
+      .track:hover { background: rgba(255, 255, 255, 0.04); }
+      .t-art {
+        flex: none; width: 48px; height: 48px; border-radius: 8px;
         background:
-          radial-gradient(40% 50% at 22% 28%, oklch(70% 0.22 18) 0%, transparent 60%),
-          radial-gradient(45% 55% at 80% 22%, oklch(72% 0.2 305) 0%, transparent 62%),
-          radial-gradient(50% 60% at 70% 82%, oklch(74% 0.19 230) 0%, transparent 60%),
-          radial-gradient(45% 55% at 18% 80%, oklch(76% 0.2 145) 0%, transparent 60%),
-          #0b0b12;
-        filter: saturate(1.1);
+          radial-gradient(120% 120% at 30% 25%, color-mix(in oklab, var(--c) 85%, white) 0%, var(--c) 55%, color-mix(in oklab, var(--c) 70%, black) 100%);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
       }
+      .t-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+      .t-title { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .t-artist { font-size: 13px; color: var(--ink-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .t-dur { flex: none; font-size: 13px; color: var(--ink-dim); font-variant-numeric: tabular-nums; }
 
-      .nowplaying {
-        position: relative;
-        text-align: center;
-        transform: translateY(-6vh);
-        z-index: 1;
-      }
-      .cover {
-        width: min(46vw, 300px);
-        aspect-ratio: 1;
-        margin: 0 auto 28px;
-        border-radius: 24px;
-        background:
-          conic-gradient(from 210deg at 50% 50%,
-            oklch(72% 0.2 18), oklch(74% 0.18 305), oklch(76% 0.18 230),
-            oklch(78% 0.18 145), oklch(72% 0.2 18));
-        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
-      }
-      .np-title { margin: 0; font-size: clamp(22px, 4vw, 34px); font-weight: 700; letter-spacing: -0.01em; }
-      .np-artist { margin: 6px 0 0; font-size: 15px; opacity: 0.7; }
-
-      /* ── The glass player bar ───────────────────────────────────────────── */
-      .player {
+      /* ── The dock + glass pill (ported 1:1 from the prod #nav-pill) ──────── */
+      .player-dock {
         position: fixed;
-        left: 50%;
-        bottom: max(24px, env(safe-area-inset-bottom, 0px));
-        transform: translateX(-50%);
-        z-index: 5;
-        width: min(560px, calc(100vw - 28px));
-        height: 76px;
-        padding: 0 14px 0 14px;
-        border-radius: 24px;
+        left: 0; right: 0;
+        bottom: max(20px, env(safe-area-inset-bottom, 0px));
+        z-index: 20;
+        display: flex;
+        justify-content: center;
+        padding: 0 20px;
+        pointer-events: none;
+      }
+      .player-dock > * { pointer-events: auto; }
+
+      /* #nav-pill geometry/treatment, verbatim from global.css (the exact glass
+         the prod pill had — defaults, no per-instance --lg override). */
+      #player-pill {
+        position: relative;
+        isolation: isolate;
+        width: min(896px, 100%);
+        height: 64px;
         display: flex;
         align-items: center;
-        gap: 12px;
-        color: #fff;
-        box-shadow: 0 18px 50px rgba(0, 0, 0, 0.4);
-        /* Fallback glass — overrides the .liquid-glass base blur(18px) with a
-           lighter frosted blur so the bar never reads as a heavy smear; the SVG
-           refraction (when it applies) replaces this via inline backdrop-filter. */
-        -webkit-backdrop-filter: blur(12px) saturate(1.2);
-        backdrop-filter: blur(12px) saturate(1.2);
-        /* a touch more tint + rim so it reads as glass over the vivid wallpaper */
-        background: rgba(255, 255, 255, 0.11);
-        border: 1px solid rgba(255, 255, 255, 0.18);
+        gap: 0.75rem;
+        padding: 0 0.75rem 0 1rem;
+        border-radius: 999px;
+        color: var(--ink);
+        background: rgba(255, 255, 255, 0.06);
+        box-shadow:
+          inset 0 0 12px -3px rgba(255, 255, 255, 0.30),
+          0 18px 30px -10px rgba(0, 0, 0, 0.55);
         -webkit-user-select: none;
         user-select: none;
       }
+      #player-pill::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.03) 40%, transparent 70%);
+        pointer-events: none;
+        z-index: -1;
+      }
+      /* Safari/Firefox fallback (no SVG-in-backdrop): plain frosted glass. */
+      html.lg-no-svg-backdrop #player-pill {
+        -webkit-backdrop-filter: blur(18px) saturate(140%);
+        backdrop-filter: blur(18px) saturate(140%);
+      }
+      html.lg-no-svg-backdrop #player-pill::before { display: none; }
 
-      .player .art {
-        flex: none;
-        width: 52px;
-        height: 52px;
-        border-radius: 12px;
+      /* Below 641px the runtime skips the pill (the prod glass was desktop-only),
+         so it would show the heavy .liquid-glass blur(18px). Give it a lighter
+         frosted fallback here — also avoids the costly SVG re-raster while the
+         library scrolls under it on phones. */
+      @media (max-width: 640px) {
+        #player-pill {
+          -webkit-backdrop-filter: blur(12px) saturate(1.2);
+          backdrop-filter: blur(12px) saturate(1.2);
+        }
+      }
+
+      .np-art {
+        flex: none; width: 44px; height: 44px; border-radius: 10px;
         background:
-          conic-gradient(from 210deg at 50% 50%,
-            oklch(72% 0.2 18), oklch(74% 0.18 305), oklch(76% 0.18 230),
-            oklch(78% 0.18 145), oklch(72% 0.2 18));
-        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255,255,255,0.12);
+          radial-gradient(120% 120% at 30% 25%, color-mix(in oklab, var(--c) 85%, white) 0%, var(--c) 55%, color-mix(in oklab, var(--c) 70%, black) 100%);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
       }
+      .np-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+      .np-title { font-size: 14px; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .np-artist { font-size: 12px; color: var(--ink-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-      .player .meta { min-width: 0; flex: 1; }
-      .player .title {
-        font-size: 15px; font-weight: 650; line-height: 1.2;
-        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      }
-      .player .artist {
-        font-size: 13px; line-height: 1.2; opacity: 0.72;
-        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      }
-
-      .player .controls { flex: none; display: flex; align-items: center; gap: 4px; }
-      .player .ctl {
-        display: inline-grid;
-        place-items: center;
+      .np-controls { flex: none; display: flex; align-items: center; gap: 2px; }
+      .np-ctl {
+        display: inline-grid; place-items: center;
         width: 40px; height: 40px;
-        border: 0; border-radius: 999px;
-        background: transparent;
-        color: #fff;
-        cursor: pointer;
+        border: 0; border-radius: 999px; background: transparent;
+        color: var(--ink); cursor: pointer;
         transition: background-color 0.15s ease, transform 0.12s ease;
       }
-      .player .ctl:hover { background: rgba(255, 255, 255, 0.14); }
-      .player .ctl:active { transform: scale(0.94); }
-      .player .ctl svg { width: 20px; height: 20px; }
-      .player .ctl.play svg { width: 24px; height: 24px; }
-      .player .ctl.play { width: 44px; height: 44px; }
+      .np-ctl:hover { background: rgba(255, 255, 255, 0.12); }
+      .np-ctl:active { transform: scale(0.94); }
+      .np-ctl svg { width: 20px; height: 20px; }
+      .np-play svg { width: 24px; height: 24px; }
+      .np-play .i-pause { display: none; }
+      .np-play.is-playing .i-play { display: none; }
+      .np-play.is-playing .i-pause { display: inline; }
 
-      /* play/pause icon crossfade */
-      .player .ctl.play .i-pause { display: none; }
-      .player .ctl.play.is-playing .i-play { display: none; }
-      .player .ctl.play.is-playing .i-pause { display: inline; }
-
-      .player .scrubber {
-        position: absolute;
-        left: 14px; right: 14px; bottom: 8px;
-        height: 3px;
-        border-radius: 999px;
-        background: rgba(255, 255, 255, 0.22);
-        overflow: hidden;
-      }
-      .player .scrubber-fill {
-        height: 100%;
-        width: 28%;
-        border-radius: 999px;
-        background: rgba(255, 255, 255, 0.9);
-      }
-
-      @media (max-width: 480px) {
-        .player { height: 70px; }
-        .player .art { width: 46px; height: 46px; }
+      @media (max-width: 520px) {
+        #player-pill { height: 60px; }
+        .np-art { width: 40px; height: 40px; }
       }
     </style>
   </body>
