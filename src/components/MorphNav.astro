@@ -334,7 +334,9 @@ const heroId = sections[0]?.id ?? "hero";
   .morph-progress-ring {
     stroke: var(--morph-accent);
     stroke-linecap: round;
-    transition: stroke-dashoffset 80ms linear;
+    /* No transition: the offset is updated once per animation frame from the
+       live scroll position (see the rAF loop in the script), so it tracks
+       scroll 1:1. A transition here would make it lag/step behind on Safari. */
   }
 
   .morph-body {
@@ -432,8 +434,7 @@ const heroId = sections[0]?.id ?? "hero";
     .morph-title-stack,
     .morph-menu-glyph,
     .morph-progress-glyph,
-    .morph-body,
-    .morph-progress-ring {
+    .morph-body {
       transition-duration: 1ms !important;
     }
   }
@@ -630,9 +631,30 @@ const heroId = sections[0]?.id ?? "hero";
       });
     }
 
+    // Drive the progress ring from a rAF loop, not the scroll event directly:
+    // it reads the live scrollY each frame while the page is moving (smooth even
+    // during iOS Safari momentum, where scroll events arrive in uneven bursts)
+    // and parks itself once the position settles.
+    let progressRaf = 0;
+    let progressPrevY = NaN;
+    function progressTick() {
+      updateProgress();
+      const y = window.scrollY;
+      if (y !== progressPrevY) {
+        progressPrevY = y;
+        progressRaf = window.requestAnimationFrame(progressTick);
+      } else {
+        progressRaf = 0;
+      }
+    }
+    function onScroll() {
+      progressPrevY = NaN; // force the loop to keep ticking while scrolling
+      if (!progressRaf) progressRaf = window.requestAnimationFrame(progressTick);
+    }
+
     updateProgress();
     syncReadouts();
-    window.addEventListener("scroll", updateProgress, { passive: true });
+    window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onResize);
   }
 
