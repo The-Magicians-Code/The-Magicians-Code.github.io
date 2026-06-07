@@ -1,8 +1,94 @@
 # RavaNav as the site's mobile navigation — design
 
-**Date:** 2026-06-06
-**Branch:** `feat/rava-nav-module`
-**Status:** Design — pending review
+**Date:** 2026-06-06 (design) · 2026-06-07 (shipped)
+**Branch:** `feat/rava-nav-module` — merged via PR #46, branch deleted
+**Status:** ✅ Shipped, but the implementation **diverged materially** from this
+design. See **What actually shipped** immediately below for the accurate, current
+picture; everything under "Original design" is the 2026-06-06 record, kept for the
+"why" trail and authoritative only where the two don't conflict.
+
+## What actually shipped (2026-06-07, merged via PR #46)
+
+The design below is preserved as the original record, but implementation diverged.
+The accurate current picture:
+
+### Biggest divergence: MorphNav is the *global* nav, not mobile-only
+
+The mobile-only / desktop-swap plan (Scope table, §1–§2) was dropped. MorphNav is
+now the site's single navigation at **every** breakpoint; there is no liquid-glass
+nav bar anymore. Consequences:
+
+- `Nav.astro` and `MobileMenu.astro` were **deleted** (the original plan left them
+  in place). The liquid-glass *module* lives on, but only as a standalone showcase
+  — `src/pages/musicplayer.astro`.
+- `global.css` no longer swaps navs by breakpoint; MorphNav simply widens at
+  ≥641px (`width: min(400px, calc(100vw - 40px))`). The `@media(min-width:641px)
+  { display:none }` self-hide guard was removed.
+
+### Final props (the `BaseLayout` mount)
+
+- `sections`: hero→Home, about→About, projects→Work, skills-tools→Stack,
+  contact→Contact.
+- `links`: **Home `/#hero` (scrolls to the very top)**, About `/#about`, Work
+  `/#projects`, Stack `/#skills-tools`, **Resume → the PDF**
+  `/Tanel_Treuberg_Software_Engineer.pdf` (external), Contact `/#contact`.
+- `themeToggle={true}`, **`intro={false}`** (the intro morph is disabled in prod),
+  `autoOpen={false}`.
+
+### Corrections to the 2026-06-06 "corrections"
+
+- **Resume is the PDF, not `/resume/`.** The codex-review correction that claimed
+  `/resume/` is a live route was itself wrong — there is no styled resume page; the
+  resume is a build-time PDF served at `/Tanel_Treuberg_Software_Engineer.pdf`.
+  CLAUDE.md's note was correct. There is no `resume.astro` print-hide step.
+- The **spark/menu glyph was dropped** (design decision). The compact pill shows
+  the title reel plus an **always-on global scroll-progress ring**.
+
+### Fixes folded in after the design (Safari device testing + codex review)
+
+None of these were in the original plan; they surfaced bringing it to production
+parity:
+
+1. **Hide-until-ready reveal** (`BaseLayout`): the body is hidden until fonts load
+   + layout settles, then fades in — kills the cold-load flash of unstyled /
+   not-yet-positioned content. Above-the-fold fonts (incl. Geist Mono) are
+   preloaded; reduced-motion reveals instantly; 1.8s JS + 2.5s CSS safety nets.
+2. **Open height re-measured at open time** (and on resize/`fonts.ready`), not once
+   at init — fixes a Safari bug where measuring under `opacity:0` baked an inflated
+   `scrollHeight` and stretched the panel to the viewport cap with dead space.
+3. **Rapid-toggle no longer snaps**: `measure()` only freezes `transition` during
+   the intro morph, so a mid-animation re-measure doesn't jump the height to its
+   class target instead of smoothly reversing.
+4. **Scrollspy realigned**: a 1px IntersectionObserver line at `scroll-padding-top`
+   (was a `-10%/-90%` band), so the title flips exactly as a section's top reaches
+   the nav line — a tapped section reads active immediately, not the one before it
+   — plus a bottom-of-page guard so the last (short) section still activates.
+5. **iOS focus-scroll pinned**: tapping the fixed pill made WebKit focus-scroll the
+   document toward the pill's in-flow position, creeping the page upward on each
+   tap. Fixed by capturing scroll on `pointerdown` and restoring it for ~10 frames
+   after the tap. (A programmatic `focus({preventScroll})` was tried first but
+   painted a `:focus-visible` outline as a stray line under the title, so it was
+   dropped in favour of the pin + `.morph-top:focus:not(:focus-visible){outline:none}`.)
+6. **a11y**: `morph-top` gets `aria-label="Navigation menu"` + `aria-controls` to
+   the panel, and the decorative title reel is `aria-hidden` (otherwise the
+   button's accessible name was the concatenation of every section title).
+7. **`nav-test` harness dev-gated**: it had been shipping as a public `/nav-test/`
+   route with placeholder copy; now `import.meta.env.DEV`-gated (a prod build emits
+   a redirect to `/`).
+
+### Adjacent work in the same PR (context, not nav-specific)
+
+- Lenis smooth scroll wired globally (`src/scripts/smooth-scroll.ts`), including
+  bento card modals; it honours `scroll-padding-top` for anchor jumps.
+- Parallax geometry caching (`scroll-parallax.ts`) and liquid-glass init deferred
+  to `requestIdleCallback` — scroll-performance fixes.
+
+---
+
+## Original design (2026-06-06, historical record)
+
+_Kept verbatim for the design rationale. Where it conflicts with "What actually
+shipped" above, the section above is authoritative._
 
 ## Goal
 
