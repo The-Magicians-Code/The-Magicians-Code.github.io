@@ -396,14 +396,11 @@ const heroId = sections[0]?.id ?? "hero";
     }
   }
 
-  /* MorphNav is the site nav at every breakpoint. On desktop, give the pill a
-     little more presence (wider) and a hover affordance on the bar itself. */
+  /* MorphNav is the site nav at every breakpoint. On desktop the pill gets a
+     little more presence (wider). */
   @media (min-width: 641px) {
     .morph-nav {
       width: min(400px, calc(100vw - 40px));
-    }
-    .morph-top:hover {
-      background: rgba(128, 128, 128, 0.06);
     }
   }
 </style>
