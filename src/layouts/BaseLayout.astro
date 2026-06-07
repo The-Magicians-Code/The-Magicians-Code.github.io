@@ -3,8 +3,7 @@ import '../styles/fonts.css';
 import '../styles/global.css';
 import '../styles/liquid-glass.css';
 
-import Nav from '../components/Nav.astro';
-import MobileMenu from '../components/MobileMenu.astro';
+import MorphNav from '../components/MorphNav.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 
 interface Props {
@@ -45,13 +44,45 @@ const personSchema = {
 ---
 
 <!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
+
+    {/* Preload the above-the-fold fonts so they're ready at first paint. The
+        bento card-title positioning (syncTitleRestY) gates on document.fonts.ready,
+        so a late font load makes those titles snap into place — preloading shrinks
+        that wait (and, with the hide-until-ready below, the hidden window). The
+        Estonian `-ext` subsets aren't above-the-fold, so we skip them. Geist Mono
+        is included: the hero tech pills (.hero-pill) use it above the fold. */}
+    <link rel="preload" href="/fonts/fraunces-latin-full-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/fraunces-latin-full-italic.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/geist-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/geist-mono-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
+
+    {/* Hide the page until it's styled + settled, then fade in — kills the cold-load
+        flash of unstyled / not-yet-positioned content. Render-blocking inline so it
+        applies before any other CSS or paint; the themed <html> background still
+        shows (a calm colour, not blank). Revealed by the script below on
+        fonts.ready + 2 frames; the 2.5s CSS animation + 1.8s JS timeout are the
+        no-JS / failure safety nets so it can never stay hidden. */}
+    <style is:inline>
+      body { opacity: 0; animation: site-reveal 0.4s ease 2.5s forwards; }
+      html.is-ready body { opacity: 1; animation: none; transition: opacity 0.4s ease; }
+      @keyframes site-reveal { to { opacity: 1; } }
+      @media (prefers-reduced-motion: reduce) {
+        /* Reduced motion: keep hide-until-ready (opacity gating isn't motion, so
+           it still prevents the FOUC) but never fade — reveal is an instant
+           opacity flip in both paths. The JS path flips via .is-ready with no
+           transition; the no-JS failsafe flips at the same 2.5s safety mark with
+           a ~0s animation (not a shortened fade). */
+        body { animation: site-reveal 0.01s linear 2.5s forwards; }
+        html.is-ready body { transition: none; }
+      }
+    </style>
 
     <title>{title}</title>
     <meta name="description" content={description} />
@@ -128,6 +159,35 @@ const personSchema = {
       })();
     </script>
 
+    <script is:inline>
+      // Reveal the page (see the hide style above) once it's styled + the layout
+      // has settled: on document.fonts.ready (the font-swap reflow + bento-title
+      // positioning gate) plus two frames so the first parallax/layout pass has
+      // run. Hard 1.8s timeout so a slow/failed font load never blocks paint.
+      (function () {
+        var revealed = false;
+        function reveal() {
+          if (revealed) return;
+          revealed = true;
+          document.documentElement.classList.add('is-ready');
+        }
+        function settle() {
+          requestAnimationFrame(function () { requestAnimationFrame(reveal); });
+        }
+        try {
+          if (document.fonts && document.fonts.ready) document.fonts.ready.then(settle, reveal);
+          else settle();
+        } catch (_) { reveal(); }
+        setTimeout(reveal, 1800);
+      })();
+    </script>
+
+    <script>
+      // Mounted first so Lenis drives window scroll before the scroll-coupled
+      // consumers (liquid-glass, MorphNav ring/scrollspy, scroll-parallax) read it.
+      import '../scripts/smooth-scroll';
+    </script>
+
     <script>
       import '../scripts/liquid-glass';
     </script>
@@ -142,8 +202,26 @@ const personSchema = {
     </script>
   </head>
   <body class="pt-28">
-    <Nav />
-    <MobileMenu />
+    <MorphNav
+      sections={[
+        { id: 'hero', title: 'Home' },
+        { id: 'about', title: 'About' },
+        { id: 'projects', title: 'Work' },
+        { id: 'skills-tools', title: 'Stack' },
+        { id: 'contact', title: 'Contact' },
+      ]}
+      links={[
+        { label: 'Home', href: '/#hero', icon: 'lucide:home' },
+        { label: 'About', href: '/#about', icon: 'lucide:user' },
+        { label: 'Work', href: '/#projects', icon: 'lucide:briefcase' },
+        { label: 'Stack', href: '/#skills-tools', icon: 'lucide:layers' },
+        { label: 'Resume', href: '/Tanel_Treuberg_Software_Engineer.pdf', external: true, icon: 'lucide:file-text' },
+        { label: 'Contact', href: '/#contact', icon: 'lucide:mail' },
+      ]}
+      themeToggle={true}
+      intro={false}
+      autoOpen={false}
+    />
     <slot />
     <SiteFooter />
   </body>

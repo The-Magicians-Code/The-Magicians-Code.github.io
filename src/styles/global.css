@@ -65,6 +65,10 @@ html {
      font sizes on orientation change) so the layout reads like a native app. */
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  /* Suppress the elastic overscroll bounce at the top/bottom of the page.
+     Honoured by Chromium and macOS Safari (16+); iOS Safari ignores it for the
+     document, but the rubber-band there is wanted/native anyway. */
+  overscroll-behavior-y: none;
 }
 
 /* Hide scrollbars globally while keeping scroll functionality.
@@ -380,7 +384,7 @@ body.bento-open .nav-progressive-blur {
   gap: 0.25rem;
 }
 
-/* #theme-toggle-button styles live in src/components/ThemeToggle.astro */
+/* .theme-toggle-btn styles live in src/components/ThemeToggle.astro */
 
 .hamburger-button {
   width: 44px;
@@ -458,98 +462,6 @@ body.bento-open .nav-progressive-blur {
 
 .panel a:hover { background: rgba(128, 128, 128, .15); }
 
-/* ===== Responsive Layout ===== */
-@media (max-width: 640px) {
-  .nav-links { display: none; }
-  .hamburger-button { display: inline-flex; }
-
-  #nav-pill {
-    background: none !important;
-    border: none !important;
-    box-shadow: none !important;
-    -webkit-backdrop-filter: none !important;
-    backdrop-filter: none !important;
-    border-radius: 0 !important;
-    height: auto !important;
-    width: 100% !important;
-    padding: 0;
-    gap: 12px;
-    margin: 10px 0 0;
-  }
-
-  .brand-pill {
-    background: transparent;
-    box-shadow: none;
-    border: none;
-    width: auto;
-    height: auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 999px;
-  }
-
-  .brand-pill:hover { background-color: transparent; }
-  .brand-pill:hover .brand-home-icon { color: var(--ink); filter: brightness(1.05); }
-
-  .brand-text { display: none; }
-
-  .brand-home-icon {
-    display: inline-block;
-    color: var(--ink-dim);
-    transition: color 0.2s ease, filter 0.2s ease;
-  }
-
-  .nav-actions {
-    background: none !important;
-    -webkit-backdrop-filter: none !important;
-    backdrop-filter: none !important;
-    box-shadow: none !important;
-    border: none !important;
-    border-radius: 0;
-    padding: 0;
-    gap: 8px;
-  }
-
-  #theme-toggle-button,
-  .hamburger-button {
-    background-color: transparent !important;
-    color: var(--ink-dim);
-    opacity: .85;
-  }
-
-  #theme-toggle-button:hover,
-  .hamburger-button:hover {
-    background-color: transparent !important;
-    color: var(--ink) !important;
-    filter: brightness(1.03);
-    opacity: 1;
-  }
-
-  .side-wrap {
-    background: var(--glass-bg);
-    -webkit-backdrop-filter: blur(18px) saturate(140%);
-    backdrop-filter: blur(18px) saturate(140%);
-    box-shadow: var(--glass-inner), var(--glass-shadow);
-    border: 1px solid var(--glass-brd);
-    border-radius: 999px;
-    padding: 6px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    height: 52px;
-  }
-
-  .brand-wrap {
-    padding: 0;
-    width: 52px;
-    height: 52px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-}
-
 /* ===== Section Fade-in (delay via CSS variable, not :nth-of-type) ===== */
 .section-fade-in {
   opacity: 0;
@@ -583,9 +495,10 @@ body {
   overflow-x: clip;
 }
 
-/* Fixed nav offset so smooth-scroll hash jumps don't land targets under the nav.
-   scroll-padding-top on the scroll container covers all anchors (incl. the hero)
-   and pairs with html.scroll-smooth — no per-id upkeep. */
+/* Fixed nav offset so hash jumps don't land targets under the nav. Lenis
+   replicates this via a matching scrollTo offset (see smooth-scroll.ts); this
+   covers the native fallback (reduced-motion) for all anchors incl. the hero —
+   no per-id upkeep. */
 html {
   scroll-padding-top: 7rem;
 }

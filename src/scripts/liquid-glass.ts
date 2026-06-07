@@ -436,10 +436,25 @@ desktopMQ.addEventListener('change', (e) => {
 
 window.__lg = { refresh };
 
+// Defer the canvas-heavy discovery off the load critical path. discoverAndInit
+// rasterizes per-pixel displacement/specular maps (expensive); running it at
+// DOMContentLoaded blocks the main thread right when first paint + the bento
+// card-title positioning (gated on document.fonts.ready) are trying to settle.
+// Scheduling it at idle (with a 500ms safety timeout) lets the layout settle
+// first; the nav's glass upgrade lands a frame or two later, which is
+// imperceptible. window.__lg.refresh stays published synchronously above.
+function scheduleDiscover(): void {
+  const ric = (window as Window & {
+    requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => void;
+  }).requestIdleCallback;
+  if (ric) ric(discoverAndInit, { timeout: 500 });
+  else setTimeout(discoverAndInit, 0);
+}
+
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', discoverAndInit);
+  document.addEventListener('DOMContentLoaded', scheduleDiscover);
 } else {
-  discoverAndInit();
+  scheduleDiscover();
 }
 
 export {};

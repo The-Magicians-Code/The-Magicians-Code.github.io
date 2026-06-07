@@ -2,7 +2,7 @@
 import { Icon } from 'astro-icon/components';
 ---
 
-<button id="theme-toggle-button" type="button" aria-label="Toggle theme">
+<button class="theme-toggle-btn" type="button" aria-label="Toggle theme">
   <span class="tt-icons" aria-hidden="true">
     <Icon name="lucide:sun" class="icon-sun" />
     <Icon name="lucide:moon" class="icon-moon" />
@@ -14,7 +14,7 @@ import { Icon } from 'astro-icon/components';
 </button>
 
 <style is:global>
-  #theme-toggle-button {
+  .theme-toggle-btn {
     height: 36px;
     border-radius: 9999px;
     display: inline-flex;
@@ -26,26 +26,26 @@ import { Icon } from 'astro-icon/components';
     cursor: pointer;
   }
 
-  #theme-toggle-button:hover {
+  .theme-toggle-btn:hover {
     color: var(--ink);
     background-color: rgba(128, 128, 128, .15);
   }
 
   /* Subtle press dip — feels responsive, animations.dev copy-button style. */
-  #theme-toggle-button:active {
+  .theme-toggle-btn:active {
     transform: scale(0.97);
   }
 
   /* Sun/moon icons stacked on top of each other so the theme swap can
      cross-fade instead of hard-swapping via display:none. */
-  #theme-toggle-button .tt-icons {
+  .theme-toggle-btn .tt-icons {
     position: relative;
     flex: none;
     width: 20px;
     height: 20px;
   }
-  #theme-toggle-button .icon-sun,
-  #theme-toggle-button .icon-moon {
+  .theme-toggle-btn .icon-sun,
+  .theme-toggle-btn .icon-moon {
     position: absolute;
     inset: 0;
     margin: auto;
@@ -55,72 +55,59 @@ import { Icon } from 'astro-icon/components';
 
   /* Sol/Lua label — both words share one grid cell so the pill width is the
      widest word (no reflow on toggle); they cross-fade like the icons. */
-  #theme-toggle-button .tt-label {
+  .theme-toggle-btn .tt-label {
     display: grid;
     font-size: 13px;
     font-weight: 500;
     line-height: 1;
   }
-  #theme-toggle-button .tt-label > span {
+  .theme-toggle-btn .tt-label > span {
     grid-area: 1 / 1;
   }
 
   /* Shared cross-fade: blur + scale + opacity at 0.15s ease-out. The blur
      blends the two states so the swap reads as a smooth melt, not a cut. */
-  #theme-toggle-button .icon-sun,
-  #theme-toggle-button .icon-moon,
-  #theme-toggle-button .tt-label > span {
+  .theme-toggle-btn .icon-sun,
+  .theme-toggle-btn .icon-moon,
+  .theme-toggle-btn .tt-label > span {
     transition: opacity 0.15s ease-out, transform 0.15s ease-out, filter 0.15s ease-out;
   }
 
   /* Light mode: Sol + sun active; moon + Lua parked (blurred, shrunk, hidden). */
-  #theme-toggle-button .icon-moon,
-  #theme-toggle-button .lbl-lua {
+  .theme-toggle-btn .icon-moon,
+  .theme-toggle-btn .lbl-lua {
     opacity: 0;
     transform: scale(0.6);
     filter: blur(2px);
   }
-  #theme-toggle-button .icon-sun,
-  #theme-toggle-button .lbl-sol {
+  .theme-toggle-btn .icon-sun,
+  .theme-toggle-btn .lbl-sol {
     opacity: 1;
     transform: scale(1);
     filter: blur(0);
   }
   /* Dark mode: the reverse. */
-  html.dark #theme-toggle-button .icon-sun,
-  html.dark #theme-toggle-button .lbl-sol {
+  html.dark .theme-toggle-btn .icon-sun,
+  html.dark .theme-toggle-btn .lbl-sol {
     opacity: 0;
     transform: scale(0.6);
     filter: blur(2px);
   }
-  html.dark #theme-toggle-button .icon-moon,
-  html.dark #theme-toggle-button .lbl-lua {
+  html.dark .theme-toggle-btn .icon-moon,
+  html.dark .theme-toggle-btn .lbl-lua {
     opacity: 1;
     transform: scale(1);
     filter: blur(0);
   }
 
-  /* Mobile: icon-only. The labelled ("Sol"/"Lua") variant is destined for the
-     dropdown menu, where text beside the icon reads well; in the compact nav we
-     drop the label and collapse the pill to a square icon button. */
-  @media (max-width: 640px) {
-    #theme-toggle-button {
-      width: 36px;
-      padding: 0;
-      gap: 0;
-      justify-content: center;
-    }
-    #theme-toggle-button .tt-label { display: none; }
-  }
-
   @media (prefers-reduced-motion: reduce) {
-    #theme-toggle-button,
-    #theme-toggle-button .icon-sun,
-    #theme-toggle-button .icon-moon,
-    #theme-toggle-button .tt-label > span {
+    .theme-toggle-btn,
+    .theme-toggle-btn .icon-sun,
+    .theme-toggle-btn .icon-moon,
+    .theme-toggle-btn .tt-label > span {
       transition: none;
     }
-    #theme-toggle-button:active {
+    .theme-toggle-btn:active {
       transform: none;
     }
   }
@@ -129,6 +116,7 @@ import { Icon } from 'astro-icon/components';
 <script>
   import { applyTheme } from '../lib/theme';
 
-  const button = document.getElementById('theme-toggle-button');
-  button?.addEventListener('click', () => applyTheme('toggle'));
+  document
+    .querySelectorAll('.theme-toggle-btn')
+    .forEach((b) => b.addEventListener('click', () => applyTheme('toggle')));
 </script>
