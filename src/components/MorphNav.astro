@@ -316,6 +316,12 @@ const heroId = sections[0]?.id ?? "hero";
     opacity: 1;
     filter: blur(0);
     pointer-events: auto;
+    /* On open, de-blur on the same 1000ms curve as the shell's height expansion
+       so the blur finishes exactly as the last item is fully revealed (opacity
+       still fades in quickly). The base 300ms transition governs the close. */
+    transition:
+      opacity 300ms cubic-bezier(.5, 0, .88, .77),
+      filter 1000ms cubic-bezier(.44, 0, .08, 1);
   }
 
   /* Vertical nav list: each item is its own rounded clickable area. */
