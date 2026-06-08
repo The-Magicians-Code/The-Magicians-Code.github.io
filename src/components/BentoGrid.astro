@@ -1003,10 +1003,14 @@
      ════════════════════════════════════════════════════════════════ */
   :global(.bento-card.has-cover) {
     --morph-dur: 760ms;
+    /* The content reveal now runs as its own beat AFTER the box morph lands
+       (bento-expand.ts delays .is-content-in by --morph-dur), so it gets a
+       shorter duration than the morph — long enough to feel like a graceful
+       fade, short enough that the settled box doesn't sit empty. Close still
+       uses --morph-dur (the box-collapse and content blur-out run together). */
+    --content-reveal-dur: 420ms;
     /* No spring/overshoot — the box morph uses the inherited smooth snappy
-       curve so expand/collapse don't bounce. --fade-ease drives the blur/rise;
-       content opacity fades LINEAR (over --morph-dur) so it resolves evenly
-       and lands with the box rather than vanishing up-front under ease-out. */
+       curve so expand/collapse don't bounce. --fade-ease drives the rise. */
     --fade-ease: cubic-bezier(0.22, 1, 0.36, 1);
   }
 
@@ -1157,15 +1161,21 @@
     font-style: normal;
     color: inherit;
   }
-  /* Reveal (open ③) — all items resolve together over the morph (the --i/--ri
-     stagger referenced in older comments was removed; nothing wires
-     transition-delay, so don't reintroduce per-item blur layers). */
+  /* Reveal (open ③) — all items resolve together (the --i/--ri stagger
+     referenced in older comments was removed; nothing wires transition-delay,
+     so don't reintroduce per-item blur layers). bento-expand.ts now adds
+     .is-content-in only AFTER the box morph lands, so this is a standalone
+     beat — give it its own shorter duration (var(--content-reveal-dur)) so the
+     settled box doesn't sit empty through a full --morph-dur fade. */
   :global(.bento-card.has-cover.is-content-in .card-eyebrow),
   :global(.bento-card.has-cover.is-content-in .card-title),
   :global(.bento-card.has-cover.is-content-in .cs-mode-toggle),
   :global(.bento-card.has-cover.is-content-in .bento-card-body-rendered > *) {
     opacity: 1;
     transform: none;
+    transition:
+      opacity var(--content-reveal-dur) var(--fade-ease),
+      transform var(--content-reveal-dur) var(--fade-ease);
   }
   /* Exit (close ③) — content blurs out over the FULL box-collapse duration
      (--morph-dur) so the frosting runs for the whole collapse and the two

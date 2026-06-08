@@ -384,13 +384,18 @@ function doOpen(card: HTMLElement): void {
     }
     if (hasCover) {
       void wrap.offsetHeight;
-      // Reveal the content (blur/fade/rise) CONCURRENT with the box morph and
-      // lasting its full duration — mirrors the close (content blurs out over
-      // the whole collapse). Fires at the morph start, not after it.
+      // Reveal the content AFTER the box has finished expanding, not during.
+      // The box morph starts at COVER_MORPH_DELAY and runs morphDur, so it
+      // lands at COVER_MORPH_DELAY + morphDur — fire the content reveal then so
+      // it reads as a distinct second beat (settled box → content fades in)
+      // rather than racing the expand. The reveal's own (shorter) duration
+      // lives in the .is-content-in CSS rule. (This outer setTimeout fired at
+      // ~0, i.e. ≈ the open click, so the delay is measured from the same
+      // origin as the morph schedule.)
       window.setTimeout(() => {
         if (!openState || openState.closing) return;
         card.classList.add('is-content-in');
-      }, reduce ? 0 : COVER_MORPH_DELAY);
+      }, reduce ? 0 : COVER_MORPH_DELAY + morphDur);
     } else {
       void wrap.offsetHeight;
       requestAnimationFrame(() => {
