@@ -310,12 +310,16 @@
     z-index: 201;
     /* border-color deliberately omitted — snap in lockstep with bg.
        See spec "Carried-over fixes from the prototype". */
+    /* box-shadow is intentionally NOT transitioned — it ends at `none` (the
+       combined rule below), and animating a blurred shadow repaints it every
+       frame on the main thread for the whole morph. Snapping it costs nothing
+       visually here (the card lifts to full-screen, so the resting shadow is
+       immediately off-frame) and drops a per-frame paint on WebKit. */
     transition:
       top           var(--morph-dur) var(--ease-snappy),
       left          var(--morph-dur) var(--ease-snappy),
       width         var(--morph-dur) var(--ease-snappy),
       height        var(--morph-dur) var(--ease-snappy),
-      box-shadow    var(--morph-dur) var(--ease-snappy),
       border-radius var(--morph-dur) var(--ease-snappy);
     will-change: top, left, width, height, border-radius;
   }
