@@ -17,10 +17,12 @@ import {
 interface OpenState {
   card: HTMLElement;
   placeholder: HTMLElement;
-  closeBtn: HTMLButtonElement;
+  // Modal "chrome": mounted at the reveal (morph end), not on the click frame —
+  // so null until then. See mountChrome in doOpen.
+  closeBtn: HTMLButtonElement | null;
   backdrop: HTMLElement;
-  blurTop: HTMLElement;
-  blurBottom: HTMLElement;
+  blurTop: HTMLElement | null;
+  blurBottom: HTMLElement | null;
   originalInline: string;
   appendedBodyWrap: HTMLElement | null;
   pillToggle: HTMLElement | null;
@@ -206,34 +208,53 @@ function doOpen(card: HTMLElement): void {
   // snap the corners. applyMorphTarget animates it once the transition is live.
   card.style.borderRadius = cs.borderTopLeftRadius;
 
-  // Close button as a child of the card.
-  const closeBtn = document.createElement('button');
-  closeBtn.type = 'button';
-  closeBtn.className = 'cs-close';
-  closeBtn.setAttribute('aria-label', 'Close case study');
-  closeBtn.appendChild(makeCloseIcon());
-  card.appendChild(closeBtn);
+  // Modal "chrome" — the close button + the Apple-style progressive edge blur
+  // strips — is mounted at the content-reveal moment (when the morph has
+  // ended), NOT here on the click frame. Two reasons:
+  //   1. Inserting the backdrop-filter strips (12 nodes, 10 filter layers)
+  //      forces compositing setup + a warm-up paint that was landing on the
+  //      open click frame (part of the ~70-90fps open dip).
+  //   2. The strips only frost SCROLLED CONTENT, which doesn't exist until the
+  //      reveal; and the close button only needs to be clickable once the box
+  //      has settled. Escape + a backdrop click still close during the morph,
+  //      so there's no lost affordance.
+  // Guarded on openState identity (card) so a stale callback after a close +
+  // re-open can't mount chrome onto the wrong lifecycle.
+  const mountChrome = (): void => {
+    if (!openState || openState.closing || openState.card !== card) return;
+    if (openState.closeBtn) return; // idempotent
 
-  // Progressive blur strips at the card's top + bottom edges. Apple-style
-  // multi-layer stacked blur — mounted dynamically so resting cards pay
-  // zero GPU cost. See BentoGrid.astro .card-blur rules for the per-
-  // layer blur radii and mask gradients.
-  const blurTop = makeBlurStrip('top');
-  const blurBottom = makeBlurStrip('bottom');
-  card.appendChild(blurTop);
-  card.appendChild(blurBottom);
-
-  // Double-rAF before flipping .is-on so the browser fully paints the
-  // backdrop-filter layers at opacity:0 first. Without the warm-up
-  // frame, the GPU rasterizes the filter as the opacity transition
-  // starts and the blur visibly "pops" instead of fading.
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      if (!openState || openState.closing) return;
-      blurTop.classList.add('is-on');
-      blurBottom.classList.add('is-on');
+    const closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.className = 'cs-close';
+    closeBtn.setAttribute('aria-label', 'Close case study');
+    closeBtn.appendChild(makeCloseIcon());
+    closeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeCaseStudy();
     });
-  });
+    card.appendChild(closeBtn);
+    openState.closeBtn = closeBtn;
+
+    const blurTop = makeBlurStrip('top');
+    const blurBottom = makeBlurStrip('bottom');
+    card.appendChild(blurTop);
+    card.appendChild(blurBottom);
+    openState.blurTop = blurTop;
+    openState.blurBottom = blurBottom;
+
+    // Double-rAF before flipping .is-on so the browser fully paints the
+    // backdrop-filter layers at opacity:0 first. Without the warm-up frame the
+    // GPU rasterizes the filter as the opacity transition starts and the blur
+    // visibly "pops" instead of fading.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (!openState || openState.closing || openState.card !== card) return;
+        blurTop.classList.add('is-on');
+        blurBottom.classList.add('is-on');
+      });
+    });
+  };
 
   card.classList.add('is-expanding');
   card.setAttribute('aria-expanded', 'true');
@@ -298,10 +319,10 @@ function doOpen(card: HTMLElement): void {
   openState = {
     card,
     placeholder,
-    closeBtn,
+    closeBtn: null,
     backdrop,
-    blurTop,
-    blurBottom,
+    blurTop: null,
+    blurBottom: null,
     originalInline,
     appendedBodyWrap: null,
     pillToggle: null,
@@ -418,19 +439,22 @@ function doOpen(card: HTMLElement): void {
       window.setTimeout(() => {
         if (!openState || openState.closing) return;
         card.classList.add('is-content-in');
+        // Mount the close button + edge blur strips now that the box has
+        // settled and there's content to frost (off the click frame).
+        mountChrome();
       }, reduce ? 0 : morphDur);
     } else {
       void wrap.offsetHeight;
       requestAnimationFrame(() => {
         wrap.classList.remove('is-swapping');
+        mountChrome();
       });
     }
   };
 
-  closeBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    closeCaseStudy();
-  });
+  // Escape + backdrop-click close even during the morph (before the close
+  // button mounts at reveal). The close button's own click handler is wired in
+  // mountChrome.
   backdrop.addEventListener('click', closeCaseStudy, { once: true });
   document.addEventListener('keydown', escClose);
 }
@@ -482,7 +506,8 @@ function closeCaseStudy(): void {
 
   // Unmount the bottom blur strip immediately — backdrop-filter computes
   // regardless of opacity, so leaving it through the close morph eats GPU.
-  blurBottom.remove();
+  // (May be null if the user closed before the chrome mounted at reveal.)
+  blurBottom?.remove();
   card.setAttribute('aria-expanded', 'false');
 
   // Note: the backdrop's `is-open` is dropped in runCollapse (not here) so its
@@ -517,12 +542,14 @@ function closeCaseStudy(): void {
       parent.scrollTop = 0;
     }
 
-    // 2) Remove appended children + close button + blur strips.
+    // 2) Remove appended children + close button + blur strips. The chrome
+    //    (closeBtn / blur strips) is null if the user closed before it mounted
+    //    at reveal, so guard each removal.
     if (appendedBodyWrap) appendedBodyWrap.remove();
     if (pillToggle) pillToggle.remove();
-    closeBtn.remove();
-    blurTop.remove();
-    blurBottom.remove();
+    closeBtn?.remove();
+    blurTop?.remove();
+    blurBottom?.remove();
 
     // 2) Apply guarded style (originalInline + transition:none) so the
     //    inline-style swap doesn't animate. THEN remove placeholder.
