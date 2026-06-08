@@ -10,8 +10,10 @@
 // in the URL — so it can be pulled up on a real iPhone without shipping it to
 // every visitor. The overlay is pointer-events:none and never blocks the page.
 //
-// Cost: one canvas draw per frame + a throttled text update (~6Hz). Negligible,
-// so it doesn't meaningfully perturb the very thing it measures.
+// Cost: the graph scrolls one column per frame (a single self-drawImage) and
+// paints only the newest bar — ~5 canvas ops/frame, not a full ~150-bar
+// repaint — plus a throttled (~6Hz) text update. Kept deliberately cheap so the
+// monitor doesn't meaningfully perturb the very framerate it measures.
 
 const WIDTH = 150; // graph width in CSS px (one column per retained frame)
 const GRAPH_H = 40; // graph height in CSS px
@@ -80,7 +82,12 @@ function mount(): void {
   });
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
-  ctx.scale(dpr, dpr);
+  // Draw in DEVICE pixels (no ctx.scale) so the per-frame canvas-scroll
+  // (drawImage onto itself) shifts by a whole column with no fractional blur.
+  const GW = canvas.width;
+  const GH = canvas.height;
+  const colW = Math.max(1, Math.round(dpr)); // device px per 1-CSS-px column
+  const gLine = colW; // guide-line thickness
 
   wrap.append(label, canvas);
 
@@ -89,53 +96,41 @@ function mount(): void {
     requestAnimationFrame(tick);
   };
 
-  const durations: number[] = [];
   let last = performance.now();
   let accMs = 0;
   let accFrames = 0;
   let worst = 0;
   let lastText = last;
 
-  // ms → y pixel (0 at top). Longer frames draw taller bars from the baseline.
+  // ms → y (device px). Longer frames draw taller bars from the baseline.
   const yFor = (ms: number): number =>
-    GRAPH_H - Math.min(GRAPH_H, (ms / MAX_MS) * GRAPH_H);
-
-  function draw(): void {
-    if (!ctx) return;
-    ctx.clearRect(0, 0, WIDTH, GRAPH_H);
-
-    // Guide lines at the warn + bad thresholds so spikes are easy to read.
-    ctx.lineWidth = 1;
-    for (const [ms, alpha] of [[WARN_MS, 0.18], [BAD_MS, 0.28]] as const) {
-      ctx.strokeStyle = `rgba(255,255,255,${alpha})`;
-      const y = Math.round(yFor(ms)) + 0.5;
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(WIDTH, y);
-      ctx.stroke();
-    }
-
-    // One 1px column per retained frame, right-aligned (newest at the right).
-    const start = WIDTH - durations.length;
-    for (let i = 0; i < durations.length; i++) {
-      const d = durations[i];
-      const top = yFor(d);
-      ctx.fillStyle = colourFor(d);
-      ctx.fillRect(start + i, top, 1, GRAPH_H - top);
-    }
-  }
+    Math.round(GH - Math.min(GH, (ms / MAX_MS) * GH));
 
   function tick(now: number): void {
     const dt = now - last;
     last = now;
-
-    durations.push(dt);
-    if (durations.length > WIDTH) durations.shift();
     accMs += dt;
     accFrames++;
     if (dt > worst) worst = dt;
 
-    draw();
+    // Cheap render: scroll the whole graph one column left — drawImage the
+    // canvas onto itself with 'copy' (which also clears the newly-exposed right
+    // strip) — then paint ONLY the newest column: the two guide-line pixels +
+    // this frame's bar. ~5 canvas ops/frame instead of clearing and repainting
+    // all ~150 bars, so the monitor barely perturbs the framerate it measures.
+    if (ctx) {
+      ctx.globalCompositeOperation = 'copy';
+      ctx.drawImage(canvas, -colW, 0);
+      ctx.globalCompositeOperation = 'source-over';
+      const x = GW - colW;
+      ctx.fillStyle = 'rgba(255,255,255,0.18)';
+      ctx.fillRect(x, yFor(WARN_MS), colW, gLine);
+      ctx.fillStyle = 'rgba(255,255,255,0.28)';
+      ctx.fillRect(x, yFor(BAD_MS), colW, gLine);
+      const top = yFor(dt);
+      ctx.fillStyle = colourFor(dt);
+      ctx.fillRect(x, top, colW, GH - top);
+    }
 
     // Throttle the numeric readout to ~6Hz so the digits are legible (and the
     // text write itself isn't per-frame churn).
