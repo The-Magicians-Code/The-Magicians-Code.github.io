@@ -1119,16 +1119,18 @@
   :global(.bento-card.has-cover .cs-mode-toggle),
   :global(.bento-card.has-cover .bento-card-body-rendered > *) {
     opacity: 0;
-    filter: blur(20px);
-    transform: translateY(10px);
-    /* filter is LINEAR (not the front-loaded ease-out) so the un-blur spreads
-       over the whole duration — text resolves into focus gradually rather than
-       snapping sharp in the first ~300ms, mirroring how the close stays soft. */
-    /* Reveal runs for the box-morph duration so the content finishes resolving
-       exactly when the box lands (the close exit mirrors this). */
+    transform: translateY(14px);
+    /* Blur was dropped here (was filter: blur(20px)). Animating filter:blur
+       INDEPENDENTLY on every content element (eyebrow + title + pill + every
+       paragraph ≈ 10 layers) forced WebKit to re-rasterize ~10 blurred text
+       surfaces per frame for the full morph — a ~160ms freeze at close on
+       iOS Safari (Chromium absorbed it; see the morph perf trace). Cross-fade
+       via opacity + slide instead (composited, cheap). Opacity now rides
+       --fade-ease (was linear) so it resolves perceptually fast without blur
+       to mask a slow linear ramp, while still landing with the box at
+       --morph-dur. */
     transition:
-      opacity var(--morph-dur) linear,
-      filter var(--morph-dur) linear,
+      opacity var(--morph-dur) var(--fade-ease),
       transform var(--morph-dur) var(--fade-ease);
   }
   /* Modal title: centered ink (overrides base rest-y transform, the
@@ -1155,13 +1157,14 @@
     font-style: normal;
     color: inherit;
   }
-  /* Reveal (open ③) — staggered top-to-bottom by --i. */
+  /* Reveal (open ③) — all items resolve together over the morph (the --i/--ri
+     stagger referenced in older comments was removed; nothing wires
+     transition-delay, so don't reintroduce per-item blur layers). */
   :global(.bento-card.has-cover.is-content-in .card-eyebrow),
   :global(.bento-card.has-cover.is-content-in .card-title),
   :global(.bento-card.has-cover.is-content-in .cs-mode-toggle),
   :global(.bento-card.has-cover.is-content-in .bento-card-body-rendered > *) {
     opacity: 1;
-    filter: blur(0px);
     transform: none;
   }
   /* Exit (close ③) — content blurs out over the FULL box-collapse duration
@@ -1172,14 +1175,14 @@
   :global(.bento-card.has-cover.is-closing-content .cs-mode-toggle),
   :global(.bento-card.has-cover.is-closing-content .bento-card-body-rendered > *) {
     opacity: 0;
-    filter: blur(14px);
-    transform: translateY(6px);
-    /* Blur out over the box-collapse duration so the content finishes fading
-       exactly as the box lands (mirrors the open reveal), instead of being
-       clipped mid-fade when cleanup removes it at collapse-end. */
+    transform: translateY(10px);
+    /* Blur dropped (was filter: blur(14px)) — same WebKit per-layer cost as
+       the reveal above, and the body paragraphs are already hidden inside
+       180ms by the parent wrap's .is-collapsing opacity fade (see
+       .is-collapsing .bento-card-body-rendered), so the per-child blur was
+       mostly invisible cost. Cross-fade via opacity + slide. */
     transition:
-      opacity var(--morph-dur) linear,
-      filter var(--morph-dur) var(--fade-ease),
+      opacity var(--morph-dur) var(--fade-ease),
       transform var(--morph-dur) var(--fade-ease);
   }
 
