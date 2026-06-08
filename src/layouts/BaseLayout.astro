@@ -200,6 +200,18 @@ const personSchema = {
         import('../scripts/pick-mode');
       }
     </script>
+
+    <script>
+      // Visual FPS monitor. Auto-loads in dev; on any other build (e.g. the
+      // Netlify deploy preview) it stays a lazy chunk that only loads when
+      // summoned with `?fps` or `#fps` in the URL — so it can be pulled up on a
+      // real device for jank hunting without shipping to every visitor. The
+      // runtime URL check keeps the import alive in the prod graph (unlike the
+      // build-constant DEV guard above), gated behind the query/hash.
+      if (import.meta.env.DEV || /[?&#]fps\b/.test(location.href)) {
+        import('../scripts/fps-monitor');
+      }
+    </script>
   </head>
   <body class="pt-28">
     <MorphNav

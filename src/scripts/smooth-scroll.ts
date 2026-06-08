@@ -46,10 +46,25 @@ if (!reduceMotion) {
   let cardLenis: Lenis | null = null;
   let cardLenisRaf = 0;
   let cardLenisFor: HTMLElement | null = null;
+  // Keeps the card Lenis's scroll limit in sync with the body's content height.
+  // Because the card Lenis is created with wrapper === content === .card-body,
+  // its own ResizeObserver watches the body's (fixed 100vh) border-box and
+  // never sees the inner content grow. So a TL;DR → Detailed mode swap balloons
+  // the scrollable content (e.g. ~800px → ~2000px) without updating Lenis's
+  // cached limit — wheel scroll then clamps to the stale TL;DR height and the
+  // modal reads as "scroll locked". We watch the actual content children and
+  // call lenis.resize() when any of them changes size. (Native scrollTop is
+  // unaffected — this bug is wheel/Lenis-only.)
+  let cardContentRO: ResizeObserver | null = null;
+  let cardChildMO: MutationObserver | null = null;
 
   const detachCardLenis = () => {
     if (cardLenisRaf) cancelAnimationFrame(cardLenisRaf);
     cardLenisRaf = 0;
+    cardContentRO?.disconnect();
+    cardContentRO = null;
+    cardChildMO?.disconnect();
+    cardChildMO = null;
     cardLenis?.destroy();
     cardLenis = null;
     cardLenisFor = null;
@@ -61,6 +76,21 @@ if (!reduceMotion) {
     detachCardLenis();
     cardLenis = new Lenis({ wrapper: body, content: body, smoothWheel: true, syncTouch: false });
     cardLenisFor = card;
+
+    // Re-measure Lenis on any content-height change (mode swap, late-cloned
+    // modal body, font reflow). ResizeObserver.observe is idempotent, so
+    // re-observing existing children when new ones are added is safe.
+    cardContentRO = new ResizeObserver(() => cardLenis?.resize());
+    const observeChildren = () => {
+      for (const child of body.children) cardContentRO?.observe(child);
+    };
+    observeChildren();
+    // The modal content (.bento-card-body-rendered) is cloned in AFTER the
+    // morph, so the children present at attach time aren't the final set —
+    // bind the observer to whatever gets appended later too.
+    cardChildMO = new MutationObserver(observeChildren);
+    cardChildMO.observe(body, { childList: true });
+
     const loop = (time: number) => {
       cardLenis?.raf(time);
       cardLenisRaf = requestAnimationFrame(loop);

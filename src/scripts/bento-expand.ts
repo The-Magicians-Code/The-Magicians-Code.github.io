@@ -57,6 +57,11 @@ const MORPH_DUR = 520; // must match --morph-dur in CSS (plain cards)
 // Cover cards delay the box morph so the resting title can blur out first.
 const COVER_MORPH_DELAY = 180; // ms; matches the choreography overlap
 
+// Cover-card close is a two-beat: content fades out IN PLACE first, then the
+// box collapses. This is how long the box waits before collapsing — must match
+// --content-close-dur in CSS (the content fade-out duration).
+const CONTENT_CLOSE_DUR = 280;
+
 const prefersReducedMotion = (): boolean =>
   window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -384,13 +389,18 @@ function doOpen(card: HTMLElement): void {
     }
     if (hasCover) {
       void wrap.offsetHeight;
-      // Reveal the content (blur/fade/rise) CONCURRENT with the box morph and
-      // lasting its full duration — mirrors the close (content blurs out over
-      // the whole collapse). Fires at the morph start, not after it.
+      // Reveal the content AFTER the box has finished expanding, not during.
+      // The box morph starts at COVER_MORPH_DELAY and runs morphDur, so it
+      // lands at COVER_MORPH_DELAY + morphDur — fire the content reveal then so
+      // it reads as a distinct second beat (settled box → content fades in)
+      // rather than racing the expand. The reveal's own (shorter) duration
+      // lives in the .is-content-in CSS rule. (This outer setTimeout fired at
+      // ~0, i.e. ≈ the open click, so the delay is measured from the same
+      // origin as the morph schedule.)
       window.setTimeout(() => {
         if (!openState || openState.closing) return;
         card.classList.add('is-content-in');
-      }, reduce ? 0 : COVER_MORPH_DELAY);
+      }, reduce ? 0 : COVER_MORPH_DELAY + morphDur);
     } else {
       void wrap.offsetHeight;
       requestAnimationFrame(() => {
@@ -571,14 +581,24 @@ function closeCaseStudy(): void {
   };
 
   if (hasCover && !reduce) {
-    // Blur the content + modal title out AT THE SAME TIME as the box collapses
-    // — content (340ms) and box (760ms) run concurrently. .is-closing-content
-    // persists through the collapse (cleared in doCleanup); the resting-title
-    // blur-in is free once doCleanup strips the lifecycle classes.
+    // Two-beat close (mirror of the open's expand → settle → reveal): fade the
+    // content out IN PLACE first while the box stays fully expanded, THEN
+    // collapse the now-empty box. Without the wait the content fades while the
+    // box is shrinking under it, reading as the text sliding/clipping with the
+    // collapse. .is-closing-content drives the content opacity fade-out (over
+    // --content-close-dur); it persists through the collapse and is cleared in
+    // doCleanup, when the resting-title blur-in becomes free.
     card.classList.remove('is-content-in');
     card.classList.add('is-closing-content');
+    window.setTimeout(() => {
+      // Guard against a teardown having run in the gap (openState is held
+      // until doCleanup, which only fires from runCollapse — so this normally
+      // holds, but stay defensive).
+      if (openState === state && state.closing) runCollapse();
+    }, CONTENT_CLOSE_DUR);
+  } else {
+    runCollapse();
   }
-  runCollapse();
 }
 
 // ── Title rest-y measurement ─────────────────────────────────────────────

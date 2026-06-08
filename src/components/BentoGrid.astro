@@ -310,14 +310,22 @@
     z-index: 201;
     /* border-color deliberately omitted — snap in lockstep with bg.
        See spec "Carried-over fixes from the prototype". */
+    /* box-shadow is intentionally NOT transitioned — it ends at `none` (the
+       combined rule below), and animating a blurred shadow repaints it every
+       frame on the main thread for the whole morph. Snapping it costs nothing
+       visually here (the card lifts to full-screen, so the resting shadow is
+       immediately off-frame) and drops a per-frame paint on WebKit. */
     transition:
       top           var(--morph-dur) var(--ease-snappy),
       left          var(--morph-dur) var(--ease-snappy),
       width         var(--morph-dur) var(--ease-snappy),
       height        var(--morph-dur) var(--ease-snappy),
-      box-shadow    var(--morph-dur) var(--ease-snappy),
       border-radius var(--morph-dur) var(--ease-snappy);
-    will-change: top, left, width, height, border-radius;
+    /* No will-change: it only promotes compositor properties (transform /
+       opacity). top/left/width/height/border-radius are layout & paint, so
+       hinting them does nothing useful and just holds extra layer memory.
+       (Would return as `will-change: transform` only if the morph is ever
+       rewritten as a transform-based FLIP.) */
   }
   :global(.bento-card.is-expanding),
   :global(.bento-card.is-expanded),
@@ -1003,10 +1011,18 @@
      ════════════════════════════════════════════════════════════════ */
   :global(.bento-card.has-cover) {
     --morph-dur: 760ms;
+    /* The content reveal now runs as its own beat AFTER the box morph lands
+       (bento-expand.ts delays .is-content-in by --morph-dur), so it gets a
+       shorter duration than the morph — long enough to feel like a graceful
+       fade, short enough that the settled box doesn't sit empty. Close still
+       uses --morph-dur (the box-collapse and content blur-out run together). */
+    --content-reveal-dur: 420ms;
+    /* Close mirror: content fades OUT over this, then the box collapses (the
+       delay lives in bento-expand.ts as CONTENT_CLOSE_DUR — keep in sync).
+       Dismiss a touch quicker than entry. */
+    --content-close-dur: 280ms;
     /* No spring/overshoot — the box morph uses the inherited smooth snappy
-       curve so expand/collapse don't bounce. --fade-ease drives the blur/rise;
-       content opacity fades LINEAR (over --morph-dur) so it resolves evenly
-       and lands with the box rather than vanishing up-front under ease-out. */
+       curve so expand/collapse don't bounce. --fade-ease drives the fades. */
     --fade-ease: cubic-bezier(0.22, 1, 0.36, 1);
   }
 
@@ -1023,8 +1039,7 @@
     height: calc(100% + 112px);
     background-size: cover;
     background-position: center 42%;
-    filter: blur(0px);
-    will-change: transform, filter;
+    will-change: transform;
   }
   :global(.bento-card.has-cover .cover-overlay) {
     position: absolute;
@@ -1037,26 +1052,28 @@
       rgba(0, 0, 0, 0.60) 100%
     );
   }
-  /* Cover blurs + fades into the paper surface as the box morphs ("frosted
-     melt"); un-blurs + fades back in on collapse. The overlay just fades. */
+  /* Cover fades into the paper surface as the box morphs; fades back in on
+     collapse. The overlay just fades. (Previously also animated filter:blur
+     for a "frosted melt", but animating blur on this oversized full-width
+     image forced WebKit to re-rasterize it every frame — a likely source of
+     the scattered open-time hitches. Opacity-only fade is composited/cheap.) */
   :global(.bento-card.has-cover .cover-img) {
-    transition: opacity 456ms var(--fade-ease), filter 456ms var(--fade-ease);
+    transition: opacity 456ms var(--fade-ease);
   }
   :global(.bento-card.has-cover .cover-overlay) {
     transition: opacity 456ms var(--fade-ease);
   }
   :global(.bento-card.has-cover.is-expanding .cover-img) {
     opacity: 0;
-    filter: blur(16px);
   }
   :global(.bento-card.has-cover.is-expanding .cover-overlay) {
     opacity: 0;
   }
   /* No is-collapsing return rule: the cover stays hidden through the whole
-     collapse (box shrinks as a plain white card while the content blurs out).
+     collapse (box shrinks as a plain white card while the content fades out).
      Once the box lands, doCleanup strips the lifecycle classes and the cover
-     reverts to its resting state — fading + un-blurring back in via the base
-     456ms transition above. That's the "fade to white box, then image back in"
+     reverts to its resting state — fading back in via the base 456ms
+     transition above. That's the "fade to white box, then image back in"
      two-beat. */
 
   /* ── ① Resting title overlay (white, centered). Blurs out on open
@@ -1119,17 +1136,15 @@
   :global(.bento-card.has-cover .cs-mode-toggle),
   :global(.bento-card.has-cover .bento-card-body-rendered > *) {
     opacity: 0;
-    filter: blur(20px);
-    transform: translateY(10px);
-    /* filter is LINEAR (not the front-loaded ease-out) so the un-blur spreads
-       over the whole duration — text resolves into focus gradually rather than
-       snapping sharp in the first ~300ms, mirroring how the close stays soft. */
-    /* Reveal runs for the box-morph duration so the content finishes resolving
-       exactly when the box lands (the close exit mirrors this). */
-    transition:
-      opacity var(--morph-dur) linear,
-      filter var(--morph-dur) linear,
-      transform var(--morph-dur) var(--fade-ease);
+    /* Hidden via opacity ONLY — no translate. The content reveals in its
+       FINAL position AFTER the box has settled (see .is-content-in), so any
+       transform here would read as the text sliding into place / an anchor
+       shift. Blur was also dropped (was filter: blur(20px)): animating it
+       per-element rasterized ~10 blurred text layers per frame and froze
+       WebKit/iOS for ~160ms at close. Pure opacity cross-fade is composited
+       and cheap. */
+    transform: none;
+    transition: opacity var(--morph-dur) var(--fade-ease);
   }
   /* Modal title: centered ink (overrides base rest-y transform, the
      fit-content width, and the is-expanded center-x transform). */
@@ -1155,14 +1170,19 @@
     font-style: normal;
     color: inherit;
   }
-  /* Reveal (open ③) — staggered top-to-bottom by --i. */
+  /* Reveal (open ③) — all items resolve together (the --i/--ri stagger
+     referenced in older comments was removed; nothing wires transition-delay,
+     so don't reintroduce per-item blur layers). bento-expand.ts now adds
+     .is-content-in only AFTER the box morph lands, so this is a standalone
+     beat — give it its own shorter duration (var(--content-reveal-dur)) so the
+     settled box doesn't sit empty through a full --morph-dur fade. */
   :global(.bento-card.has-cover.is-content-in .card-eyebrow),
   :global(.bento-card.has-cover.is-content-in .card-title),
   :global(.bento-card.has-cover.is-content-in .cs-mode-toggle),
   :global(.bento-card.has-cover.is-content-in .bento-card-body-rendered > *) {
     opacity: 1;
-    filter: blur(0px);
     transform: none;
+    transition: opacity var(--content-reveal-dur) var(--fade-ease);
   }
   /* Exit (close ③) — content blurs out over the FULL box-collapse duration
      (--morph-dur) so the frosting runs for the whole collapse and the two
@@ -1172,15 +1192,12 @@
   :global(.bento-card.has-cover.is-closing-content .cs-mode-toggle),
   :global(.bento-card.has-cover.is-closing-content .bento-card-body-rendered > *) {
     opacity: 0;
-    filter: blur(14px);
-    transform: translateY(6px);
-    /* Blur out over the box-collapse duration so the content finishes fading
-       exactly as the box lands (mirrors the open reveal), instead of being
-       clipped mid-fade when cleanup removes it at collapse-end. */
-    transition:
-      opacity var(--morph-dur) linear,
-      filter var(--morph-dur) var(--fade-ease),
-      transform var(--morph-dur) var(--fade-ease);
+    transform: none;
+    /* Fade out IN PLACE (no slide, no blur) over --content-close-dur while the
+       box is still fully expanded. bento-expand.ts waits this long before
+       starting the collapse, so the content clears first and never moves with
+       the shrinking box — the mirror of the open's expand → settle → reveal. */
+    transition: opacity var(--content-close-dur) var(--fade-ease);
   }
 
   /* Reduced motion: no blur/transform/stagger — snap each phase. */
