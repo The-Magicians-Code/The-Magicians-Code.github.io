@@ -1009,8 +1009,12 @@
        fade, short enough that the settled box doesn't sit empty. Close still
        uses --morph-dur (the box-collapse and content blur-out run together). */
     --content-reveal-dur: 420ms;
+    /* Close mirror: content fades OUT over this, then the box collapses (the
+       delay lives in bento-expand.ts as CONTENT_CLOSE_DUR — keep in sync).
+       Dismiss a touch quicker than entry. */
+    --content-close-dur: 280ms;
     /* No spring/overshoot — the box morph uses the inherited smooth snappy
-       curve so expand/collapse don't bounce. --fade-ease drives the rise. */
+       curve so expand/collapse don't bounce. --fade-ease drives the fades. */
     --fade-ease: cubic-bezier(0.22, 1, 0.36, 1);
   }
 
@@ -1123,19 +1127,15 @@
   :global(.bento-card.has-cover .cs-mode-toggle),
   :global(.bento-card.has-cover .bento-card-body-rendered > *) {
     opacity: 0;
-    transform: translateY(14px);
-    /* Blur was dropped here (was filter: blur(20px)). Animating filter:blur
-       INDEPENDENTLY on every content element (eyebrow + title + pill + every
-       paragraph ≈ 10 layers) forced WebKit to re-rasterize ~10 blurred text
-       surfaces per frame for the full morph — a ~160ms freeze at close on
-       iOS Safari (Chromium absorbed it; see the morph perf trace). Cross-fade
-       via opacity + slide instead (composited, cheap). Opacity now rides
-       --fade-ease (was linear) so it resolves perceptually fast without blur
-       to mask a slow linear ramp, while still landing with the box at
-       --morph-dur. */
-    transition:
-      opacity var(--morph-dur) var(--fade-ease),
-      transform var(--morph-dur) var(--fade-ease);
+    /* Hidden via opacity ONLY — no translate. The content reveals in its
+       FINAL position AFTER the box has settled (see .is-content-in), so any
+       transform here would read as the text sliding into place / an anchor
+       shift. Blur was also dropped (was filter: blur(20px)): animating it
+       per-element rasterized ~10 blurred text layers per frame and froze
+       WebKit/iOS for ~160ms at close. Pure opacity cross-fade is composited
+       and cheap. */
+    transform: none;
+    transition: opacity var(--morph-dur) var(--fade-ease);
   }
   /* Modal title: centered ink (overrides base rest-y transform, the
      fit-content width, and the is-expanded center-x transform). */
@@ -1173,9 +1173,7 @@
   :global(.bento-card.has-cover.is-content-in .bento-card-body-rendered > *) {
     opacity: 1;
     transform: none;
-    transition:
-      opacity var(--content-reveal-dur) var(--fade-ease),
-      transform var(--content-reveal-dur) var(--fade-ease);
+    transition: opacity var(--content-reveal-dur) var(--fade-ease);
   }
   /* Exit (close ③) — content blurs out over the FULL box-collapse duration
      (--morph-dur) so the frosting runs for the whole collapse and the two
@@ -1185,15 +1183,12 @@
   :global(.bento-card.has-cover.is-closing-content .cs-mode-toggle),
   :global(.bento-card.has-cover.is-closing-content .bento-card-body-rendered > *) {
     opacity: 0;
-    transform: translateY(10px);
-    /* Blur dropped (was filter: blur(14px)) — same WebKit per-layer cost as
-       the reveal above, and the body paragraphs are already hidden inside
-       180ms by the parent wrap's .is-collapsing opacity fade (see
-       .is-collapsing .bento-card-body-rendered), so the per-child blur was
-       mostly invisible cost. Cross-fade via opacity + slide. */
-    transition:
-      opacity var(--morph-dur) var(--fade-ease),
-      transform var(--morph-dur) var(--fade-ease);
+    transform: none;
+    /* Fade out IN PLACE (no slide, no blur) over --content-close-dur while the
+       box is still fully expanded. bento-expand.ts waits this long before
+       starting the collapse, so the content clears first and never moves with
+       the shrinking box — the mirror of the open's expand → settle → reveal. */
+    transition: opacity var(--content-close-dur) var(--fade-ease);
   }
 
   /* Reduced motion: no blur/transform/stagger — snap each phase. */
