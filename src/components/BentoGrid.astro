@@ -1031,8 +1031,7 @@
     height: calc(100% + 112px);
     background-size: cover;
     background-position: center 42%;
-    filter: blur(0px);
-    will-change: transform, filter;
+    will-change: transform;
   }
   :global(.bento-card.has-cover .cover-overlay) {
     position: absolute;
@@ -1045,26 +1044,28 @@
       rgba(0, 0, 0, 0.60) 100%
     );
   }
-  /* Cover blurs + fades into the paper surface as the box morphs ("frosted
-     melt"); un-blurs + fades back in on collapse. The overlay just fades. */
+  /* Cover fades into the paper surface as the box morphs; fades back in on
+     collapse. The overlay just fades. (Previously also animated filter:blur
+     for a "frosted melt", but animating blur on this oversized full-width
+     image forced WebKit to re-rasterize it every frame — a likely source of
+     the scattered open-time hitches. Opacity-only fade is composited/cheap.) */
   :global(.bento-card.has-cover .cover-img) {
-    transition: opacity 456ms var(--fade-ease), filter 456ms var(--fade-ease);
+    transition: opacity 456ms var(--fade-ease);
   }
   :global(.bento-card.has-cover .cover-overlay) {
     transition: opacity 456ms var(--fade-ease);
   }
   :global(.bento-card.has-cover.is-expanding .cover-img) {
     opacity: 0;
-    filter: blur(16px);
   }
   :global(.bento-card.has-cover.is-expanding .cover-overlay) {
     opacity: 0;
   }
   /* No is-collapsing return rule: the cover stays hidden through the whole
-     collapse (box shrinks as a plain white card while the content blurs out).
+     collapse (box shrinks as a plain white card while the content fades out).
      Once the box lands, doCleanup strips the lifecycle classes and the cover
-     reverts to its resting state — fading + un-blurring back in via the base
-     456ms transition above. That's the "fade to white box, then image back in"
+     reverts to its resting state — fading back in via the base 456ms
+     transition above. That's the "fade to white box, then image back in"
      two-beat. */
 
   /* ── ① Resting title overlay (white, centered). Blurs out on open
