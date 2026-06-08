@@ -271,10 +271,28 @@ function doOpen(card: HTMLElement): void {
   if (hasCover && !reduce) {
     window.setTimeout(() => {
       if (!openState || openState.closing) return;
-      requestAnimationFrame(applyMorphTarget);
+      requestAnimationFrame(() => {
+        if (!openState || openState.closing) return;
+        applyMorphTarget();
+        // Build the (heavy) modal content ONE FRAME into the morph — the box is
+        // now animating on the compositor and the main thread is idle, so the
+        // deep content clone no longer competes with the click / first-paint
+        // frames (the ~70-80fps open dip). Chaining off applyMorphTarget's rAF
+        // (rather than a fixed delay) guarantees the clone lands AFTER the morph
+        // has committed, not racing it. mountContent schedules its own reveal at
+        // +morphDur — i.e. when the box settles.
+        requestAnimationFrame(() => {
+          if (openState && !openState.closing) mountContent();
+        });
+      });
     }, COVER_MORPH_DELAY);
   } else {
     requestAnimationFrame(applyMorphTarget);
+    // Plain cards mount after the morph (for the .is-swapping fade); cover +
+    // reduced-motion mounts immediately (no morph beat to wait behind).
+    window.setTimeout(() => {
+      if (openState && !openState.closing) mountContent();
+    }, hasCover ? 0 : MORPH_DUR);
   }
 
   openState = {
@@ -295,12 +313,14 @@ function doOpen(card: HTMLElement): void {
     restRadius: cs.borderTopLeftRadius,
   };
 
-  // After the morph lands, clone the hidden body content into the visible
-  // card-body and fade it in. Single wrap-level opacity transition (no
-  // per-paragraph stagger) — same pattern as the TL;DR ↔ Detailed mode
-  // swap (.is-swapping on the wrap → opacity 0 → 1 over 160ms). Guard
-  // against close-during-open: if user esc'd before this fires, drop it.
-  window.setTimeout(() => {
+  // Build the modal content: clone the hidden body source into the visible
+  // card-body and fade it in. Defined as a function (not an inline timer) so the
+  // scheduler above chooses WHEN to run it — cover cards chain it one frame into
+  // the morph (keeping the click frame light); plain cards run it after the
+  // morph for the .is-swapping fade. Single wrap-level opacity transition, same
+  // pattern as the TL;DR ↔ Detailed swap. Guard against close-during-open at the
+  // top (openState may be gone, or .closing, before this runs).
+  const mountContent = (): void => {
     if (!openState || openState.closing) return;
     const body = card.querySelector<HTMLElement>('.card-body');
     const source = card.querySelector<HTMLElement>('.bento-card-body');
@@ -389,25 +409,23 @@ function doOpen(card: HTMLElement): void {
     }
     if (hasCover) {
       void wrap.offsetHeight;
-      // Reveal the content AFTER the box has finished expanding, not during.
-      // The box morph starts at COVER_MORPH_DELAY and runs morphDur, so it
-      // lands at COVER_MORPH_DELAY + morphDur — fire the content reveal then so
-      // it reads as a distinct second beat (settled box → content fades in)
-      // rather than racing the expand. The reveal's own (shorter) duration
-      // lives in the .is-content-in CSS rule. (This outer setTimeout fired at
-      // ~0, i.e. ≈ the open click, so the delay is measured from the same
-      // origin as the morph schedule.)
+      // Reveal the content AFTER the box has finished expanding, not during —
+      // a distinct second beat (settled box → content fades in), not racing the
+      // expand. mountContent is chained one frame INTO the morph for cover
+      // cards, so the box settles ~morphDur after this runs; fire the reveal
+      // then. (Reduced-motion mounts up front, so reveal immediately.) The
+      // reveal's own duration lives in the .is-content-in CSS rule.
       window.setTimeout(() => {
         if (!openState || openState.closing) return;
         card.classList.add('is-content-in');
-      }, reduce ? 0 : COVER_MORPH_DELAY + morphDur);
+      }, reduce ? 0 : morphDur);
     } else {
       void wrap.offsetHeight;
       requestAnimationFrame(() => {
         wrap.classList.remove('is-swapping');
       });
     }
-  }, hasCover ? 0 : MORPH_DUR);
+  };
 
   closeBtn.addEventListener('click', (e) => {
     e.stopPropagation();
