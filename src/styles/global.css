@@ -488,6 +488,20 @@ body.bento-open .nav-progressive-blur {
   transform: none;
 }
 
+/* Parallax depth layers animate `transform` on scroll. Promote them up front so
+   the compositor layer stays stable. Without this, scroll-parallax.ts toggling
+   the transform demotes/re-promotes the layer at each viewport-center crossing,
+   which re-rasterizes it and flips the heading text between subpixel- and
+   grayscale-AA — a visible shimmer in the page body. (Hero layers + .cover-img
+   already promote via their own will-change; this covers the section heading
+   layers.) Scoped to motion: parallax is disabled under reduced-motion, so
+   there's nothing to stabilise and no reason to hold the layers. */
+@media (prefers-reduced-motion: no-preference) {
+  [data-parallax] [data-depth] {
+    will-change: transform;
+  }
+}
+
 /* Full-bleed hero must not introduce horizontal scroll. The site hides
    scrollbars, which would otherwise MASK overflow instead of preventing it. */
 html,

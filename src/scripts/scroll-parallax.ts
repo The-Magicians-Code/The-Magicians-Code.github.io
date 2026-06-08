@@ -125,7 +125,14 @@ function update(): void {
       const y = active ? -progress * layer.depth * RANGE : 0;
       if (Math.abs(y - layer.lastY) < MIN_DELTA) continue;
       layer.lastY = y;
-      layer.el.style.transform = y ? `translate3d(0, ${y}px, 0)` : '';
+      // Always write translate3d — even at y=0 (translate3d(0,0,0)) — rather
+      // than clearing to ''. Clearing demotes the compositor layer; the next
+      // non-zero offset re-promotes it. That promote/demote churn at every
+      // viewport-center crossing re-rasterizes the layer and flips its text
+      // between subpixel- and grayscale-AA, reading as a shimmer. Holding a
+      // 3d transform keeps the layer promoted and stable. (Paired with
+      // will-change:transform in CSS so it's promoted from first paint too.)
+      layer.el.style.transform = `translate3d(0, ${y}px, 0)`;
     }
   }
 }
