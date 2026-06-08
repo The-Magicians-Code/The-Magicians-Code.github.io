@@ -321,7 +321,11 @@
       width         var(--morph-dur) var(--ease-snappy),
       height        var(--morph-dur) var(--ease-snappy),
       border-radius var(--morph-dur) var(--ease-snappy);
-    will-change: top, left, width, height, border-radius;
+    /* No will-change: it only promotes compositor properties (transform /
+       opacity). top/left/width/height/border-radius are layout & paint, so
+       hinting them does nothing useful and just holds extra layer memory.
+       (Would return as `will-change: transform` only if the morph is ever
+       rewritten as a transform-based FLIP.) */
   }
   :global(.bento-card.is-expanding),
   :global(.bento-card.is-expanded),
