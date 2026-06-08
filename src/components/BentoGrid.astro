@@ -947,6 +947,21 @@
     opacity: 1;
     pointer-events: auto;
     transition-delay: 0ms, 280ms;
+    /* The button is mounted (in JS) at the content reveal, by which time
+       .is-expanded is already on the card — so the base opacity:0 → opacity:1
+       transition can't fire (a freshly-inserted node renders straight at its
+       final state, no start frame). An ANIMATION does play on insertion, so a
+       one-shot entry fade replaces the (dead) transition and prevents the
+       button popping in. `backwards` pins the from-state at frame 0 and holds
+       nothing after, so the .is-collapsing close-fade still takes over. */
+    animation: cs-close-in 260ms var(--ease) backwards;
+  }
+  @keyframes cs-close-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :global(.bento-card.is-expanded .cs-close) { animation: none; }
   }
   :global(.bento-card.is-collapsing .cs-close) {
     opacity: 0;
