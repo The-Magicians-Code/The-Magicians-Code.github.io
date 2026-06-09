@@ -7,6 +7,7 @@
     "dev": "astro dev",
     "dev:lan": "astro dev --host",
     "start": "astro dev",
+    "prebuild": "node scripts/check-css-prefixes.mjs",
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",

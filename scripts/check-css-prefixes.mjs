@@ -50,11 +50,26 @@ function findDeclarations(src) {
   let strDelim = '';
   const curBlock = () => (stack.length ? stack[stack.length - 1] : 0);
 
+  // True if the string literal opening at `q` is the argument of a
+  // (set|remove)Property(...) call — i.e. an actual style-property name, not an
+  // unrelated log/config string that happens to read "backdrop-filter".
+  const isStylePropCall = (q) => {
+    let k = q - 1;
+    while (k >= 0 && /\s/.test(src[k])) k--;
+    if (src[k] !== '(') return false;
+    k--;
+    while (k >= 0 && /\s/.test(src[k])) k--;
+    let end = k;
+    while (k >= 0 && /[A-Za-z]/.test(src[k])) k--;
+    const ident = src.slice(k + 1, end + 1);
+    return ident === 'setProperty' || ident === 'removeProperty';
+  };
+
   for (let i = 0; i < src.length; i++) {
     const c = src[i], c2 = src[i + 1];
-    if (c === '\n') { line++; continue; }
+    if (c === '\n') { line++; if (state === 'line_comment') state = 'normal'; continue; }
 
-    if (state === 'line_comment') continue; // ended by the \n branch above
+    if (state === 'line_comment') continue;
     if (state === 'block_comment') { if (c === '*' && c2 === '/') { state = 'normal'; i++; } continue; }
     if (state === 'string') {
       if (c === '\\') { i++; continue; }
@@ -73,8 +88,10 @@ function findDeclarations(src) {
         if (src[j] === '\n') line++;
         body += src[j]; j++;
       }
-      if (body === '-webkit-backdrop-filter') decls.push({ line, block: curBlock(), kind: 'webkit' });
-      else if (body === 'backdrop-filter') decls.push({ line, block: curBlock(), kind: 'std' });
+      if (isStylePropCall(i)) {
+        if (body === '-webkit-backdrop-filter') decls.push({ line, block: curBlock(), kind: 'webkit' });
+        else if (body === 'backdrop-filter') decls.push({ line, block: curBlock(), kind: 'std' });
+      }
       i = j; // sit on the closing delim (loop ++ moves past)
       continue;
     }
