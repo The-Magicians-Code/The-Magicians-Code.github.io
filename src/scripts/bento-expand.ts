@@ -238,7 +238,9 @@ function doOpen(card: HTMLElement): void {
     // Double-rAF before flipping .is-on so the browser fully paints the
     // backdrop-filter layers at opacity:0 first. Without the warm-up frame the
     // GPU rasterizes the filter as the opacity transition starts and the blur
-    // visibly "pops" instead of fading.
+    // visibly "pops" instead of fading. (Verified no desktop hitch when dropped,
+    // but it's cheap insurance against the first-raster pop on mobile WebKit; the
+    // perceived pre-blur "pause" is the curve's slow start, not these frames.)
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         if (!openState || openState.closing || openState.card !== card) return;
