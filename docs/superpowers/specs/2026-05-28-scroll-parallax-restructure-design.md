@@ -1,7 +1,12 @@
 # Scroll Parallax Restructure — Design
 
+> **⚠️ RETIRED (2026-06-09).** The scroll-parallax + `.reveal-up` system described
+> here has been **removed from the site** (`src/scripts/scroll-parallax.ts`
+> deleted; all `data-parallax` / `data-depth` / `.reveal-up` usage gone). Kept as
+> the historical "why" trail only — not active implementation guidance.
+
 **Date:** 2026-05-28
-**Status:** Draft (brainstorming + full-flow prototype + codex-rescue review complete; awaiting user spec review)
+**Status:** Retired 2026-06-09 (system removed) — was: Draft (brainstorming + full-flow prototype + codex-rescue review complete; awaiting user spec review)
 
 ## Goal
 
