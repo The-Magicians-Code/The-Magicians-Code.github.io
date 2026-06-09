@@ -6,8 +6,15 @@
 // getBoundingClientRect — follow the smoothed position with no changes of their
 // own.
 //
-// MPA note: every navigation is a full reload, so Lenis re-inits per page; no
-// teardown/destroy needed.
+// ⚠️ NO-TEARDOWN ASSUMPTION (load-bearing). This module — and bento-expand.ts,
+// MorphNav.astro, and liquid-glass.ts — register IntersectionObservers /
+// ResizeObservers / MutationObservers / rAF loops / Lenis instances and never
+// tear them down, because every navigation is a full page RELOAD (MPA) that
+// wipes them. This holds ONLY while the site has no Astro <ClientRouter> /
+// view-transitions. The moment client-side swaps are enabled, navigations stop
+// reloading and all of the above LEAK on every navigation (~a dozen observers +
+// rAF loops + Lenis instances accumulate). Before adding <ClientRouter>, wire
+// astro:before-swap / astro:page-load teardown for each of those consumers.
 import Lenis from 'lenis';
 
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
