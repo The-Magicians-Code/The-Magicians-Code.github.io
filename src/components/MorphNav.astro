@@ -321,7 +321,11 @@ const heroId = sections[0]?.id ?? "hero";
        edges (like prod's mobile menu / the theme toggle's pill). */
     padding: 8px;
     opacity: 0;
-    filter: blur(10px);
+    /* Items rest 16px low and rise into place on open. Replaced an animated
+       filter: blur(10px)→0, which WebKit re-rasterizes EVERY frame of the
+       1000ms reveal (the per-frame raster cost the bento code abandoned).
+       transform + opacity are compositor-only — no re-raster. */
+    transform: translateY(16px);
     pointer-events: none;
     /* visibility:hidden removes the collapsed panel's links from the tab order
        and a11y tree cross-browser — the `inert` property (set in JS) no-ops on
@@ -331,21 +335,21 @@ const heroId = sections[0]?.id ?? "hero";
     visibility: hidden;
     transition:
       opacity 300ms cubic-bezier(.5, 0, .88, .77),
-      filter 300ms cubic-bezier(.5, 0, .88, .77),
+      transform 300ms cubic-bezier(.5, 0, .88, .77),
       visibility 0s linear 300ms;
   }
 
   .morph-nav.is-open .morph-body {
     opacity: 1;
-    filter: blur(0);
+    transform: translateY(0);
     pointer-events: auto;
     visibility: visible;
-    /* On open, de-blur on the same 1000ms curve as the shell's height expansion
-       so the blur finishes exactly as the last item is fully revealed (opacity
-       still fades in quickly). The base 300ms transition governs the close. */
+    /* Rise on the same 1000ms curve as the shell's height expansion so the
+       items settle exactly as the panel finishes opening (opacity still fades
+       in quickly). The base 300ms transition governs the close. */
     transition:
       opacity 300ms cubic-bezier(.5, 0, .88, .77),
-      filter 1000ms cubic-bezier(.44, 0, .08, 1),
+      transform 1000ms cubic-bezier(.44, 0, .08, 1),
       visibility 0s;
   }
 
