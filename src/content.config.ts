@@ -4,17 +4,20 @@ import { glob } from 'astro/loaders';
 
 const projects = defineCollection({
   loader: glob({ pattern: '**/*.md', base: './src/content/projects' }),
-  schema: z.object({
-    title: z.string(),
-    description: z.string(),
-    repoUrl: z.url(),
-    order: z.number().int(),
-    draft: z.boolean().default(false),
-    bentoSpan: z.enum(['hero', 'wide', 'tall', 'normal']).default('normal'),
-    coverVariant: z.enum(['base', 'alt']).default('base'),
-    cover: z.string().optional(),
-    deepwikiUrl: z.url().optional(),
-  }),
+  schema: ({ image }) =>
+    z.object({
+      title: z.string(),
+      description: z.string(),
+      repoUrl: z.url(),
+      order: z.number().int(),
+      draft: z.boolean().default(false),
+      bentoSpan: z.enum(['hero', 'wide', 'tall', 'normal']).default('normal'),
+      coverVariant: z.enum(['base', 'alt']).default('base'),
+      // Optimized at build time (astro:assets) → AVIF/WebP + responsive srcset.
+      // Path is resolved relative to the markdown file.
+      cover: image().optional(),
+      deepwikiUrl: z.url().optional(),
+    }),
 });
 
 const blog = defineCollection({

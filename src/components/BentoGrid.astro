@@ -1030,11 +1030,11 @@
   :global(.bento-card.has-cover .cover-img) {
     position: absolute;
     left: 0;
-    right: 0;
     top: -56px;                  /* oversized, centered crop */
+    width: 100%;
     height: calc(100% + 112px);
-    background-size: cover;
-    background-position: center 42%;
+    object-fit: cover;
+    object-position: center 42%;
   }
   :global(.bento-card.has-cover .cover-overlay) {
     position: absolute;
