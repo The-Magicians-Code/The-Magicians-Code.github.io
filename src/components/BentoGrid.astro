@@ -539,12 +539,16 @@
     z-index: 2;
     pointer-events: none;
     opacity: 0;
-    /* Gentle ease-out (not --ease-snappy's strong S-curve) so the fade
-       is perceptually smooth rather than popping near the midpoint.
-       Slight delay lets the card morph start visibly before the blur
-       begins fading in, so the two animations are sequenced rather
-       than fighting for attention. */
-    transition: opacity 420ms cubic-bezier(0.22, 1, 0.36, 1) 120ms;
+    /* Slow, even grow-in, started in lockstep with the content fade. The
+       strips mount at the reveal (when .is-content-in lands), so with no
+       delay the blur eases in alongside the content rather than as a late,
+       separate beat. The near-symmetric ease-in-out (slow start, no early
+       rush) replaced an earlier strong ease-out that front-loaded the
+       opacity (~85% in ~125ms) and read as a pop. Perf: this whole fade
+       lives AFTER the box-morph geometry settles, so the backdrop-filter
+       never re-rasterizes against a resizing box (the WebKit morph-jank
+       case) — only against the (cheap, compositor) content opacity fade. */
+    transition: opacity 720ms cubic-bezier(0.4, 0, 0.2, 1);
   }
   :global(.bento-card.is-collapsing .card-blur) {
     /* On close, fade out quickly with no delay so the blur clears
