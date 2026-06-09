@@ -212,6 +212,23 @@ function doOpen(card: HTMLElement): void {
   //      so there's no lost affordance.
   // Guarded on openState identity (card) so a stale callback after a close +
   // re-open can't mount chrome onto the wrong lifecycle.
+  // Create the edge blur strips at opacity:0 (idempotent). Called early —
+  // during the morph, from mountContent — so the GPU rasterizes the filter
+  // layers over the morph frames (cheap: the backdrop is paper, content still
+  // hidden) and they're WARM by the reveal. Pre-mounting both removes the
+  // create/warm-up pause at reveal time and removes the first-raster "pop"
+  // (the strips already exist and are painted before .is-on fades them in).
+  const ensureBlurStrips = (): void => {
+    if (!openState || openState.closing || openState.card !== card) return;
+    if (openState.blurTop) return; // already mounted
+    const blurTop = makeBlurStrip('top');
+    const blurBottom = makeBlurStrip('bottom');
+    card.appendChild(blurTop);
+    card.appendChild(blurBottom);
+    openState.blurTop = blurTop;
+    openState.blurBottom = blurBottom;
+  };
+
   const mountChrome = (): void => {
     if (!openState || openState.closing || openState.card !== card) return;
     if (openState.closeBtn) return; // idempotent
@@ -228,26 +245,13 @@ function doOpen(card: HTMLElement): void {
     card.appendChild(closeBtn);
     openState.closeBtn = closeBtn;
 
-    const blurTop = makeBlurStrip('top');
-    const blurBottom = makeBlurStrip('bottom');
-    card.appendChild(blurTop);
-    card.appendChild(blurBottom);
-    openState.blurTop = blurTop;
-    openState.blurBottom = blurBottom;
-
-    // Double-rAF before flipping .is-on so the browser fully paints the
-    // backdrop-filter layers at opacity:0 first. Without the warm-up frame the
-    // GPU rasterizes the filter as the opacity transition starts and the blur
-    // visibly "pops" instead of fading. (Verified no desktop hitch when dropped,
-    // but it's cheap insurance against the first-raster pop on mobile WebKit; the
-    // perceived pre-blur "pause" is the curve's slow start, not these frames.)
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        if (!openState || openState.closing || openState.card !== card) return;
-        blurTop.classList.add('is-on');
-        blurBottom.classList.add('is-on');
-      });
-    });
+    // Strips are pre-mounted during the morph (ensureBlurStrips in mountContent);
+    // this is a fallback for any path that skipped it. Flip .is-on in the SAME
+    // frame as .is-content-in so the blur fades in lockstep with the content —
+    // no warm-up pause, because the pre-mounted strips are already painted.
+    ensureBlurStrips();
+    openState.blurTop?.classList.add('is-on');
+    openState.blurBottom?.classList.add('is-on');
   };
 
   card.classList.add('is-expanding');
@@ -422,6 +426,12 @@ function doOpen(card: HTMLElement): void {
     for (const child of wrap.children) {
       (child as HTMLElement).classList.add('body-para');
     }
+
+    // Pre-mount the edge blur strips NOW (mid-morph, content still hidden) so the
+    // backdrop-filter layers are rasterized/warm by the reveal — then mountChrome
+    // only has to flip .is-on, in lockstep with the content fade, with no pause.
+    ensureBlurStrips();
+
     if (hasCover) {
       void wrap.offsetHeight;
       // Reveal the content AFTER the box has finished expanding, not during —
