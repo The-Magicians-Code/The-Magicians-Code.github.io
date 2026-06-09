@@ -32,7 +32,6 @@ const {
     cover && 'has-cover',
   ]}
   data-bento-card
-  data-parallax={cover ? '' : undefined}
   data-slug={slug}
   data-deepwiki-url={deepwikiUrl ?? undefined}
   role="button"
@@ -44,7 +43,7 @@ const {
   <div class="cover">
     {cover && (
       <Fragment>
-        <div class="cover-img" data-depth="0.2" style={`background-image:url('${cover}')`}></div>
+        <div class="cover-img" style={`background-image:url('${cover}')`}></div>
         <div class="cover-overlay"></div>
       </Fragment>
     )}

@@ -1,17 +1,17 @@
 ---
 ---
 
-<header class="hero" id="hero" data-parallax aria-label="Intro" data-nav-section="hero">
-  <div class="hero-layer hero-back" data-depth="0.15" aria-hidden="true">
+<header class="hero" id="hero" aria-label="Intro" data-nav-section="hero">
+  <div class="hero-layer hero-back" aria-hidden="true">
     <span class="hero-ghost">Code</span>
   </div>
-  <div class="hero-layer hero-mid" data-depth="0.5">
+  <div class="hero-layer hero-mid">
     <div>
       <h1 class="hero-headline">Tanel <em>Treuberg</em></h1>
       <p class="hero-sub">Software engineer working across backend, infrastructure, and applied ML.</p>
     </div>
   </div>
-  <div class="hero-layer hero-front" data-depth="1.2">
+  <div class="hero-layer hero-front">
     <ul class="hero-pills">
       <li class="hero-pill">Backend</li>
       <li class="hero-pill">Infrastructure</li>
@@ -41,7 +41,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    will-change: transform;
   }
   .hero-back {
     background: radial-gradient(58% 50% at 50% 42%, var(--accent-soft), transparent 70%);

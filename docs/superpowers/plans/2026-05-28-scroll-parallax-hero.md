@@ -1,5 +1,13 @@
 # Scroll Parallax Hero Implementation Plan
 
+> **⚠️ RETIRED (2026-06-09).** The scroll-parallax + `.reveal-up` scroll-reveal
+> system this plan introduced has been **removed from the site**:
+> `src/scripts/scroll-parallax.ts` is deleted and all
+> `data-parallax` / `data-depth` / `.reveal-up` usage is gone (hero, sections,
+> bento covers). This document is retained only as the historical "why" trail —
+> do **not** follow it as active implementation guidance. A different fade is
+> planned to be introduced separately.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Restructure the homepage into a full-bleed "stacked-depth" parallax hero that resolves into the existing 880px card column, with subtle reveal + drift on the sections below.

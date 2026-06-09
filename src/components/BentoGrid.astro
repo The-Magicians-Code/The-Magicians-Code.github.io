@@ -73,25 +73,6 @@
   :global(.bento-card:focus-visible) {
     outline: none;
   }
-  /* Card-enter starting state scoped to interactive bento cards only
-     (those with [data-bento-card]). Other .bento-card-shaped elements
-     would otherwise be stuck at opacity:0 with no animation to clear it. */
-  :global([data-bento-card]) {
-    opacity: 0;
-    transform: translateY(24px);
-  }
-  :global([data-bento-card].in) {
-    animation: bento-card-enter 720ms var(--ease, cubic-bezier(0.22, 1, 0.36, 1)) forwards;
-    animation-delay: var(--card-enter-delay, 0s);
-  }
-  @keyframes bento-card-enter {
-    0%   { opacity: 0; transform: translateY(24px); }
-    100% { opacity: 1; transform: none; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    :global([data-bento-card])    { opacity: 1; transform: none; }
-    :global([data-bento-card].in) { animation: none; }
-  }
 
   :global(.bento-card:hover) {
     transform: translateY(-2px);
@@ -1050,11 +1031,10 @@
     position: absolute;
     left: 0;
     right: 0;
-    top: -56px;                  /* oversize so parallax can't reveal an edge */
+    top: -56px;                  /* oversized, centered crop */
     height: calc(100% + 112px);
     background-size: cover;
     background-position: center 42%;
-    will-change: transform;
   }
   :global(.bento-card.has-cover .cover-overlay) {
     position: absolute;
