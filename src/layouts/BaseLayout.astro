@@ -182,6 +182,11 @@ const personSchema = {
       })();
     </script>
 
+    {/* ⚠️ Before adding an Astro <ClientRouter> / view-transitions here: the
+        scripts below (and bento-expand, MorphNav) never tear down their
+        observers / rAF loops / Lenis — they rely on a full reload per
+        navigation. Client-side swaps would leak them. See the NO-TEARDOWN note
+        atop src/scripts/smooth-scroll.ts and wire astro:before-swap cleanup. */}
     <script>
       // Mounted first so Lenis drives window scroll before the scroll-coupled
       // consumers (liquid-glass, MorphNav ring/scrollspy) read it.
