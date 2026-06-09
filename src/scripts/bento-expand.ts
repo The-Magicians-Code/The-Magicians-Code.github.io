@@ -50,7 +50,7 @@ function makeBlurStrip(position: 'top' | 'bottom'): HTMLElement {
   const strip = document.createElement('div');
   strip.className = `card-blur card-blur-${position}`;
   strip.setAttribute('aria-hidden', 'true');
-  for (let i = 0; i < 5; i++) strip.appendChild(document.createElement('div'));
+  for (let i = 0; i < 3; i++) strip.appendChild(document.createElement('div'));
   return strip;
 }
 
