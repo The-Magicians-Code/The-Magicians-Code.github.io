@@ -28,6 +28,9 @@
 
 ### Design
 - https://emilkowal.ski/ui/7-practical-animation-tips
+- https://animations.dev/vocabulary
+- https://www.ui-skills.com · [repo](https://github.com/ibelick/ui-skills)
+- https://index.how/to/articulate
 - https://pixelwrld.co
 - https://godly.website/website/roman-tesliuk-947
 - https://mchiu.co.uk
