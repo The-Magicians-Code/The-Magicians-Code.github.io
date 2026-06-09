@@ -333,7 +333,14 @@
     transition: padding var(--morph-dur) var(--ease-snappy);
   }
   :global(.bento-card.is-expanded .card-body) {
-    padding: 56px 48px 48px;
+    /* Top AND bottom padding ≥ the 80px progressive-blur bands so the first
+       content (the "CASE STUDY" eyebrow) and the last content (the "for the
+       nerds" footer link) clear the bands at the scroll extremes rather than
+       sitting blurred under them. The empty padding sits under each band,
+       blurring uniform paper → invisible. (The header is normal flow — the
+       cs-sticky-header build is commented out in bento-expand.ts — so there's
+       nothing holding the eyebrow above the strip; padding is what clears it.) */
+    padding: 88px 48px 88px;
     justify-content: flex-start;
     /* Whole modal scrolls as one unit — header (eyebrow + title +
        pill) flows with the case-study body. Single scroll context;
@@ -508,7 +515,7 @@
     text-align: center;
   }
   @media (max-width: 540px) {
-    :global(.bento-card.is-expanded .card-body) { padding: 48px 22px 32px; }
+    :global(.bento-card.is-expanded .card-body) { padding: 68px 22px 68px; } /* top + bottom ≥ 60px mobile blur band */
   }
 
   /* ── Progressive blur edges on the expanded card ─────────────────
@@ -1094,11 +1101,15 @@
   :global(.bento-card.has-cover .card-body) {
     text-align: center;
     align-items: center;
-    padding: 56px 48px 48px;
+    /* Top + bottom padding ≥ the progressive-blur bands (80px desktop) so the
+       eyebrow and the footer link clear them at the scroll extremes — see the
+       .is-expanded .card-body rule above. This has-cover rule has equal
+       specificity but wins on source order, so it must carry the same clearance. */
+    padding: 88px 48px 88px;
   }
   @media (max-width: 540px) {
     :global(.bento-card.has-cover .card-body) {
-      padding: 48px 22px 32px;
+      padding: 68px 22px 68px; /* top + bottom ≥ 60px mobile blur band */
     }
   }
 
