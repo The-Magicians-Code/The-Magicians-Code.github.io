@@ -1,10 +1,10 @@
 // Lenis smooth scroll — the lerp-based "can't-slam-it" easing (same lib as the
 // reference site). Scope: smooth WHEEL/pointer only; native momentum on touch
 // (syncTouch: false), and fully disabled under prefers-reduced-motion. Lenis
-// drives the real window scroll (no transform), so the MorphNav progress ring,
-// the scrollspy IntersectionObserver, and scroll-parallax — all of which read
-// window.scrollY / getBoundingClientRect — follow the smoothed position with no
-// changes of their own.
+// drives the real window scroll (no transform), so the MorphNav progress ring
+// and the scrollspy IntersectionObserver — both of which read window.scrollY /
+// getBoundingClientRect — follow the smoothed position with no changes of their
+// own.
 //
 // MPA note: every navigation is a full reload, so Lenis re-inits per page; no
 // teardown/destroy needed.
