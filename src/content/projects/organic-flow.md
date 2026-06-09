@@ -6,7 +6,7 @@ deepwikiUrl: https://deepwiki.com/The-Magicians-Code/organic-flow
 order: 3
 bentoSpan: wide
 coverVariant: alt
-cover: /covers/organic-flow.jpg
+cover: ../../assets/covers/organic-flow.jpg
 draft: false
 ---
 
