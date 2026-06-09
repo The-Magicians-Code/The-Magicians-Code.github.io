@@ -154,14 +154,6 @@ function doOpen(card: HTMLElement): void {
   const backdrop = document.querySelector<HTMLElement>('[data-bento-backdrop]');
   if (!backdrop) return;
 
-  // Finish any in-flight card-enter animation so its transform doesn't fight
-  // our position:fixed lift and the captured rect reflects the settled pose.
-  card.getAnimations().forEach((a) => {
-    if ((a as CSSAnimation).animationName === 'bento-card-enter') {
-      try { a.finish(); } catch { /* ignore */ }
-    }
-  });
-
   const rect = card.getBoundingClientRect();
   const vr = getViewportRect();
   // Pre-size the modal content to this exact morph target before it reveals,
@@ -816,26 +808,6 @@ function onResize(): void {
   });
 }
 
-// ── Card-enter stagger (IntersectionObserver) ────────────────────────────
-function initCardEnter(): void {
-  const cards = [...document.querySelectorAll<HTMLElement>('[data-bento-card]')];
-  cards.forEach((c, i) => {
-    c.style.setProperty('--card-enter-delay', `${Math.min(i, 8) * 0.08}s`);
-  });
-  const io = new IntersectionObserver(
-    (entries) => {
-      for (const entry of entries) {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('in');
-          io.unobserve(entry.target);
-        }
-      }
-    },
-    { rootMargin: '0px 0px -10% 0px', threshold: 0.05 },
-  );
-  cards.forEach((c) => io.observe(c));
-}
-
 // ── Wire-up ──────────────────────────────────────────────────────────────
 function init(): void {
   const cards = document.querySelectorAll<HTMLElement>('[data-bento-card]');
@@ -850,8 +822,6 @@ function init(): void {
       }
     });
   });
-
-  initCardEnter();
 
   // Title rest-y depends on the rendered font (Fraunces, loaded from
   // Google Fonts). Gate on document.fonts.ready so the measurement uses
