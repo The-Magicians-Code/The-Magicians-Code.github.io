@@ -75,7 +75,9 @@
   }
 
   :global(.bento-card:hover) {
-    transform: translateY(-2px);
+    /* Shadow-only hover (no translateY lift): the base transition animates
+       box-shadow but not transform, so the lift snapped instantly and read
+       as a jump. Deepening the shadow gives the hover cue without moving. */
     box-shadow:
       0 6px 24px rgba(0, 0, 0, 0.06),
       0 2px 6px rgba(0, 0, 0, 0.04);
