@@ -96,7 +96,11 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
   position: relative;
   isolation: isolate;
-  min-height: 100vh;
+  /* dvh tracks the iOS toolbar rather than locking to the large viewport.
+     Build floor is Safari 16.1 (Tailwind/Lightning CSS target), which supports
+     dvh, so no vh fallback is needed — Lightning strips duplicate-prop
+     fallbacks at this target anyway. */
+  min-height: 100dvh;
   /* Suppress double-tap-to-zoom (and the legacy ~300ms tap delay) page-wide so
      the site behaves like a native app. `manipulation` still permits normal
      scrolling; pinch-zoom is blocked separately (viewport meta on Android,

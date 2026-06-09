@@ -323,21 +323,30 @@ const heroId = sections[0]?.id ?? "hero";
     opacity: 0;
     filter: blur(10px);
     pointer-events: none;
+    /* visibility:hidden removes the collapsed panel's links from the tab order
+       and a11y tree cross-browser — the `inert` property (set in JS) no-ops on
+       iOS < 15.5, so opacity/pointer-events alone would leave them reachable
+       there. Hidden is delayed until the fade-out finishes so the close isn't
+       cut; shown immediately on open (see .is-open). */
+    visibility: hidden;
     transition:
       opacity 300ms cubic-bezier(.5, 0, .88, .77),
-      filter 300ms cubic-bezier(.5, 0, .88, .77);
+      filter 300ms cubic-bezier(.5, 0, .88, .77),
+      visibility 0s linear 300ms;
   }
 
   .morph-nav.is-open .morph-body {
     opacity: 1;
     filter: blur(0);
     pointer-events: auto;
+    visibility: visible;
     /* On open, de-blur on the same 1000ms curve as the shell's height expansion
        so the blur finishes exactly as the last item is fully revealed (opacity
        still fades in quickly). The base 300ms transition governs the close. */
     transition:
       opacity 300ms cubic-bezier(.5, 0, .88, .77),
-      filter 1000ms cubic-bezier(.44, 0, .08, 1);
+      filter 1000ms cubic-bezier(.44, 0, .08, 1),
+      visibility 0s;
   }
 
   /* Vertical nav list: each item is its own rounded clickable area. */
