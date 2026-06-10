@@ -1,3 +1,10 @@
+---
+// Standalone "Magicians Code" cinematic prototype, scaffolded into Astro so it
+// builds into dist/ and shows up on the Netlify deploy preview. It is fully
+// self-contained (own <html>/<head>), shares nothing with the rest of the site,
+// and is intentionally not linked from anywhere. Static assets live verbatim in
+// public/assets/; CSS + JS are kept byte-for-byte via is:inline.
+---
 <!doctype html>
 <html lang="en">
 <head>
@@ -9,13 +16,13 @@
   <meta property="og:description" content="Cinematic interfaces. Data-driven systems. Engineering that disappears.">
   <meta property="og:type" content="website">
   <meta name="theme-color" content="#0b0b10">
-  <link rel="icon" type="image/svg+xml" href="assets/img/mark.svg">
+  <link rel="icon" type="image/svg+xml" href="/assets/img/mark.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;700;800&family=Space+Grotesk:wght@300;400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/css/main.css">
+  <link rel="stylesheet" href="/assets/css/main.css">
   <noscript>
-    <style>
+    <style is:inline>
       .loader, .cursor, .cursor-tag { display: none; }
       .reveal { opacity: 1; transform: none; }
       .manifesto__text .w { opacity: 1; }
@@ -27,7 +34,7 @@
   <!-- Preloader -->
   <div class="loader" id="loader" aria-hidden="true">
     <div class="loader__inner">
-      <img class="loader__mark" src="assets/img/mark.svg" alt="">
+      <img class="loader__mark" src="/assets/img/mark.svg" alt="">
       <span class="loader__count" id="loaderCount">00</span>
       <span class="loader__word">conjuring</span>
     </div>
@@ -46,7 +53,7 @@
 
   <header class="nav" id="nav">
     <a class="nav__logo" href="#top" data-magnetic>
-      <img src="assets/img/mark.svg" alt="" class="nav__mark">
+      <img src="/assets/img/mark.svg" alt="" class="nav__mark">
       <span>The&nbsp;Magicians&nbsp;Code</span>
     </a>
     <nav class="nav__links" aria-label="Primary">
@@ -76,7 +83,7 @@
     <!-- ============================== HERO ============================== -->
     <section class="hero" id="hero">
       <canvas class="hero__aurora" id="aurora" aria-hidden="true"></canvas>
-      <img class="hero__contours" src="assets/img/contours.svg" alt="" data-depth="0.12" data-rotate aria-hidden="true">
+      <img class="hero__contours" src="/assets/img/contours.svg" alt="" data-depth="0.12" data-rotate aria-hidden="true">
 
       <div class="hero__inner">
         <p class="hero__eyebrow reveal">Independent design &times; engineering studio</p>
@@ -126,7 +133,7 @@
       <ul class="work__list">
         <li class="project reveal" data-cursor="view">
           <a class="project__card" href="https://github.com/The-Magicians-Code" target="_blank" rel="noopener">
-            <figure class="project__media"><img src="assets/img/art-flow.svg" alt="Generative flow-field artwork for Deep Current" data-parallax loading="lazy"></figure>
+            <figure class="project__media"><img src="/assets/img/art-flow.svg" alt="Generative flow-field artwork for Deep Current" data-parallax loading="lazy"></figure>
             <div class="project__info">
               <span class="project__num mono">N&deg;01</span>
               <h3 class="project__title">Deep Current</h3>
@@ -137,7 +144,7 @@
         </li>
         <li class="project reveal" data-cursor="view">
           <a class="project__card" href="https://github.com/The-Magicians-Code" target="_blank" rel="noopener">
-            <figure class="project__media"><img src="assets/img/art-grid.svg" alt="Warped measurement grid artwork for Signal and Noise" data-parallax loading="lazy"></figure>
+            <figure class="project__media"><img src="/assets/img/art-grid.svg" alt="Warped measurement grid artwork for Signal and Noise" data-parallax loading="lazy"></figure>
             <div class="project__info">
               <span class="project__num mono">N&deg;02</span>
               <h3 class="project__title">Signal &amp; Noise</h3>
@@ -148,7 +155,7 @@
         </li>
         <li class="project reveal" data-cursor="view">
           <a class="project__card" href="https://github.com/The-Magicians-Code" target="_blank" rel="noopener">
-            <figure class="project__media"><img src="assets/img/art-orbits.svg" alt="Orbital instrument artwork for Aurora Index" data-parallax loading="lazy"></figure>
+            <figure class="project__media"><img src="/assets/img/art-orbits.svg" alt="Orbital instrument artwork for Aurora Index" data-parallax loading="lazy"></figure>
             <div class="project__info">
               <span class="project__num mono">N&deg;03</span>
               <h3 class="project__title">Aurora Index</h3>
@@ -159,7 +166,7 @@
         </li>
         <li class="project reveal" data-cursor="view">
           <a class="project__card" href="https://github.com/The-Magicians-Code" target="_blank" rel="noopener">
-            <figure class="project__media"><img src="assets/img/art-constellation.svg" alt="Constellation graph artwork for Counterspell" data-parallax loading="lazy"></figure>
+            <figure class="project__media"><img src="/assets/img/art-constellation.svg" alt="Constellation graph artwork for Counterspell" data-parallax loading="lazy"></figure>
             <div class="project__info">
               <span class="project__num mono">N&deg;04</span>
               <h3 class="project__title">Counterspell</h3>
@@ -192,7 +199,7 @@
 
     <!-- ============================ CONTACT ============================== -->
     <section class="contact" id="contact">
-      <img class="contact__contours" src="assets/img/contours.svg" alt="" data-depth="0.08" data-rotate aria-hidden="true">
+      <img class="contact__contours" src="/assets/img/contours.svg" alt="" data-depth="0.08" data-rotate aria-hidden="true">
       <p class="mono reveal">04 &mdash; Encore</p>
       <h2 class="contact__title reveal" data-delay="80">Let&rsquo;s make something<br>that feels <em>impossible</em>.</h2>
       <a class="contact__cta" href="mailto:tanel.treuberg@gmail.com" data-magnetic data-cursor="say hi">
@@ -210,6 +217,6 @@
 
   </main>
 
-  <script src="assets/js/main.js" defer></script>
+  <script is:inline src="/assets/js/main.js" defer></script>
 </body>
 </html>
