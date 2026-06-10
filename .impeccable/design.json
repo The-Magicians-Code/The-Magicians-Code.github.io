@@ -1,0 +1,187 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-06-05T00:00:00Z",
+  "title": "Design System: The Magicians' Code",
+  "extensions": {
+    "colorMeta": {
+      "bg": { "role": "neutral", "displayName": "Studio Light (warm paper bg)", "canonical": "#f6f3ed",
+        "tonalRamp": ["#0a0a0d", "#14141a", "#2a2a2e", "#4d4d52", "#8e8a82", "#c8c4ba", "#f6f3ed", "#faf8f3"] },
+      "paper": { "role": "neutral", "displayName": "Paper (solid bento surface)", "canonical": "#faf8f3",
+        "tonalRamp": ["#14141a", "#2a2a2e", "#4d4d52", "#8e8a82", "#c8c4ba", "#e5e2d8", "#f6f3ed", "#faf8f3"] },
+      "ink": { "role": "neutral", "displayName": "Type Black", "canonical": "#1a1a1c",
+        "tonalRamp": ["#0a0a0d", "#1a1a1c", "#2c2c30", "#4d4d52", "#8e8a82", "#c8c4ba", "#e5e2d8", "#faf8f3"] },
+      "ink-dim": { "role": "neutral", "displayName": "Type Black Dim", "canonical": "#4d4d52",
+        "tonalRamp": ["#1a1a1c", "#2c2c30", "#4d4d52", "#6a6a70", "#8e8a82", "#b3b0a8", "#d2cfc6", "#f0ede4"] },
+      "ink-3": { "role": "neutral", "displayName": "Type Black Tertiary", "canonical": "#8e8a82",
+        "tonalRamp": ["#2c2c30", "#4d4d52", "#6a6a70", "#8e8a82", "#a8a39a", "#c2bdb2", "#dcd8cd", "#f0ede4"] },
+      "accent": { "role": "primary", "displayName": "Working Heat (terracotta ember)", "canonical": "oklch(64% 0.18 28)",
+        "tonalRamp": [
+          "oklch(0.20 0.08 28)", "oklch(0.32 0.12 28)", "oklch(0.45 0.16 28)", "oklch(0.55 0.18 28)",
+          "oklch(0.64 0.18 28)", "oklch(0.72 0.16 28)", "oklch(0.85 0.10 28)", "oklch(0.95 0.04 28)"
+        ] },
+      "bg-dark": { "role": "neutral", "displayName": "Studio Light (dark mode bg)", "canonical": "#0a0a0d",
+        "tonalRamp": ["#0a0a0d", "#14141a", "#2a2a2e", "#4d4d52", "#8e8a82", "#c8c4ba", "#e5e2d8", "#f6f3ed"] },
+      "ink-dark": { "role": "neutral", "displayName": "Type Black (dark mode)", "canonical": "#f0f0f5",
+        "tonalRamp": ["#0a0a0d", "#14141a", "#2c2c30", "#5c5c68", "#a8a8b3", "#d2d2dd", "#f0f0f5", "#faf8f3"] },
+      "paper-dark": { "role": "neutral", "displayName": "Paper (dark mode bento surface)", "canonical": "#14141a",
+        "tonalRamp": ["#0a0a0d", "#14141a", "#2a2a2e", "#4d4d52", "#8e8a82", "#c8c4ba", "#e5e2d8", "#faf8f3"] },
+      "ink-dim-dark": { "role": "neutral", "displayName": "Type Black Dim (dark mode)", "canonical": "#a8a8b3",
+        "tonalRamp": ["#2c2c30", "#4d4d52", "#6a6a70", "#8e8a82", "#a8a8b3", "#c2c2cc", "#d2d2dd", "#f0f0f5"] },
+      "ink-3-dark": { "role": "neutral", "displayName": "Type Black Tertiary (dark mode)", "canonical": "#5c5c68",
+        "tonalRamp": ["#2c2c30", "#4d4d52", "#5c5c68", "#6a6a70", "#8e8a82", "#a8a8b3", "#c2c2cc", "#f0f0f5"] },
+      "accent-dark": { "role": "primary", "displayName": "Working Heat (dark mode ember)", "canonical": "oklch(72% 0.16 28)",
+        "tonalRamp": [
+          "oklch(0.20 0.08 28)", "oklch(0.32 0.12 28)", "oklch(0.45 0.16 28)", "oklch(0.55 0.18 28)",
+          "oklch(0.64 0.18 28)", "oklch(0.72 0.16 28)", "oklch(0.85 0.10 28)", "oklch(0.95 0.04 28)"
+        ] },
+      "rule": { "role": "neutral", "displayName": "Rule (hairline divider)", "canonical": "rgba(26, 26, 28, 0.12)" },
+      "rule-dark": { "role": "neutral", "displayName": "Rule (dark mode hairline)", "canonical": "rgba(255, 255, 255, 0.10)" },
+      "glass-bg": { "role": "neutral", "displayName": "Glass Tint (.glass/.card/.pill surface)", "canonical": "rgba(255, 252, 246, 0.45)" },
+      "glass-bg-dark": { "role": "neutral", "displayName": "Glass Tint (dark mode)", "canonical": "rgba(255, 255, 255, 0.04)" },
+      "glass-brd": { "role": "neutral", "displayName": "Glass Border (edge hairline)", "canonical": "rgba(255, 255, 255, 0.55)" },
+      "glass-brd-dark": { "role": "neutral", "displayName": "Glass Border (dark mode)", "canonical": "rgba(255, 255, 255, 0.10)" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display (Fraunces)", "purpose": "Hero headlines, primary identity moments. Use text-wrap: balance." },
+      "headline": { "displayName": "Headline (Fraunces)", "purpose": "Section openers, project detail H1, resume section heads." },
+      "title": { "displayName": "Title (Fraunces 500)", "purpose": "Card titles, dialog headers, project card titles." },
+      "body": { "displayName": "Body (Geist)", "purpose": "All paragraphs. Cap line length 65–75ch. text-wrap: pretty on long prose." },
+      "body-emphasis": { "displayName": "Ember Emphasis (Fraunces italic in Working Heat)", "purpose": "The em element — the system's most distinctive typographic gesture. Italic + ember + serif inline in sans body." },
+      "label": { "displayName": "Label (Geist 500)", "purpose": "Button labels and link labels. DEVIATION: MorphNav renders its own labels in Inter (a 4th family outside the three-voice system), flagged for reconciliation to Geist." },
+      "eyebrow": { "displayName": "Editorial Eyebrow (Geist Mono uppercase)", "purpose": "Section markers. Currently ship UNNUMBERED (Project, Index); the intended cadence is numbering (01 · Hero) to distinguish from AI-scaffolding eyebrows, but that is NOT yet applied — it is the gap." },
+      "mono": { "displayName": "Mono (Geist Mono)", "purpose": "Tech pills, metadata, code spans." }
+    },
+    "shadows": [
+      { "name": "glass-inner-light", "value": "inset 0 1px 0 rgba(255, 255, 255, 0.55)", "purpose": "Top-edge highlight on the .glass primitive in light mode." },
+      { "name": "glass-outer-light", "value": "0 16px 40px -16px rgba(26, 26, 28, 0.18)", "purpose": "Diffuse outer drop on .glass in light mode." },
+      { "name": "glass-inner-dark", "value": "inset 0 1px 0 rgba(255, 255, 255, 0.10)", "purpose": "Top-edge highlight on .glass in dark mode (softer)." },
+      { "name": "glass-outer-dark", "value": "0 20px 60px -20px rgba(0, 0, 0, 0.6)", "purpose": "Diffuse outer drop on .glass in dark mode (deeper, more diffuse)." },
+      { "name": "bento-lift-light", "value": "0 16px 40px -16px rgba(26, 26, 28, 0.10)", "purpose": "Bento card hover state, light mode. Pairs with translateY(-2px) and accent-soft border." },
+      { "name": "card-lift-light", "value": "0 22px 48px -16px rgba(26, 26, 28, 0.22)", "purpose": "Glass .card hover state, light mode. Stronger than bento because glass competes with content behind." },
+      { "name": "morph-nav-light", "value": "0 18px 60px rgba(26, 26, 28, 0.12)", "purpose": "MorphNav floating pill drop shadow, light mode (--morph-shadow). Soft, wide, diffuse." },
+      { "name": "bento-lift-dark", "value": "0 22px 56px -20px rgba(0, 0, 0, 0.55)", "purpose": "Bento card hover state, dark mode. html.dark .bento:hover counterpart of bento-lift-light." },
+      { "name": "card-lift-dark", "value": "0 24px 60px -20px rgba(0, 0, 0, 0.7)", "purpose": "Glass .card hover state, dark mode. html.dark .card:hover counterpart of card-lift-light (deeper, more diffuse)." },
+      { "name": "morph-nav-dark", "value": "0 20px 60px rgba(0, 0, 0, 0.6)", "purpose": "MorphNav floating pill drop shadow, dark mode. html.dark counterpart of morph-nav-light (deeper)." }
+    ],
+    "motion": [
+      { "name": "ease-canonical", "value": "cubic-bezier(0.22, 1, 0.36, 1)", "purpose": "The system's nominal ease (ease-out-quart equivalent), held as --ease in :root. Used on card/bento hover transitions (220ms). NOTE: not universal — .section-fade-in uses plain ease-out, and MorphNav's morph + panel reveal use their own cubic-beziers." },
+      { "name": "duration-hover", "value": "220ms", "purpose": "Card and bento hover transitions (transform + box-shadow + border-color)." },
+      { "name": "duration-reveal", "value": "600ms", "purpose": "Entrance reveal (.section-fade-in: opacity + translateY via the fadeIn keyframe, 0.6s)." },
+      { "name": "duration-morph", "value": "1000ms", "purpose": "MorphNav shell morph (width/height/border-radius) between intro/compact/open states. Uses its OWN easing cubic-bezier(.44, 0, .08, 1), not the canonical ease." },
+      { "name": "duration-menu-reveal", "value": "300ms", "purpose": "MorphNav open-panel reveal: link rows fade in via opacity + filter (blur) over 300ms." },
+      { "name": "reduced-motion", "value": "Interactive components disable transforms/animation under reduce; the .section-fade-in entrance is the open gap.", "purpose": "@media (prefers-reduced-motion: reduce) treatment. Shipping at component level (BentoGrid, MorphNav, TechPill, ThemeToggle, BaseLayout) and in motion scripts (Lenis smooth-scroll, bento-expand, case-study); the .section-fade-in entrance in global.css is NOT yet gated — audit before claiming complete. Apply the pattern to any new animation." }
+    ],
+    "breakpoints": [
+      { "name": "mobile", "value": "540px", "purpose": "Dominant mobile cutoff (max-width): bento padding, blur band, layout collapse. Most-used breakpoint in the codebase." },
+      { "name": "nav-desktop", "value": "641px", "purpose": "min-width gate inside MorphNav for desktop sizing/behavior; also the desktop/mobile threshold used elsewhere in the layout." },
+      { "name": "layout-md", "value": "720px", "purpose": "Component layout breakpoint (project / case-study layouts)." },
+      { "name": "layout-lg", "value": "880px", "purpose": "Component layout breakpoint (wider grids)." }
+    ],
+    "breakpointsNote": "No single unified 3-tier scale exists; these are the load-bearing values actually in the CSS (others appear ad hoc per component)."
+  },
+  "components": [
+    {
+      "name": "Bento Card (solid paper)",
+      "kind": "card",
+      "refersTo": "bento",
+      "description": "The canonical confident displayed-object container. Solid paper bg, hairline border, accent-soft hover border. No backdrop-filter — better paint cost on grids.",
+      "html": "<article class=\"ds-bento\"><h3 class=\"ds-bento-title\">organic-flow</h3><p class=\"ds-bento-meta\">Polish foundation events &amp; passes</p><p class=\"ds-bento-body\">Astro on Cloudflare Workers, Supabase, Przelewy24, Apple &amp; Google Wallet. I was the <em class=\"ds-em\">only engineer</em>; the foundation is the customer.</p></article>",
+      "css": ".ds-bento { background: #faf8f3; color: #1a1a1c; border: 1px solid rgba(26, 26, 28, 0.12); border-radius: 20px; padding: 24px; font-family: Geist, ui-sans-serif, system-ui, sans-serif; transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1), border-color 220ms cubic-bezier(0.22, 1, 0.36, 1); } .ds-bento:hover { transform: translateY(-2px); border-color: oklch(64% 0.18 28 / 0.14); box-shadow: 0 16px 40px -16px rgba(26, 26, 28, 0.10); } .ds-bento-title { margin: 0 0 6px; font-family: Fraunces, Georgia, serif; font-weight: 500; font-size: 1.25rem; line-height: 1.3; letter-spacing: -0.005em; color: #1a1a1c; text-wrap: balance; } .ds-bento-meta { margin: 0 0 14px; font-family: 'Geist Mono', ui-monospace, monospace; font-size: 0.75rem; line-height: 1.2; color: #8e8a82; } .ds-bento-body { margin: 0; font-size: 1rem; line-height: 1.55; color: #1a1a1c; max-width: 65ch; } .ds-em { font-family: Fraunces, Georgia, serif; font-style: italic; color: oklch(64% 0.18 28); }"
+    },
+    {
+      "name": "Glass Surface (translucent overlay)",
+      "kind": "card",
+      "refersTo": "glass",
+      "description": "Translucent panel with backdrop-filter blur + saturate. Used for the nav fallback, mobile side-wrap, pills. Different paint cost profile from .bento; reserve for surfaces that float over content.",
+      "html": "<aside class=\"ds-glass\"><p class=\"ds-glass-eyebrow\">02 · About</p><h4 class=\"ds-glass-title\">A short note from the curator</h4><p class=\"ds-glass-body\">Each artifact here runs. Click in.</p></aside>",
+      "css": ".ds-glass { background: rgba(255, 252, 246, 0.45); color: #1a1a1c; -webkit-backdrop-filter: blur(20px) saturate(140%); backdrop-filter: blur(20px) saturate(140%); border: 1px solid rgba(255, 255, 255, 0.55); border-radius: 14px; padding: 28px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), 0 16px 40px -16px rgba(26, 26, 28, 0.18); font-family: Geist, ui-sans-serif, system-ui, sans-serif; } .ds-glass-eyebrow { margin: 0 0 12px; font-family: 'Geist Mono', ui-monospace, monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.16em; color: #8e8a82; } .ds-glass-title { margin: 0 0 8px; font-family: Fraunces, Georgia, serif; font-weight: 500; font-size: 1.25rem; line-height: 1.3; color: #1a1a1c; text-wrap: balance; } .ds-glass-body { margin: 0; font-size: 1rem; line-height: 1.55; color: #4d4d52; }"
+    },
+    {
+      "name": "Tech Pill (stack chip)",
+      "kind": "chip",
+      "refersTo": "pill-stack",
+      "description": "Skills & tools chip. Glass tint, mono caps. Inline, never a primary affordance.",
+      "html": "<span class=\"ds-pill\"><svg viewBox=\"0 0 24 24\" width=\"12\" height=\"12\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><polyline points=\"16 18 22 12 16 6\"/><polyline points=\"8 6 2 12 8 18\"/></svg>Astro</span>",
+      "css": ".ds-pill { display: inline-flex; align-items: center; gap: 6px; background: rgba(255, 252, 246, 0.45); border: 1px solid rgba(255, 255, 255, 0.55); -webkit-backdrop-filter: blur(20px) saturate(140%); backdrop-filter: blur(20px) saturate(140%); border-radius: 999px; padding: 6px 12px; font-family: 'Geist Mono', ui-monospace, monospace; font-size: 12px; color: #4d4d52; line-height: 1.2; }"
+    },
+    {
+      "name": "Editorial Eyebrow",
+      "kind": "custom",
+      "refersTo": "section-eyebrow",
+      "description": "Section marker. ALWAYS paired with numbering (01 · Hero). The numbering is what distinguishes this from AI-scaffolding eyebrows; do not ship the eyebrow without numbering or sequence logic.",
+      "html": "<p class=\"ds-eyebrow\">02 · Projects</p>",
+      "css": ".ds-eyebrow { margin: 0 0 12px; font-family: 'Geist Mono', ui-monospace, monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.16em; color: #8e8a82; }"
+    },
+    {
+      "name": "Accent Link",
+      "kind": "custom",
+      "refersTo": "link-accent",
+      "description": "The system's link treatment for the ember-warm accent. Opacity-based hover, never an underline-on-hover.",
+      "html": "<a class=\"ds-link-accent\" href=\"#\">Read more</a>",
+      "css": ".ds-link-accent { color: oklch(64% 0.18 28); text-decoration: underline; text-decoration-color: oklch(64% 0.18 28 / 0.4); text-decoration-thickness: 1px; text-underline-offset: 3px; transition: color 0.2s ease, opacity 0.2s ease, text-decoration-color 0.2s ease; } .ds-link-accent:hover { opacity: 0.82; text-decoration-color: oklch(64% 0.18 28); }"
+    },
+    {
+      "name": "Ember Italic Emphasis (em)",
+      "kind": "custom",
+      "refersTo": "body-emphasis",
+      "description": "The system's most distinctive typographic gesture: italic Fraunces in Working Heat, inline in Geist body. Identity carried by inflection.",
+      "html": "<p class=\"ds-body\">This site is a maker's cabinet — an organized exhibition where every artifact <em class=\"ds-em\">actually runs</em>.</p>",
+      "css": ".ds-body { margin: 0; font-family: Geist, ui-sans-serif, system-ui, sans-serif; font-size: 1rem; line-height: 1.55; color: #1a1a1c; max-width: 65ch; } .ds-em { font-family: Fraunces, Georgia, serif; font-style: italic; color: oklch(64% 0.18 28); }"
+    },
+    {
+      "name": "Section Eyebrow + Headline pair",
+      "kind": "custom",
+      "refersTo": "headline",
+      "description": "The canonical section-opener pattern. Numbered eyebrow + Fraunces headline.",
+      "html": "<header class=\"ds-section-head\"><p class=\"ds-eyebrow\">03 · About</p><h2 class=\"ds-headline\">A solo developer who treats taste as a tool.</h2></header>",
+      "css": ".ds-section-head { display: flex; flex-direction: column; gap: 0; max-width: 720px; } .ds-eyebrow { margin: 0 0 12px; font-family: 'Geist Mono', ui-monospace, monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.16em; color: #8e8a82; } .ds-headline { margin: 0; font-family: Fraunces, Georgia, serif; font-weight: 400; font-size: clamp(1.75rem, 3.5vw, 2.5rem); line-height: 1.15; letter-spacing: -0.01em; color: #1a1a1c; text-wrap: balance; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Cabinet of Working Curiosities",
+    "overview": "The site is a maker's cabinet: an organized exhibition of working artifacts, each one runnable, each one paid for in real engineering. The cabinet is lit by studio light, the type is ink on paper, the accent is the colour of a small ember at the edge of a workbench. Projects are displayed objects. The resume is the curator's notecard. The contact link is the door out. The nav is a morphing pill that tracks where you are in the cabinet: a compact bar naming the current section that expands into the full index on demand.\n\nThe system commits to a warm-paper light surface (with a fully developed dark-mode counterpart), a deep ink ramp for type and structure, and a single ember-warm terracotta accent used sparingly. Typography pairs Fraunces with Geist and Geist Mono: three families on three contrast axes, never substituted for each other.\n\nThis system explicitly rejects two lanes: agency-portfolio-monochrome and generic-dev-portfolio. The committed warm-paper / terracotta / Fraunces / morphing-pill-nav identity is the antibody; drift toward neutral is the failure mode.",
+    "keyCharacteristics": [
+      "Warm-paper light + ink dark with a full token swap driven by the html.dark class (BaseLayout seeds the initial class from prefers-color-scheme; the theme toggle then owns it). New CSS keys off html.dark, not @media prefers-color-scheme.",
+      "One ember-warm accent (Working Heat). Used sparingly on em, links, and hover states.",
+      "Three-family typography: Fraunces + Geist + Geist Mono. Self-hosted via @fontsource-variable.",
+      "Two surface registers: solid paper (.bento) for displayed objects; glass (.glass/.card/.pill) for overlays. A documented inconsistency lives between .card and .bento — consolidation recommended.",
+      "Motion is committed: one ease (cubic-bezier(0.22, 1, 0.36, 1)), uniform 220ms hover transitions, and a staggered .section-fade-in entrance (the entrance is the open reduced-motion gap).",
+      "MorphNav (morphing pill: compact scrollspy bar ↔ open menu) is the signature. A third intro-spark shell exists in the component but is disabled in production (BaseLayout passes intro=false).",
+      "A11y is engineered to the level the craft requires: focus rings on interactive elements (the bento project cards are a deliberate exception, using the .cs-expand reveal), reduced-motion honored across components and motion scripts (the .section-fade-in entrance is the open gap), dark-mode complete. Not AAA-pursuing."
+    ],
+    "rules": [
+      { "name": "The One Ember Rule", "body": "Working Heat appears on ≤8% of any given surface. em is its canonical home — italic + ember + serif inline in sans body. Filling a button or a section bg with the accent breaks the metaphor.", "section": "colors" },
+      { "name": "The Warm Paper Rule", "body": "Light-mode bg is #f6f3ed. The committed warm tint is part of the brand and is deliberately NOT the AI-default warm-cream lane — it lives here as identity. New design moves do not retreat toward #ffffff.", "section": "colors" },
+      { "name": "The Symmetric Dark-Mode Rule", "body": "Every committed token has a dark-mode counterpart in the same role. New components must work in both modes from the first commit; 'dark mode pass later' is a deferred bug.", "section": "colors" },
+      { "name": "The Three-Voice Rule", "body": "Three families, three voices: Fraunces is the writer, Geist is the speaker, Geist Mono is the technician. They never substitute for each other. Headlines never go sans. Body never goes serif (except as em). Labels never go serif.", "section": "typography" },
+      { "name": "The Ember-Italic Rule", "body": "em is rendered as Fraunces italic in Working Heat. This pairing is the system's most distinctive typographic gesture; it carries identity inline with content. Do not override it. Do not use em purely decoratively.", "section": "typography" },
+      { "name": "The Editorial Eyebrow Rule", "body": "The section eyebrow uses Geist Mono uppercase tracked at 0.16em in Type Black Tertiary. It currently ships as unnumbered single-word labels (Project, Index); the intended cadence is section numbering (01 · Hero), which is NOT yet applied — that's the gap. The committed direction is numbered eyebrows; decorative unnumbered eyebrows on every block are the anti-pattern to avoid.", "section": "typography" },
+      { "name": "The Flat-Paper Rule", "body": "Most surfaces sit flat on the page. A bento card with a hairline border is the canonical container; cards lift only on hover, and the lift is short (220ms) and subtle. Heavy ambient shadows on rest-state surfaces are forbidden.", "section": "elevation" },
+      { "name": "The One Signature Rule", "body": "MorphNav is the one signature flourish in the system. New components do not add competing signature treatments. The Liquid Glass module still exists for prototype/demo surfaces but is no longer the nav.", "section": "elevation" },
+      { "name": "The Symmetric Shadow Rule", "body": "Every shadow has a dark-mode counterpart with darker, more diffuse parameters. Light-mode shadows use warm grey; dark-mode shadows use pure black at higher opacity.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep light-mode bg at #f6f3ed (Studio Light, warm paper). This is committed identity, not drift.",
+      "Do keep dark-mode parity: every committed token has a dark-mode counterpart and every new component works in both modes from the first commit.",
+      "Do use Fraunces italic + Working Heat on em for editorial emphasis. It is the system's most distinctive typographic gesture.",
+      "Do pair section eyebrows with section numbering (01 · Hero, 02 · Projects, etc).",
+      "Do use .bento for confident displayed objects.",
+      "Do respect prefers-reduced-motion on every new animation.",
+      "Do keep MorphNav as the one signature flourish (the Liquid Glass module remains available for prototype/demo surfaces but is no longer the nav).",
+      "Do include the dark-mode shadow pair on every new component that has a shadow."
+    ],
+    "donts": [
+      "Don't drift the body bg toward pure white or pure off-white. The warm-paper tint is part of the brand.",
+      "Don't use Working Heat as a surface fill that dominates more than ~8% of a view.",
+      "Don't introduce a fourth type family.",
+      "Don't pair Fraunces with another serif.",
+      "Don't use em for purely decorative italics — it carries identity.",
+      "Don't ship an eyebrow without numbering or clear sequence logic.",
+      "Don't introduce a new card-shaped primitive; .card / .bento drift is already documented.",
+      "Don't apply background-clip: text with a gradient.",
+      "Don't ship motion without a prefers-reduced-motion path (MorphNav, bento cards, and the motion scripts already model this).",
+      "Don't drift toward agency-portfolio-monochrome or generic-dev-portfolio.",
+      "Don't remove or invisibility-style focus rings, except the deliberate bento project-card exception (UA outline suppressed; focus surfaced via the .cs-expand reveal)."
+    ]
+  }
+}
