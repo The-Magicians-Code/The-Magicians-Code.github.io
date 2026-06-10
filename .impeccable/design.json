@@ -68,8 +68,7 @@
       { "name": "duration-hover", "value": "220ms", "purpose": "Card and bento hover transitions (transform + box-shadow + border-color)." },
       { "name": "duration-reveal", "value": "600ms", "purpose": "Entrance reveal (.section-fade-in: opacity + translateY via the fadeIn keyframe, 0.6s)." },
       { "name": "duration-morph", "value": "1000ms", "purpose": "MorphNav shell morph (width/height/border-radius) between intro/compact/open states. Uses its OWN easing cubic-bezier(.44, 0, .08, 1), not the canonical ease." },
-      { "name": "duration-mobile-menu", "value": "300ms", "purpose": "Mobile menu panel transitions (transform + opacity + max-height)." },
-      { "name": "duration-hamburger-step", "value": "150ms", "purpose": "Hamburger bar slide-then-rotate staged sequence (each leg is 150ms with 150ms delay between)." },
+      { "name": "duration-menu-reveal", "value": "300ms", "purpose": "MorphNav open-panel reveal: link rows fade in via opacity + filter (blur) over 300ms." },
       { "name": "reduced-motion", "value": "Interactive components disable transforms/animation under reduce; the .section-fade-in entrance is the open gap.", "purpose": "@media (prefers-reduced-motion: reduce) treatment. Shipping at component level (BentoGrid, MorphNav, TechPill, ThemeToggle, BaseLayout) and in motion scripts (Lenis smooth-scroll, bento-expand, case-study); the .section-fade-in entrance in global.css is NOT yet gated — audit before claiming complete. Apply the pattern to any new animation." }
     ],
     "breakpoints": [
@@ -147,7 +146,7 @@
       "Three-family typography: Fraunces + Geist + Geist Mono. Self-hosted via @fontsource-variable.",
       "Two surface registers: solid paper (.bento) for displayed objects; glass (.glass/.card/.pill) for overlays. A documented inconsistency lives between .card and .bento — consolidation recommended.",
       "Motion is committed: one ease (cubic-bezier(0.22, 1, 0.36, 1)), uniform 220ms hover transitions, and a staggered .section-fade-in entrance (the entrance is the open reduced-motion gap).",
-      "MorphNav (morphing pill: intro spark → compact scrollspy bar → open menu) is the signature.",
+      "MorphNav (morphing pill: compact scrollspy bar ↔ open menu) is the signature. A third intro-spark shell exists in the component but is disabled in production (BaseLayout passes intro=false).",
       "A11y is engineered to the level the craft requires: focus rings on interactive elements (the bento project cards are a deliberate exception, using the .cs-expand reveal), reduced-motion honored across components and motion scripts (the .section-fade-in entrance is the open gap), dark-mode complete. Not AAA-pursuing."
     ],
     "rules": [
@@ -156,7 +155,7 @@
       { "name": "The Symmetric Dark-Mode Rule", "body": "Every committed token has a dark-mode counterpart in the same role. New components must work in both modes from the first commit; 'dark mode pass later' is a deferred bug.", "section": "colors" },
       { "name": "The Three-Voice Rule", "body": "Three families, three voices: Fraunces is the writer, Geist is the speaker, Geist Mono is the technician. They never substitute for each other. Headlines never go sans. Body never goes serif (except as em). Labels never go serif.", "section": "typography" },
       { "name": "The Ember-Italic Rule", "body": "em is rendered as Fraunces italic in Working Heat. This pairing is the system's most distinctive typographic gesture; it carries identity inline with content. Do not override it. Do not use em purely decoratively.", "section": "typography" },
-      { "name": "The Editorial Eyebrow Rule", "body": "The section eyebrow uses Geist Mono uppercase tracked at 0.16em in Type Black Tertiary. It is paired with section numbering (01 · Hero) to signal sequence. Eyebrows without numbering, or eyebrows that decorate every block regardless of structure, are forbidden.", "section": "typography" },
+      { "name": "The Editorial Eyebrow Rule", "body": "The section eyebrow uses Geist Mono uppercase tracked at 0.16em in Type Black Tertiary. It currently ships as unnumbered single-word labels (Project, Index); the intended cadence is section numbering (01 · Hero), which is NOT yet applied — that's the gap. The committed direction is numbered eyebrows; decorative unnumbered eyebrows on every block are the anti-pattern to avoid.", "section": "typography" },
       { "name": "The Flat-Paper Rule", "body": "Most surfaces sit flat on the page. A bento card with a hairline border is the canonical container; cards lift only on hover, and the lift is short (220ms) and subtle. Heavy ambient shadows on rest-state surfaces are forbidden.", "section": "elevation" },
       { "name": "The One Signature Rule", "body": "MorphNav is the one signature flourish in the system. New components do not add competing signature treatments. The Liquid Glass module still exists for prototype/demo surfaces but is no longer the nav.", "section": "elevation" },
       { "name": "The Symmetric Shadow Rule", "body": "Every shadow has a dark-mode counterpart with darker, more diffuse parameters. Light-mode shadows use warm grey; dark-mode shadows use pure black at higher opacity.", "section": "elevation" }

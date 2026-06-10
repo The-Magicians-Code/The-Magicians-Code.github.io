@@ -9,7 +9,7 @@ brand
 A mixed but identifiable audience landing on a single small surface (homepage + projects + resume). Three reader types, no single anchor:
 
 1. **Hiring managers and recruiters** reviewing a portfolio in a queue of dozens. They scan, not read. The resume, the project cards, and the contact path must read clearly at a glance. Their judgment is "yes, schedule a call" or "no, next tab."
-2. **Peer makers** — other engineers and designers who recognize craft when they see it. They evaluate the maker by *how the site behaves*, not just by what it lists. MorphNav is a deliberate flex for this audience: a nav that morphs between an intro spark, a compact scrollspy bar, and an open menu, with a live scroll-progress ring. It announces "this person sweats the interaction details most don't."
+2. **Peer makers** — other engineers and designers who recognize craft when they see it. They evaluate the maker by *how the site behaves*, not just by what it lists. MorphNav is a deliberate flex for this audience: a nav that morphs between a compact scrollspy bar and an open menu, with a live scroll-progress ring tracking your place in the page. It announces "this person sweats the interaction details most don't."
 3. **Potential collaborators or freelance clients** evaluating fit. The site is a soft sales surface. It has to convey range, taste, and a clear path to reach out, without reading as a pitch deck.
 
 All three are arriving at the same URL with the same content. The identity has to be strong enough that the same surface lands for all three — there's no per-audience routing, no segmentation, no "for recruiters" / "for engineers" branches. One voice, three readings.

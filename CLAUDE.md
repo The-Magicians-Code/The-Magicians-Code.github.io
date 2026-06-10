@@ -38,7 +38,7 @@ Precedent: the bento card morph-jump ("expands right, then jumps to center", Saf
 
 ## Liquid Glass Module
 
-> **No longer the nav.** The production nav is now [MorphNav.astro](src/components/MorphNav.astro) (a morphing-pill nav on plain `backdrop-filter` glass). The old `Nav.astro` / `#nav-pill` Liquid Glass nav has been removed. This module still ships and is the most non-obvious system in the repo, but it now only renders on prototype/demo surfaces carrying `class="liquid-glass"` (e.g. [src/pages/musicplayer.astro](src/pages/musicplayer.astro), [src/pages/nav-test.astro](src/pages/nav-test.astro)).
+> **No longer the nav.** The production nav is now [MorphNav.astro](src/components/MorphNav.astro) (a morphing-pill nav on plain `backdrop-filter` glass). The old `Nav.astro` / `#nav-pill` Liquid Glass nav has been removed. This module still ships and is the most non-obvious system in the repo, but it now only renders on the demo surface carrying `class="liquid-glass"`: [src/pages/musicplayer.astro](src/pages/musicplayer.astro) (`#player-pill`). ([src/pages/nav-test.astro](src/pages/nav-test.astro) is a standalone MorphNav harness that deliberately avoids `BaseLayout` + the liquid-glass runtime — not a Liquid Glass surface.)
 
 The effect is a custom CSS+SVG+Canvas pipeline (Snell's-law refraction + specular highlight) that runs on Chromium and gracefully falls back on Safari/Firefox.
 
