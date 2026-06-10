@@ -67,6 +67,22 @@ const noteWords = notes.split(' ').map((raw) => ({
   title="Studio — Tanel Treuberg"
   description="The studio side of The Magician's Code: strategy, interface design and engineering for ideas that deserve a performance."
   canonicalPath="/studio/"
+  navSections={[
+    { id: 'hero', title: 'Studio' },
+    { id: 'work', title: 'Work' },
+    { id: 'craft', title: 'Craft' },
+    { id: 'numbers', title: 'Numbers' },
+    { id: 'notes', title: 'Notes' },
+    { id: 'studio-contact', title: 'Contact' },
+  ]}
+  navLinks={[
+    { label: 'Studio', href: '/studio/#hero', icon: 'lucide:sparkles' },
+    { label: 'Work', href: '/studio/#work', icon: 'lucide:briefcase' },
+    { label: 'Craft', href: '/studio/#craft', icon: 'lucide:layers' },
+    { label: 'Contact', href: '/studio/#studio-contact', icon: 'lucide:mail' },
+    { label: 'Portfolio', href: '/', icon: 'lucide:home' },
+    { label: 'Resume', href: '/Tanel_Treuberg_Software_Engineer.pdf', external: true, icon: 'lucide:file-text' },
+  ]}
 >
   <header class="sp-hero" id="hero" aria-label="Studio intro" data-nav-section="hero">
     <div class="sp-hero-back" aria-hidden="true"></div>
@@ -91,7 +107,7 @@ const noteWords = notes.split(' ').map((raw) => ({
   </header>
 
   <main>
-    <section class="sp-section sp-wrap" id="work" data-nav-section="projects">
+    <section class="sp-section sp-wrap" id="work" data-nav-section="work">
       <div class="sp-section-head" data-sp-reveal>
         <p class="section-eyebrow">01 · Selected work</p>
         <h2>Artifacts, <em>working</em>.</h2>
@@ -125,7 +141,7 @@ const noteWords = notes.split(' ').map((raw) => ({
       </div>
     </section>
 
-    <section class="sp-section sp-wrap" id="craft">
+    <section class="sp-section sp-wrap" id="craft" data-nav-section="craft">
       <div class="sp-section-head" data-sp-reveal>
         <p class="section-eyebrow">02 · Craft</p>
         <h2>What I <em>practice</em>.</h2>
@@ -143,7 +159,7 @@ const noteWords = notes.split(' ').map((raw) => ({
       </div>
     </section>
 
-    <section class="sp-section sp-wrap" id="numbers">
+    <section class="sp-section sp-wrap" id="numbers" data-nav-section="numbers">
       <div class="sp-section-head" data-sp-reveal>
         <p class="section-eyebrow">03 · Numbers</p>
         <h2>The cabinet, <em>counted</em>.</h2>
@@ -160,7 +176,7 @@ const noteWords = notes.split(' ').map((raw) => ({
       </div>
     </section>
 
-    <section class="sp-section sp-wrap sp-notes" id="notes">
+    <section class="sp-section sp-wrap sp-notes" id="notes" data-nav-section="notes">
       <div data-sp-reveal>
         <p class="section-eyebrow">04 · Notes</p>
         <div class="sp-sigil" aria-hidden="true">
@@ -175,7 +191,7 @@ const noteWords = notes.split(' ').map((raw) => ({
       </div>
     </section>
 
-    <section class="sp-contact sp-wrap" id="studio-contact" data-nav-section="contact">
+    <section class="sp-contact sp-wrap" id="studio-contact" data-nav-section="studio-contact">
       <div data-sp-reveal>
         <p class="section-eyebrow">05 · Contact</p>
         <h2>Got something <em>improbable</em>?</h2>
