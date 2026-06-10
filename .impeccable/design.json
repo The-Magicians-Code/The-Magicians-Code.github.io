@@ -58,23 +58,23 @@
       { "name": "glass-outer-dark", "value": "0 20px 60px -20px rgba(0, 0, 0, 0.6)", "purpose": "Diffuse outer drop on .glass in dark mode (deeper, more diffuse)." },
       { "name": "bento-lift-light", "value": "0 16px 40px -16px rgba(26, 26, 28, 0.10)", "purpose": "Bento card hover state, light mode. Pairs with translateY(-2px) and accent-soft border." },
       { "name": "card-lift-light", "value": "0 22px 48px -16px rgba(26, 26, 28, 0.22)", "purpose": "Glass .card hover state, light mode. Stronger than bento because glass competes with content behind." },
-      { "name": "nav-pill-light", "value": "inset 0 0 12px -3px rgba(255, 255, 255, 0.60), 0 18px 30px -10px rgba(0, 0, 0, 0.35)", "purpose": "Liquid Glass nav pill: inner soft glow + lifted drop. Ported from prototypes/liquid-glass-pill." },
+      { "name": "morph-nav-light", "value": "0 18px 60px rgba(26, 26, 28, 0.12)", "purpose": "MorphNav floating pill drop shadow, light mode (--morph-shadow). Soft, wide, diffuse." },
       { "name": "bento-lift-dark", "value": "0 22px 56px -20px rgba(0, 0, 0, 0.55)", "purpose": "Bento card hover state, dark mode. html.dark .bento:hover counterpart of bento-lift-light." },
       { "name": "card-lift-dark", "value": "0 24px 60px -20px rgba(0, 0, 0, 0.7)", "purpose": "Glass .card hover state, dark mode. html.dark .card:hover counterpart of card-lift-light (deeper, more diffuse)." },
-      { "name": "nav-pill-dark", "value": "inset 0 0 12px -3px rgba(255, 255, 255, 0.30), 0 18px 30px -10px rgba(0, 0, 0, 0.55)", "purpose": "Liquid Glass nav pill, dark mode. html.dark #nav-pill counterpart of nav-pill-light (softer inner glow, deeper drop)." }
+      { "name": "morph-nav-dark", "value": "0 20px 60px rgba(0, 0, 0, 0.6)", "purpose": "MorphNav floating pill drop shadow, dark mode. html.dark counterpart of morph-nav-light (deeper)." }
     ],
     "motion": [
       { "name": "ease-canonical", "value": "cubic-bezier(0.22, 1, 0.36, 1)", "purpose": "The system's one ease. ease-out-quart equivalent. Used on card hovers, the section-fade-in entrance, mobile menu transitions. Held as --ease in :root." },
       { "name": "duration-hover", "value": "220ms", "purpose": "Card and bento hover transitions (transform + box-shadow + border-color)." },
       { "name": "duration-reveal", "value": "600ms", "purpose": "Entrance reveal (.section-fade-in: opacity + translateY via the fadeIn keyframe, 0.6s)." },
-      { "name": "duration-nav-bg", "value": "350ms", "purpose": "Nav pill background/border/box-shadow transitions on theme swap and scroll-state changes." },
+      { "name": "duration-morph", "value": "1000ms", "purpose": "MorphNav shell morph (width/height/border-radius) between intro/compact/open states. Uses its OWN easing cubic-bezier(.44, 0, .08, 1), not the canonical ease." },
       { "name": "duration-mobile-menu", "value": "300ms", "purpose": "Mobile menu panel transitions (transform + opacity + max-height)." },
       { "name": "duration-hamburger-step", "value": "150ms", "purpose": "Hamburger bar slide-then-rotate staged sequence (each leg is 150ms with 150ms delay between)." },
       { "name": "reduced-motion", "value": "Interactive components disable transforms/animation under reduce; the .section-fade-in entrance is the open gap.", "purpose": "@media (prefers-reduced-motion: reduce) treatment. Shipping at component level (BentoGrid, MorphNav, TechPill, ThemeToggle, BaseLayout) and in motion scripts (Lenis smooth-scroll, bento-expand, case-study); the .section-fade-in entrance in global.css is NOT yet gated — audit before claiming complete. Apply the pattern to any new animation." }
     ],
     "breakpoints": [
       { "name": "mobile", "value": "540px", "purpose": "Dominant mobile cutoff (max-width): bento padding, blur band, layout collapse. Most-used breakpoint in the codebase." },
-      { "name": "nav-desktop", "value": "641px", "purpose": "min-width gate for the desktop Liquid Glass nav pill; below this the mobile nav + frosted fallback apply." },
+      { "name": "nav-desktop", "value": "641px", "purpose": "min-width gate inside MorphNav for desktop sizing/behavior; also the desktop/mobile threshold used elsewhere in the layout." },
       { "name": "layout-md", "value": "720px", "purpose": "Component layout breakpoint (project / case-study layouts)." },
       { "name": "layout-lg", "value": "880px", "purpose": "Component layout breakpoint (wider grids)." }
     ],
@@ -140,15 +140,15 @@
   ],
   "narrative": {
     "northStar": "The Cabinet of Working Curiosities",
-    "overview": "The site is a maker's cabinet: an organized exhibition of working artifacts, each one runnable, each one paid for in real engineering. The cabinet is lit by studio light, the type is ink on paper, the accent is the colour of a small ember at the edge of a workbench. Projects are displayed objects. The resume is the curator's notecard. The contact link is the door out. The Liquid Glass nav is the wandering eye that refracts whatever it passes over — it is the cabinet realizing it is also a screen.\n\nThe system commits to a warm-paper light surface (with a fully developed dark-mode counterpart), a deep ink ramp for type and structure, and a single ember-warm terracotta accent used sparingly. Typography pairs Fraunces with Geist and Geist Mono — three families on three contrast axes, never substituted for each other.\n\nThis system explicitly rejects two lanes: agency-portfolio-monochrome and generic-dev-portfolio. The committed warm-paper / terracotta / Fraunces / Liquid Glass identity is the antibody; drift toward neutral is the failure mode.",
+    "overview": "The site is a maker's cabinet: an organized exhibition of working artifacts, each one runnable, each one paid for in real engineering. The cabinet is lit by studio light, the type is ink on paper, the accent is the colour of a small ember at the edge of a workbench. Projects are displayed objects. The resume is the curator's notecard. The contact link is the door out. The nav is a morphing pill that tracks where you are in the cabinet: it opens as a spark, settles into a scrollspy bar naming the current section, and expands into the full index on demand.\n\nThe system commits to a warm-paper light surface (with a fully developed dark-mode counterpart), a deep ink ramp for type and structure, and a single ember-warm terracotta accent used sparingly. Typography pairs Fraunces with Geist and Geist Mono: three families on three contrast axes, never substituted for each other.\n\nThis system explicitly rejects two lanes: agency-portfolio-monochrome and generic-dev-portfolio. The committed warm-paper / terracotta / Fraunces / morphing-pill-nav identity is the antibody; drift toward neutral is the failure mode.",
     "keyCharacteristics": [
-      "Warm-paper light + ink dark with full token swap.",
+      "Warm-paper light + ink dark with a full token swap driven by the html.dark class (BaseLayout seeds the initial class from prefers-color-scheme; the theme toggle then owns it). New CSS keys off html.dark, not @media prefers-color-scheme.",
       "One ember-warm accent (Working Heat). Used sparingly on em, links, and hover states.",
       "Three-family typography: Fraunces + Geist + Geist Mono. Self-hosted via @fontsource-variable.",
       "Two surface registers: solid paper (.bento) for displayed objects; glass (.glass/.card/.pill) for overlays. A documented inconsistency lives between .card and .bento — consolidation recommended.",
-      "Motion is committed: one ease (cubic-bezier(0.22, 1, 0.36, 1)), uniform 220ms hover transitions, scroll-reveal gated to prefers-reduced-motion.",
-      "Liquid Glass nav is the signature: SVG feDisplacementMap chained into backdrop-filter with Safari/Firefox frosted-glass fallback.",
-      "A11y is engineered to the level the craft requires: real focus rings, reduced-motion respected, dark-mode complete. Not AAA-pursuing."
+      "Motion is committed: one ease (cubic-bezier(0.22, 1, 0.36, 1)), uniform 220ms hover transitions, and a staggered .section-fade-in entrance (the entrance is the open reduced-motion gap).",
+      "MorphNav (morphing pill: intro spark → compact scrollspy bar → open menu) is the signature.",
+      "A11y is engineered to the level the craft requires: focus rings on interactive elements (the bento project cards are a deliberate exception, using the .cs-expand reveal), reduced-motion honored across components and motion scripts (the .section-fade-in entrance is the open gap), dark-mode complete. Not AAA-pursuing."
     ],
     "rules": [
       { "name": "The One Ember Rule", "body": "Working Heat appears on ≤8% of any given surface. em is its canonical home — italic + ember + serif inline in sans body. Filling a button or a section bg with the accent breaks the metaphor.", "section": "colors" },
@@ -158,7 +158,7 @@
       { "name": "The Ember-Italic Rule", "body": "em is rendered as Fraunces italic in Working Heat. This pairing is the system's most distinctive typographic gesture; it carries identity inline with content. Do not override it. Do not use em purely decoratively.", "section": "typography" },
       { "name": "The Editorial Eyebrow Rule", "body": "The section eyebrow uses Geist Mono uppercase tracked at 0.16em in Type Black Tertiary. It is paired with section numbering (01 · Hero) to signal sequence. Eyebrows without numbering, or eyebrows that decorate every block regardless of structure, are forbidden.", "section": "typography" },
       { "name": "The Flat-Paper Rule", "body": "Most surfaces sit flat on the page. A bento card with a hairline border is the canonical container; cards lift only on hover, and the lift is short (220ms) and subtle. Heavy ambient shadows on rest-state surfaces are forbidden.", "section": "elevation" },
-      { "name": "The One Signature Rule", "body": "Liquid Glass is the one signature elevation move in the system. New components do not add new signature treatments competing with it.", "section": "elevation" },
+      { "name": "The One Signature Rule", "body": "MorphNav is the one signature flourish in the system. New components do not add competing signature treatments. The Liquid Glass module still exists for prototype/demo surfaces but is no longer the nav.", "section": "elevation" },
       { "name": "The Symmetric Shadow Rule", "body": "Every shadow has a dark-mode counterpart with darker, more diffuse parameters. Light-mode shadows use warm grey; dark-mode shadows use pure black at higher opacity.", "section": "elevation" }
     ],
     "dos": [
@@ -168,7 +168,7 @@
       "Do pair section eyebrows with section numbering (01 · Hero, 02 · Projects, etc).",
       "Do use .bento for confident displayed objects.",
       "Do respect prefers-reduced-motion on every new animation.",
-      "Do keep the Liquid Glass module as the one signature elevation move.",
+      "Do keep MorphNav as the one signature flourish (the Liquid Glass module remains available for prototype/demo surfaces but is no longer the nav).",
       "Do include the dark-mode shadow pair on every new component that has a shadow."
     ],
     "donts": [
@@ -180,9 +180,9 @@
       "Don't ship an eyebrow without numbering or clear sequence logic.",
       "Don't introduce a new card-shaped primitive; .card / .bento drift is already documented.",
       "Don't apply background-clip: text with a gradient.",
-      "Don't scrap the Liquid Glass module's Safari/Firefox fallback.",
+      "Don't ship motion without a prefers-reduced-motion path (MorphNav, bento cards, and the motion scripts already model this).",
       "Don't drift toward agency-portfolio-monochrome or generic-dev-portfolio.",
-      "Don't remove or invisibility-style focus rings."
+      "Don't remove or invisibility-style focus rings, except the deliberate bento project-card exception (UA outline suppressed; focus surfaced via the .cs-expand reveal)."
     ]
   }
 }

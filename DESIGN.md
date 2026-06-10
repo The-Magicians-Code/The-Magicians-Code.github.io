@@ -106,12 +106,12 @@ components:
   link-accent:
     backgroundColor: "transparent"
     textColor: "{colors.accent}"
-  nav-pill:
-    backgroundColor: "rgba(255, 255, 255, 0.06)"
+  morph-nav:
+    backgroundColor: "rgba(250, 248, 243, 0.82)"
     textColor: "{colors.ink}"
-    rounded: "{rounded.pill}"
+    rounded: "21.5px"
     padding: "0 16px"
-    height: "64px"
+    height: "43px"
   section-eyebrow:
     backgroundColor: "transparent"
     textColor: "{colors.ink-3}"
@@ -124,13 +124,13 @@ components:
 
 **Creative North Star: "The Cabinet of Working Curiosities"**
 
-The site is a maker's cabinet: an organized exhibition of working artifacts, each one runnable, each one paid for in real engineering. The cabinet is lit by studio light, the type is ink on paper, the accent is the colour of a small ember at the edge of a workbench. Projects are displayed objects. The resume is the curator's notecard. The contact link is the door out. The Liquid Glass nav is the wandering eye that refracts whatever it passes over — it is the cabinet realizing it is also a screen.
+The site is a maker's cabinet: an organized exhibition of working artifacts, each one runnable, each one paid for in real engineering. The cabinet is lit by studio light, the type is ink on paper, the accent is the colour of a small ember at the edge of a workbench. Projects are displayed objects. The resume is the curator's notecard. The contact link is the door out. The nav is a morphing pill that tracks where you are in the cabinet: it opens as a spark, settles into a scrollspy bar naming the current section, and expands into the full index on demand.
 
 The system commits to a warm-paper light surface (with a fully developed dark-mode counterpart), a deep ink ramp for type and structure, and a single ember-warm terracotta accent used sparingly. Typography pairs Fraunces (a contemporary expressive serif) for headlines and `em` emphasis with Geist for body and Geist Mono for technical labels — a three-family system where the families are deliberately on different contrast axes (humanist serif vs. neo-grotesque sans vs. mono) rather than three sans-serifs that fight. Surfaces work in two registers: solid paper (`.bento`) for confident displayed objects, and translucent glass (`.glass`, `.card`, `.pill`) for layered overlays that hint at what's behind them.
 
-The signature is the Liquid Glass module on the nav pill: a custom CSS + SVG + Canvas pipeline that uses `feDisplacementMap` chained into `backdrop-filter` to refract scrolled content through Snell's-law-derived displacement, with a specular sheen across the top edge. The full system is documented in [`docs/superpowers/specs/2026-05-08-liquid-glass-module-design.md`](docs/superpowers/specs/2026-05-08-liquid-glass-module-design.md); Safari and Firefox gracefully fall back to a frosted-glass treatment via pre-paint UA sniff. This is the most explicit statement of the brand: an effect that works because it was engineered, including how it degrades.
+The signature is **MorphNav** ([`MorphNav.astro`](src/components/MorphNav.astro)): a fixed, centered pill that morphs through three shells driven by classes on its root — a brief intro spark (`.is-intro`), a compact 43px bar whose title reel reads out the active section as a scrollspy (`.is-compact`), and an expanded menu of links plus the theme toggle (`.is-open`). A concentric scroll-progress ring sits on its right cap. It's a frosted translucent-paper panel (`backdrop-filter: blur(14px)`, `background: rgba(250, 248, 243, 0.82)`) floating on a soft drop shadow, with an `aria-live` region announcing the active section. The earlier Liquid Glass refraction module (a custom CSS + SVG + Canvas pipeline using `feDisplacementMap` chained into `backdrop-filter`, documented in [`docs/superpowers/specs/2026-05-08-liquid-glass-module-design.md`](docs/superpowers/specs/2026-05-08-liquid-glass-module-design.md)) still lives in the codebase and powers prototype/demo surfaces, but it is no longer the nav. The signature is the morph and the wayfinding: an effect that works because it was engineered.
 
-This system explicitly rejects two lanes: agency-portfolio-monochrome (pure black, oversized cursor, every interaction over-engineered, scroll-driven choreography for every section — performance as identity) and generic-dev-portfolio (Vercel-template-clone, default neo-grotesque, hero + projects-grid + about + email, identity by absence). The committed warm-paper / terracotta / Fraunces / Liquid Glass identity is the antibody to both; drift toward neutral is the failure mode.
+This system explicitly rejects two lanes: agency-portfolio-monochrome (pure black, oversized cursor, every interaction over-engineered, scroll-driven choreography for every section — performance as identity) and generic-dev-portfolio (Vercel-template-clone, default neo-grotesque, hero + projects-grid + about + email, identity by absence). The committed warm-paper / terracotta / Fraunces / morphing-pill-nav identity is the antibody to both; drift toward neutral is the failure mode.
 
 **Key Characteristics:**
 - Warm-paper light + ink dark with a full token swap driven by the `html.dark` class — `BaseLayout` seeds the initial class from `prefers-color-scheme` when no `localStorage` choice exists, then the theme toggle owns it. New component CSS must key off `html.dark`, not `@media (prefers-color-scheme)`, or it ignores the toggle.
@@ -138,7 +138,7 @@ This system explicitly rejects two lanes: agency-portfolio-monochrome (pure blac
 - Three-family typography: Fraunces (serif, headlines + emphasis) + Geist (sans, body) + Geist Mono (technical labels + eyebrows). Self-hosted via `@fontsource-variable`.
 - Two surface registers: solid paper (`.bento`) for displayed objects; glass (`.glass`/`.card`/`.pill`) for overlays. **A documented inconsistency lives here** — see §5.
 - Motion is committed: a single ease (`cubic-bezier(0.22, 1, 0.36, 1)`), uniform 220ms hover transitions on cards, and a staggered `.section-fade-in` entrance (CSS `fadeIn` with `animation-delay`).
-- Liquid Glass nav is the signature. Identity-bearing, not decorative.
+- MorphNav (the morphing pill: intro spark → compact scrollspy bar → open menu) is the signature. Identity-bearing, not decorative.
 - A11y is engineered to the level the craft requires: focus rings on interactive elements — with one deliberate exception, the bento project cards suppress the UA outline and surface focus via the `.cs-expand` reveal instead; reduced-motion honored across the interactive components and motion scripts (Lenis, bento-expand, nav, case-study), though the `.section-fade-in` entrance fade in `global.css` is a known un-gated gap to audit; dark-mode complete via the full token swap. Not AAA-pursuing.
 
 ## 2. Colors: The Studio Palette
@@ -157,7 +157,7 @@ A working space lit warm, with ink on paper and ember at the edges. Two complete
 - **Rule** (`rgba(26, 26, 28, 0.12)` light · `rgba(255, 255, 255, 0.10)` dark) — hairlines, bento borders. Not a tinted fill; a true tonal divider against whatever sits behind it.
 
 ### Glass
-- **Glass Tint** (`rgba(255, 252, 246, 0.45)` light · `rgba(255, 255, 255, 0.04)` dark) — the translucent surface used by `.glass`, `.card`, `.pill`, and the nav fallback. Saturated 140% so refracted colour reads vivid through the blur.
+- **Glass Tint** (`rgba(255, 252, 246, 0.45)` light · `rgba(255, 255, 255, 0.04)` dark) — the translucent surface used by `.glass`, `.card`, and `.pill`. Saturated 140% so colour reads vivid through the blur. (MorphNav uses its own warmer panel tint, `rgba(250, 248, 243, 0.82)`.)
 - **Glass Border** (`rgba(255, 255, 255, 0.55)` light · `rgba(255, 255, 255, 0.10)` dark) — the hairline that gives the glass an edge.
 
 ### Named Rules
@@ -198,20 +198,21 @@ A working space lit warm, with ink on paper and ember at the edges. Two complete
 
 ## 4. Elevation
 
-Two registers, one signature. The cabinet is mostly flat: paper and ink, on a paper page. Where surfaces lift, they lift specifically, and the lift is part of the affordance. The Liquid Glass module is the one signature elevation move that does more than lift — it refracts.
+Two registers, one floating signature. The cabinet is mostly flat: paper and ink, on a paper page. Where surfaces lift, they lift specifically, and the lift is part of the affordance. The one element that floats free of the page is the MorphNav pill, riding a soft, wide, diffuse drop shadow above the scrolling content.
 
 ### Surface Vocabulary
 - **Hairline Borders** (`1px solid var(--rule)`): the default. Bento cards, content rows, dividers.
 - **Glass Inner + Outer** (`inset 0 1px 0 rgba(255, 255, 255, 0.55); 0 16px 40px -16px rgba(26, 26, 28, 0.18)` light · `inset 0 1px 0 rgba(255, 255, 255, 0.10); 0 20px 60px -20px rgba(0, 0, 0, 0.6)` dark): the `.glass` primitive. An inner highlight at the top edge + a diffuse outer drop. Pairs with backdrop-filter.
 - **Bento Lift** (`0 16px 40px -16px rgba(26, 26, 28, 0.10)` light · `0 22px 56px -20px rgba(0, 0, 0, 0.55)` dark): bento hover state. Subtle, on the same warm-shadow palette as the glass primitive.
 - **Card Lift** (`0 22px 48px -16px rgba(26, 26, 28, 0.22)` light · `0 24px 60px -20px rgba(0, 0, 0, 0.7)` dark): glass `.card` hover state. Slightly stronger than bento because the glass surface is competing with what's behind it.
-- **Liquid Glass Refraction** (custom SVG `feDisplacementMap` chained into `backdrop-filter`, plus a specular `::before` sheen, plus the inner-glow + lifted drop combo on `#nav-pill`): the signature. Documented in [`docs/superpowers/specs/2026-05-08-liquid-glass-module-design.md`](docs/superpowers/specs/2026-05-08-liquid-glass-module-design.md). Eight CSS custom properties tune it (`--lg-thickness`, `--lg-bezel`, `--lg-ior`, `--lg-uniform-shift`, `--lg-blur`, `--lg-saturate`, `--lg-svg-saturate`, `--lg-spec-alpha`).
+- **MorphNav Float** (`box-shadow: 0 18px 60px rgba(26, 26, 28, 0.12)` light · deeper in dark, on a `backdrop-filter: blur(14px)` translucent-paper panel): the signature lifted element. The nav pill floats above the page on a soft, wide, diffuse drop; nothing else in the system floats this way.
+- **Liquid Glass Refraction** (module, not currently the nav): a custom SVG `feDisplacementMap` chained into `backdrop-filter` with a specular `::before` sheen, tuned by eight CSS custom properties (`--lg-thickness`, `--lg-bezel`, `--lg-ior`, `--lg-uniform-shift`, `--lg-blur`, `--lg-saturate`, `--lg-svg-saturate`, `--lg-spec-alpha`). It still exists ([spec](docs/superpowers/specs/2026-05-08-liquid-glass-module-design.md)) and powers prototype/demo surfaces, but it no longer renders on the production nav.
 
 ### Named Rules
 
 **The Flat-Paper Rule.** Most surfaces sit flat on the page. A bento card with a hairline border is the canonical container; cards lift only on hover, and the lift is short (220ms) and subtle (`translateY(-2px)` + a small shadow bump). Heavy ambient shadows on rest-state surfaces are forbidden — the cabinet's identity is paper, not stacked cards.
 
-**The One Signature Rule.** Liquid Glass is the one signature elevation move in the system. New components do not add new signature treatments competing with it. If a surface needs to feel special, it does so through typography, colour, or the existing Liquid Glass module — not through a new effect.
+**The One Signature Rule.** MorphNav is the one signature flourish in the system. New components do not add competing signature treatments. If a surface needs to feel special, it does so through typography, colour, or restrained motion — not through a new bespoke effect.
 
 **The Symmetric Shadow Rule.** Every shadow has a dark-mode counterpart with darker, more diffuse parameters. Light-mode shadows use warm grey (`rgba(26, 26, 28, …)`); dark-mode shadows use pure black at higher opacity. Don't ship a shadow without its dark-mode pair.
 
@@ -237,14 +238,14 @@ The system has no `<button>` primitive in the global stylesheet. Nav links, them
 - **Background:** `var(--glass-bg)` (`rgba(255, 252, 246, 0.45)` light / `rgba(255, 255, 255, 0.04)` dark) with `backdrop-filter: blur(20px) saturate(140%)`.
 - **Border:** `1px solid var(--glass-brd)`.
 - **Shadow:** inner highlight + outer diffuse (from `var(--glass-inner)` and `var(--glass-shadow)`).
-- **Role:** translucent panels that float over content (the nav fallback, side-wrap on mobile, pills).
+- **Role:** translucent panels that float over content (mobile side-wrap, pills, and other overlays).
 
 ### Drift: `.card` vs. `.bento`
 The two card-shaped primitives are doing similar work. `.bento` is solid paper, hairline-bordered, performant on grids, and is the homepage's canonical displayed-object container. `.card` is the older `.glass + 14px radius + 28px padding` combo with a hover lift, but its glass background is heavier (forces backdrop-filter compositing) and it competes with `.bento` for "the card" role.
 
 **Recommended Consolidation (improvement, not implemented in this pass):**
 - Keep `.bento` as the canonical solid-paper container.
-- Keep `.glass` as the canonical translucent overlay (used by nav fallback, mobile side-wrap, pills).
+- Keep `.glass` as the canonical translucent overlay (used by the mobile side-wrap, pills, and overlays).
 - Deprecate `.card` as a styled flavor of `.glass` — replace remaining call sites with explicit `.glass` + utility classes when a glass card is genuinely needed.
 - Treat `.bento` and `.glass` as the two-tier system; surface should be intentional, not selected from three near-equivalent options.
 
@@ -254,14 +255,13 @@ The two card-shaped primitives are doing similar work. `.bento` is solid paper, 
 - **Typography:** Geist Mono 12px in Type Black Dim.
 - **Role:** stack pills in the Skills & Tools section (`TechPill.astro`, `SkillIcon.astro`). Inline, never a primary affordance.
 
-### Liquid Glass Nav (signature)
-- **Selector:** `#nav-pill` (and any `class="liquid-glass"` consumer).
-- **Treatment:** custom SVG `feDisplacementMap` filter chained into `backdrop-filter`; specular sheen via `::before` linear gradient (anchored by `isolation: isolate`); inner glow + lifted drop shadow on the pill itself.
-- **Tuning:** eight CSS custom properties (see Elevation §4 list).
-- **Fallback:** `html.lg-no-svg-backdrop` (set by pre-paint UA sniff in [`BaseLayout.astro`](src/layouts/BaseLayout.astro)) swaps the pill to the standard `.glass` treatment on Safari and Firefox.
-- **Imperative API:** `window.__lg.refresh(el)` re-rasterizes after CSS-var changes.
-- **Dev tuner:** `⌘/Ctrl+Shift+G` toggles the in-dev sliders panel (see `Nav.astro`).
-- **Mobile (<641px):** nav pill is unstyled (`background: none !important`); a separate `.side-wrap` glass treatment wraps brand + actions instead. The Liquid Glass effect is desktop-only by default; `data-lg-mobile` opts a consumer in.
+### MorphNav (signature)
+- **Component:** [`MorphNav.astro`](src/components/MorphNav.astro), rendered once in [`BaseLayout.astro`](src/layouts/BaseLayout.astro). A fixed, centered floating pill: `position: fixed; top: 20px; left: 50%; width: min(350px, calc(100vw - 40px)); border-radius: 21.5px`.
+- **Surface:** translucent paper panel (`background: rgba(250, 248, 243, 0.82)`, `backdrop-filter: blur(14px)`) on a soft drop (`0 18px 60px rgba(26, 26, 28, 0.12)`). Tokens derive from the site theme (`--ink`, `--rule`, `--accent`).
+- **Three shells** (CSS classes on `.morph-nav`): `.is-intro` — a tiny squircle showing only a spark glyph, held for `introMs` on load; `.is-compact` — the 43px bar showing the active section title + progress glyph; `.is-open` — the expanded panel with the vertical nav links and the theme toggle (height measured at runtime).
+- **Scrollspy + progress:** a title reel (`.morph-title-window`) cross-fades the active section title, driven by an `IntersectionObserver` over page elements carrying `data-nav-section`. A concentric SVG progress ring (`.morph-progress-ring`) on the right cap tracks scroll.
+- **A11y:** the title reel is `aria-hidden` (decorative); the active section is announced through a `.morph-live` `aria-live="polite"` region. The trigger carries `aria-expanded` / `aria-controls`; the collapsed panel is `inert`. A `@media (prefers-reduced-motion: reduce)` block tones the morph down.
+- **Note:** the older Liquid Glass `#nav-pill` / `Nav.astro` nav has been replaced by MorphNav. The Liquid Glass module (CSS + runtime) still ships and is used on prototype/demo surfaces (`musicplayer`, `nav-test`), but it is not the production nav.
 
 ### Mobile Menu
 - **Container:** `#mobile-menu .panel`, `min(680px, 92%)` wide, `border-radius: 16px`.
@@ -287,7 +287,7 @@ The two card-shaped primitives are doing similar work. `.bento` is solid paper, 
 - **Do** pair section eyebrows with section numbering (`01 · Hero`, `02 · Projects`, etc). The numbering is what distinguishes this from AI-scaffolding eyebrows.
 - **Do** use `.bento` for confident displayed objects (homepage grid, project cards, displayed artifacts).
 - **Do** respect `prefers-reduced-motion` on every new animation. The interactive components (BentoGrid, MorphNav, TechPill, ThemeToggle) and motion scripts (Lenis, bento-expand) already model this; the `.section-fade-in` entrance is the outstanding gap — extend the discipline to it and any new transitions.
-- **Do** keep the Liquid Glass module as the one signature elevation move. Tune its CSS vars; don't replace it; don't add a competing signature effect.
+- **Do** keep MorphNav as the one signature flourish. Extend its disposition; don't add a competing bespoke signature effect. (The Liquid Glass module remains available for prototype/demo surfaces, but it's no longer the nav.)
 - **Do** include the dark-mode shadow pair on every new component that has a shadow. Light-mode shadows use warm grey; dark-mode shadows use pure black at higher opacity.
 
 ### Don't:
@@ -299,7 +299,7 @@ The two card-shaped primitives are doing similar work. `.bento` is solid paper, 
 - **Don't** ship an eyebrow without numbering or a clear sequence logic. The editorial eyebrow is a system, not a decoration.
 - **Don't** introduce a new card-shaped primitive. The system already has `.card` / `.bento` drift to consolidate; a third would compound the problem.
 - **Don't** apply `background-clip: text` with a gradient. Gradient text is forbidden globally (cross-register absolute ban).
-- **Don't** scrap the Liquid Glass module's Safari / Firefox fallback. The graceful-degradation contract is part of the brand promise.
+- **Don't** ship motion without a `prefers-reduced-motion` path. MorphNav, the bento cards, and the motion scripts already model this; new animations must too. (Graceful degradation, the way the Liquid Glass module's Safari/Firefox fallback was built, is part of the brand promise.)
 - **Don't** drift toward agency-portfolio-monochrome: pure black bg, no colour, oversized cursor, scroll-driven choreography for every section. PRODUCT.md names this as the strongest anti-reference; the committed warm-paper / terracotta identity is the antibody.
 - **Don't** drift toward generic-dev-portfolio: black/white minimal, default Geist with no opinion, hero + projects-grid + about + email. Identity comes from being non-default.
 - **Don't** remove or invisibility-style focus rings. Even with the looser a11y posture (PRODUCT.md §Accessibility), focus rings are table stakes.
