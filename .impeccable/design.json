@@ -47,8 +47,8 @@
       "title": { "displayName": "Title (Fraunces 500)", "purpose": "Card titles, dialog headers, project card titles." },
       "body": { "displayName": "Body (Geist)", "purpose": "All paragraphs. Cap line length 65–75ch. text-wrap: pretty on long prose." },
       "body-emphasis": { "displayName": "Ember Emphasis (Fraunces italic in Working Heat)", "purpose": "The em element — the system's most distinctive typographic gesture. Italic + ember + serif inline in sans body." },
-      "label": { "displayName": "Label (Geist 500)", "purpose": "Nav links, button labels." },
-      "eyebrow": { "displayName": "Editorial Eyebrow (Geist Mono uppercase)", "purpose": "Section markers. ALWAYS paired with numbering (01 · Hero) to distinguish from AI-scaffolding eyebrows." },
+      "label": { "displayName": "Label (Geist 500)", "purpose": "Button labels and link labels. DEVIATION: MorphNav renders its own labels in Inter (a 4th family outside the three-voice system), flagged for reconciliation to Geist." },
+      "eyebrow": { "displayName": "Editorial Eyebrow (Geist Mono uppercase)", "purpose": "Section markers. Currently ship UNNUMBERED (Project, Index); the intended cadence is numbering (01 · Hero) to distinguish from AI-scaffolding eyebrows, but that is NOT yet applied — it is the gap." },
       "mono": { "displayName": "Mono (Geist Mono)", "purpose": "Tech pills, metadata, code spans." }
     },
     "shadows": [
@@ -64,7 +64,7 @@
       { "name": "morph-nav-dark", "value": "0 20px 60px rgba(0, 0, 0, 0.6)", "purpose": "MorphNav floating pill drop shadow, dark mode. html.dark counterpart of morph-nav-light (deeper)." }
     ],
     "motion": [
-      { "name": "ease-canonical", "value": "cubic-bezier(0.22, 1, 0.36, 1)", "purpose": "The system's one ease. ease-out-quart equivalent. Used on card hovers, the section-fade-in entrance, mobile menu transitions. Held as --ease in :root." },
+      { "name": "ease-canonical", "value": "cubic-bezier(0.22, 1, 0.36, 1)", "purpose": "The system's nominal ease (ease-out-quart equivalent), held as --ease in :root. Used on card/bento hover transitions (220ms). NOTE: not universal — .section-fade-in uses plain ease-out, and MorphNav's morph + panel reveal use their own cubic-beziers." },
       { "name": "duration-hover", "value": "220ms", "purpose": "Card and bento hover transitions (transform + box-shadow + border-color)." },
       { "name": "duration-reveal", "value": "600ms", "purpose": "Entrance reveal (.section-fade-in: opacity + translateY via the fadeIn keyframe, 0.6s)." },
       { "name": "duration-morph", "value": "1000ms", "purpose": "MorphNav shell morph (width/height/border-radius) between intro/compact/open states. Uses its OWN easing cubic-bezier(.44, 0, .08, 1), not the canonical ease." },
@@ -139,7 +139,7 @@
   ],
   "narrative": {
     "northStar": "The Cabinet of Working Curiosities",
-    "overview": "The site is a maker's cabinet: an organized exhibition of working artifacts, each one runnable, each one paid for in real engineering. The cabinet is lit by studio light, the type is ink on paper, the accent is the colour of a small ember at the edge of a workbench. Projects are displayed objects. The resume is the curator's notecard. The contact link is the door out. The nav is a morphing pill that tracks where you are in the cabinet: it opens as a spark, settles into a scrollspy bar naming the current section, and expands into the full index on demand.\n\nThe system commits to a warm-paper light surface (with a fully developed dark-mode counterpart), a deep ink ramp for type and structure, and a single ember-warm terracotta accent used sparingly. Typography pairs Fraunces with Geist and Geist Mono: three families on three contrast axes, never substituted for each other.\n\nThis system explicitly rejects two lanes: agency-portfolio-monochrome and generic-dev-portfolio. The committed warm-paper / terracotta / Fraunces / morphing-pill-nav identity is the antibody; drift toward neutral is the failure mode.",
+    "overview": "The site is a maker's cabinet: an organized exhibition of working artifacts, each one runnable, each one paid for in real engineering. The cabinet is lit by studio light, the type is ink on paper, the accent is the colour of a small ember at the edge of a workbench. Projects are displayed objects. The resume is the curator's notecard. The contact link is the door out. The nav is a morphing pill that tracks where you are in the cabinet: a compact bar naming the current section that expands into the full index on demand.\n\nThe system commits to a warm-paper light surface (with a fully developed dark-mode counterpart), a deep ink ramp for type and structure, and a single ember-warm terracotta accent used sparingly. Typography pairs Fraunces with Geist and Geist Mono: three families on three contrast axes, never substituted for each other.\n\nThis system explicitly rejects two lanes: agency-portfolio-monochrome and generic-dev-portfolio. The committed warm-paper / terracotta / Fraunces / morphing-pill-nav identity is the antibody; drift toward neutral is the failure mode.",
     "keyCharacteristics": [
       "Warm-paper light + ink dark with a full token swap driven by the html.dark class (BaseLayout seeds the initial class from prefers-color-scheme; the theme toggle then owns it). New CSS keys off html.dark, not @media prefers-color-scheme.",
       "One ember-warm accent (Working Heat). Used sparingly on em, links, and hover states.",

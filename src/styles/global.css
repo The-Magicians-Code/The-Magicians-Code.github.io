@@ -125,8 +125,10 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--ink);
 }
 
-/* Editorial italic emphasis — accent-tinted */
+/* Editorial italic emphasis — Fraunces italic, accent-tinted (the
+   "Ember-Italic" gesture: serif italic + ember inline in sans body). */
 em {
+  font-family: var(--font-serif);
   font-style: italic;
   color: var(--accent);
 }
