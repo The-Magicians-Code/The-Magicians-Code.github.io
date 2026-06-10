@@ -1,0 +1,31 @@
+---
+// Contact finale + site footer. The CTA is magnetic on fine pointers
+// (--mx/--my from studio.ts); the clock shares [data-clock] with the nav.
+const year = new Date().getFullYear();
+---
+
+<footer class="s-footer" id="contact">
+  <div class="s-footer-glow" aria-hidden="true"></div>
+  <div class="s-wrap">
+    <div class="s-footer-head" data-reveal>
+      <p class="s-eyebrow s-hero-eyebrow">Your move</p>
+      <h2>Let’s make<br /><em>magic</em> together.</h2>
+      <a class="s-footer-cta" href="mailto:studio@themagicianscode.dev" data-magnetic>
+        studio@themagicianscode.dev <i>→</i>
+      </a>
+    </div>
+
+    <nav class="s-footer-links" data-reveal aria-label="Studio links">
+      <a href="https://github.com/The-Magicians-Code/" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://www.linkedin.com/in/taneltreuberg/" target="_blank" rel="noopener">LinkedIn</a>
+      <a href="/">Portfolio</a>
+      <a href="#top">Back to top ↑</a>
+    </nav>
+
+    <div class="s-footer-bottom">
+      <p class="s-label">© 2024–{year} Arcana</p>
+      <a class="s-label" href="/">A studio by The Magician’s Code</a>
+      <p class="s-label s-nav-clock">Tallinn <span data-clock>--:--</span></p>
+    </div>
+  </div>
+</footer>

@@ -1,0 +1,20 @@
+---
+// Infinite discipline ticker. The sequence is rendered twice and the track
+// animates to -50%, so the loop is seamless at any viewport width.
+const items = ['Design', 'Product', 'Engineering', 'Motion', 'Strategy', 'Identity', 'Systems'];
+---
+
+<div class="s-marquee" aria-hidden="true">
+  <div class="s-marquee-track">
+    {[0, 1].map(() => (
+      <div class="s-marquee-seq">
+        {items.map((item) => (
+          <>
+            <span>{item}</span>
+            <i>✦</i>
+          </>
+        ))}
+      </div>
+    ))}
+  </div>
+</div>
