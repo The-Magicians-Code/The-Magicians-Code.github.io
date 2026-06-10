@@ -1,0 +1,197 @@
+---
+// /studio — a studio-framed prototype built FROM the production design
+// system: BaseLayout (MorphNav, theme, Lenis, SiteFooter), the global.css
+// tokens/primitives, DESIGN.md's named rules (One Ember, Flat Paper,
+// Symmetric Dark Mode, numbered eyebrows, first-person voice), and the real
+// project collection for the work section. Generated ink/ember artwork comes
+// from scripts/studio-assets/generate.mjs in light + dark variants.
+import { getCollection } from 'astro:content';
+import { Image } from 'astro:assets';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { titleToHtml, titleToText } from '../../lib/title';
+import flowLight from '../../assets/studio/flow.svg';
+import flowDark from '../../assets/studio/flow.dark.svg';
+import sigilLight from '../../assets/studio/sigil.svg';
+import sigilDark from '../../assets/studio/sigil.dark.svg';
+import '../../styles/studio-paper.css';
+
+const projects = (await getCollection('projects'))
+  .filter((p) => !p.data.draft)
+  .sort((a, b) => a.data.order - b.data.order);
+
+const crafts = [
+  {
+    index: '01',
+    name: 'Strategy & direction',
+    description:
+      'Naming, positioning, product narrative. I find the sharpest version of the idea before a single pixel moves.',
+  },
+  {
+    index: '02',
+    name: 'Interface & identity',
+    description:
+      'Typography-first design with a point of view — built to be remembered, and working in both themes from the first commit.',
+  },
+  {
+    index: '03',
+    name: 'Engineering',
+    description:
+      'Backend, infrastructure and applied ML that hold up in production. The trick has to work every night.',
+  },
+  {
+    index: '04',
+    name: 'Motion & interaction',
+    description:
+      'Choreography only where it serves wayfinding, hierarchy, or affordance. Magic, not magic tricks.',
+  },
+];
+
+const numbers = [
+  { value: 3, pad: 2, label: 'Named projects' },
+  { value: 2, pad: 2, label: 'Themes, first-class' },
+  { value: 3, pad: 2, label: 'Type voices' },
+  { value: 100, pad: 3, label: 'Lighthouse, typically' },
+];
+
+// Words wrapped in *asterisks* render as the ember-italic em voice.
+const notes =
+  'Good software is a performance. The rehearsal is invisible — *that is the point.* ' +
+  'I sweat the seams until they disappear, and what remains looks like *magic.*';
+const noteWords = notes.split(' ').map((raw) => ({
+  text: raw.replace(/\*/g, ''),
+  em: raw.startsWith('*') || raw.endsWith('*'),
+}));
+---
+
+<BaseLayout
+  title="Studio — Tanel Treuberg"
+  description="The studio side of The Magician's Code: strategy, interface design and engineering for ideas that deserve a performance."
+  canonicalPath="/studio/"
+>
+  <header class="sp-hero" id="hero" aria-label="Studio intro" data-nav-section="hero">
+    <div class="sp-hero-back" aria-hidden="true"></div>
+    <div class="sp-hero-flow" data-sp-parallax="-0.1" aria-hidden="true">
+      <img class="sp-art-light" src={flowLight.src} alt="" width={flowLight.width} height={flowLight.height} loading="eager" decoding="async" />
+      <img class="sp-art-dark" src={flowDark.src} alt="" width={flowDark.width} height={flowDark.height} loading="eager" decoding="async" />
+    </div>
+    <div class="sp-hero-inner">
+      <p class="section-eyebrow">00 · The studio</p>
+      <h1>A one-person studio for <em>improbable</em> software.</h1>
+      <p class="sp-hero-sub">
+        I'm Tanel — The Magician's Code. I take ideas from first sketch to shipped system:
+        positioning, interface, and the engineering that makes the trick work every night.
+      </p>
+      <ul class="sp-hero-pills">
+        <li class="pill">Strategy</li>
+        <li class="pill">Design</li>
+        <li class="pill">Engineering</li>
+      </ul>
+    </div>
+    <div class="sp-scroll-cue" aria-hidden="true"><span>Scroll</span></div>
+  </header>
+
+  <main>
+    <section class="sp-section sp-wrap" id="work" data-nav-section="projects">
+      <div class="sp-section-head" data-sp-reveal>
+        <p class="section-eyebrow">01 · Selected work</p>
+        <h2>Artifacts, <em>working</em>.</h2>
+      </div>
+      <div class="sp-work-list">
+        {projects.map((project, i) => (
+          <article class="sp-work-item" data-sp-reveal>
+            <a class="sp-work-cover" href={`/projects/${project.id}/`} aria-label={`${titleToText(project.data.title)} case study`}>
+              {project.data.cover && (
+                <Image
+                  src={project.data.cover}
+                  alt={`${titleToText(project.data.title)} cover`}
+                  widths={[480, 800, 1200]}
+                  sizes="(min-width: 880px) 56vw, 92vw"
+                  loading={i === 0 ? 'eager' : 'lazy'}
+                  data-sp-parallax="0.05"
+                />
+              )}
+            </a>
+            <div class="sp-work-meta">
+              <p class="sp-work-index">{String(i + 1).padStart(2, '0')} ⁄ case study</p>
+              <h3 set:html={titleToHtml(project.data.title)} />
+              <p>{project.data.description}</p>
+              <div class="sp-work-links">
+                <a class="link-accent" href={`/projects/${project.id}/`}>Read the case study →</a>
+                <a class="link-accent" href={project.data.repoUrl} target="_blank" rel="noopener">Repository ↗</a>
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+
+    <section class="sp-section sp-wrap" id="craft">
+      <div class="sp-section-head" data-sp-reveal>
+        <p class="section-eyebrow">02 · Craft</p>
+        <h2>What I <em>practice</em>.</h2>
+      </div>
+      <div class="sp-craft-list" data-sp-reveal-group>
+        {crafts.map((craft) => (
+          <div class="sp-craft" data-sp-reveal>
+            <p class="sp-craft-idx">{craft.index}</p>
+            <div class="sp-craft-body">
+              <h3>{craft.name}</h3>
+              <p>{craft.description}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <section class="sp-section sp-wrap" id="numbers">
+      <div class="sp-section-head" data-sp-reveal>
+        <p class="section-eyebrow">03 · Numbers</p>
+        <h2>The cabinet, <em>counted</em>.</h2>
+      </div>
+      <div class="sp-numbers" data-sp-reveal-group>
+        {numbers.map((stat) => (
+          <div class="sp-number" data-sp-reveal>
+            <p class="sp-number-value" data-sp-counter={stat.value} data-pad={stat.pad}>
+              {String(stat.value).padStart(stat.pad, '0')}
+            </p>
+            <p class="sp-number-label">{stat.label}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <section class="sp-section sp-wrap sp-notes" id="notes">
+      <div data-sp-reveal>
+        <p class="section-eyebrow">04 · Notes</p>
+        <div class="sp-sigil" aria-hidden="true">
+          <img class="sp-art-light" src={sigilLight.src} alt="" width={sigilLight.width} height={sigilLight.height} loading="lazy" decoding="async" />
+          <img class="sp-art-dark" src={sigilDark.src} alt="" width={sigilDark.width} height={sigilDark.height} loading="lazy" decoding="async" />
+        </div>
+        <p class="sp-notes-text" data-sp-words>
+          {noteWords.map((word) => (
+            <><span class={word.em ? 'w w-em' : 'w'}>{word.text}</span>{' '}</>
+          ))}
+        </p>
+      </div>
+    </section>
+
+    <section class="sp-contact sp-wrap" id="studio-contact" data-nav-section="contact">
+      <div data-sp-reveal>
+        <p class="section-eyebrow">05 · Contact</p>
+        <h2>Got something <em>improbable</em>?</h2>
+        <p class="sp-contact-sub">
+          Tell me what you're trying to pull off. I take on one collaboration at a time,
+          and I answer every serious email.
+        </p>
+        <a class="sp-contact-cta" href="mailto:tanel.treuberg@gmail.com">
+          tanel.treuberg@gmail.com <i>→</i>
+        </a>
+        <p class="sp-contact-alt">or start with the <a class="link-accent" href="/">portfolio</a></p>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    import '../../scripts/studio-paper';
+  </script>
+</BaseLayout>
