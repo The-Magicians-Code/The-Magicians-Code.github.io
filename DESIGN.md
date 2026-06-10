@@ -133,13 +133,13 @@ The signature is the Liquid Glass module on the nav pill: a custom CSS + SVG + C
 This system explicitly rejects two lanes: agency-portfolio-monochrome (pure black, oversized cursor, every interaction over-engineered, scroll-driven choreography for every section — performance as identity) and generic-dev-portfolio (Vercel-template-clone, default neo-grotesque, hero + projects-grid + about + email, identity by absence). The committed warm-paper / terracotta / Fraunces / Liquid Glass identity is the antibody to both; drift toward neutral is the failure mode.
 
 **Key Characteristics:**
-- Warm-paper light + ink dark with full token swap for `prefers-color-scheme`.
+- Warm-paper light + ink dark with a full token swap driven by the `html.dark` class — `BaseLayout` seeds the initial class from `prefers-color-scheme` when no `localStorage` choice exists, then the theme toggle owns it. New component CSS must key off `html.dark`, not `@media (prefers-color-scheme)`, or it ignores the toggle.
 - One ember-warm accent. Used sparingly on `em`, links, and hover states — never as a fill that dominates a surface.
 - Three-family typography: Fraunces (serif, headlines + emphasis) + Geist (sans, body) + Geist Mono (technical labels + eyebrows). Self-hosted via `@fontsource-variable`.
 - Two surface registers: solid paper (`.bento`) for displayed objects; glass (`.glass`/`.card`/`.pill`) for overlays. **A documented inconsistency lives here** — see §5.
-- Motion is committed: a single ease (`cubic-bezier(0.22, 1, 0.36, 1)`), uniform 220ms hover transitions on cards, scroll-reveal via IntersectionObserver gated to `prefers-reduced-motion`.
+- Motion is committed: a single ease (`cubic-bezier(0.22, 1, 0.36, 1)`), uniform 220ms hover transitions on cards, and a staggered `.section-fade-in` entrance (CSS `fadeIn` with `animation-delay`).
 - Liquid Glass nav is the signature. Identity-bearing, not decorative.
-- A11y is engineered to the level the craft requires: real focus rings, reduced-motion respected, dark-mode complete. Not AAA-pursuing.
+- A11y is engineered to the level the craft requires: focus rings on interactive elements — with one deliberate exception, the bento project cards suppress the UA outline and surface focus via the `.cs-expand` reveal instead; reduced-motion honored across the interactive components and motion scripts (Lenis, bento-expand, nav, case-study), though the `.section-fade-in` entrance fade in `global.css` is a known un-gated gap to audit; dark-mode complete via the full token swap. Not AAA-pursuing.
 
 ## 2. Colors: The Studio Palette
 
@@ -176,7 +176,7 @@ A working space lit warm, with ink on paper and ember at the edges. Two complete
 
 **Character:** Three families on three contrast axes (humanist serif vs. neo-grotesque sans vs. monospace), pairing on difference rather than similarity. The serif carries editorial gravity for headlines and accent emphasis. The sans carries body text without ego. The mono carries technical labels and the section-eyebrow system.
 
-**Note:** Fraunces is named in the brand-register reference's [reflex-reject list](.claude/skills/impeccable/reference/brand.md) — it is a training-data default in 2026. That list applies to *new design choices*; here, Fraunces is part of a committed identity (the variable file has just been added to `package.json` via `@fontsource-variable/fraunces`), and identity-preservation wins. New surfaces stay on this pairing. New unrelated brand briefs (not this project) would skip Fraunces by default.
+**Note:** Fraunces is named in the brand-register reference's reflex-reject list (the impeccable skill's brand register — a tooling reference, not checked into this repo) — it is a training-data default in 2026. That list applies to *new design choices*; here, Fraunces is part of a committed identity (the variable file has just been added to `package.json` via `@fontsource-variable/fraunces`), and identity-preservation wins. New surfaces stay on this pairing. New unrelated brand briefs (not this project) would skip Fraunces by default.
 
 ### Hierarchy
 - **Display** (Fraunces 400, `clamp(2.5rem, 6vw, 4.75rem)`, line-height 1.05, tracking -0.015em): hero headlines, primary identity moments. Use `text-wrap: balance` to keep multi-line displays even.
@@ -269,9 +269,9 @@ The two card-shaped primitives are doing similar work. `.bento` is solid paper, 
 - **Triggered by:** the hamburger button (visible <641px), which animates two `.line` bars into an X via paired translate-then-rotate transitions (slide-together first, rotate second on open; reverse on close).
 
 ### Cards (project, bento, reveal)
-- **ProjectCard** (`ProjectCard.astro`): displayed-object treatment using the `.bento` primitive.
+- **ProjectCard** (`ProjectCard.astro`): renders `<article class="card project-card">` — it currently sits on the glass `.card` primitive, **not** `.bento`. Treat this as known drift; the intended target for displayed-object cards is `.bento`.
 - **BentoCard** (`BentoCard.astro`): the homepage grid item, with the modal case-study expansion described in the `body.bento-open` rule.
-- **`.reveal-up`**: a scroll-reveal opacity + translateY transition gated to `IntersectionObserver`. Respects `prefers-reduced-motion`.
+- **`.section-fade-in`**: the entrance reveal — opacity + translateY via the `fadeIn` keyframe (0.6s, `animation-delay` stagger), in `global.css`. It is **not** currently gated for `prefers-reduced-motion` (no reduce override) — a known a11y gap to close.
 
 ### Editorial Eyebrow
 - **Selector:** `.section-eyebrow`.
@@ -286,7 +286,7 @@ The two card-shaped primitives are doing similar work. `.bento` is solid paper, 
 - **Do** use Fraunces italic + Working Heat on `em` for editorial emphasis. It is the system's most distinctive typographic gesture; treat it as voice, not decoration.
 - **Do** pair section eyebrows with section numbering (`01 · Hero`, `02 · Projects`, etc). The numbering is what distinguishes this from AI-scaffolding eyebrows.
 - **Do** use `.bento` for confident displayed objects (homepage grid, project cards, displayed artifacts).
-- **Do** respect `prefers-reduced-motion` on every new animation. `.reveal-up` already models this; extend the same discipline to any new transitions.
+- **Do** respect `prefers-reduced-motion` on every new animation. The interactive components (BentoGrid, MorphNav, TechPill, ThemeToggle) and motion scripts (Lenis, bento-expand) already model this; the `.section-fade-in` entrance is the outstanding gap — extend the discipline to it and any new transitions.
 - **Do** keep the Liquid Glass module as the one signature elevation move. Tune its CSS vars; don't replace it; don't add a competing signature effect.
 - **Do** include the dark-mode shadow pair on every new component that has a shadow. Light-mode shadows use warm grey; dark-mode shadows use pure black at higher opacity.
 

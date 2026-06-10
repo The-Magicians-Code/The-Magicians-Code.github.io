@@ -20,7 +20,7 @@ All three are arriving at the same URL with the same content. The identity has t
 
 - Show *who built it* by being itself — the implementation is part of the portfolio. The Liquid Glass nav is not a UI decoration; it's a piece of the argument that this person knows how to build interesting things, all the way down.
 - Frame the work — three named projects (organic-flow, strato-pi, yolo-dualdev) with detail pages each linking to a real artifact / repo.
-- Carry a résumé surface (`/resume`) for the reader who needs the linear chronology.
+- Carry a résumé surface — the build-time PDF served at `/Tanel_Treuberg_Software_Engineer.pdf` and linked from the nav (there is no HTML `/resume` route; the styled page was intentionally removed in favor of the ATS-minimal generated PDF) — for the reader who needs the linear chronology.
 - Open a clear contact path for the next step.
 
 Success in the next 1–3 months: document the visual system that already exists, identify and close the gaps where the existing implementation has drifted from its own intent, and ship a couple of targeted polish passes on the surfaces that most affect first impressions (homepage, project detail, resume).
@@ -39,7 +39,7 @@ Tone: confident but not performative. The work argues for itself; the copy doesn
 
 - **Agency-portfolio-monochrome (the Stripe / Linear school).** Pure black or pure white, big serif headlines, oversized cursor, every interaction over-engineered, scroll-driven choreography for every section. Reads as performance: every flourish announces itself. This is the strongest aversion. The existing cream-paper / terracotta / Geist + Fraunces identity is the antibody — the site has a *specific* color world that an agency-monochrome doesn't.
 - **Generic dev portfolio (Vercel-template-clone).** Black/white minimal, default Inter or Geist with no opinion, hero name + tagline + projects grid + about + email link. Looks like every GitHub-page portfolio. Identity comes from being non-default; the site already commits to a non-default direction and should not drift back.
-- **Resume-as-website (CV-on-HTML).** Sidebar bio, skills-as-progress-bars, chronological work-history table. The `/resume` page exists for the reader who needs it, but the site as a whole is not a CV; the homepage isn't a chronology.
+- **Resume-as-website (CV-on-HTML).** Sidebar bio, skills-as-progress-bars, chronological work-history table. The résumé ships as a downloadable PDF (`/Tanel_Treuberg_Software_Engineer.pdf`) for the reader who needs it — deliberately *not* an HTML page. The site as a whole is not a CV; the homepage isn't a chronology.
 - **Notion-template / pretty-Markdown personal site.** Soft pastels, generic emoji headers, vague-aspirational copy, no committed POV. The opposite of this site's actual identity.
 
 If a new design move could plausibly come from any of those four lanes, rework it.
@@ -58,7 +58,7 @@ If a new design move could plausibly come from any of those four lanes, rework i
 
 In scope:
 - **WCAG 2.2 A** as the floor for static content (resume, project copy, contact). The reader who can't see the Liquid Glass nav can still read the page.
-- **Real focus rings** on every interactive element. Removed-or-invisible focus rings are forbidden.
+- **Real focus rings** on interactive elements, with one deliberate exception: the bento project cards suppress the UA outline and surface focus through the `.cs-expand` affordance reveal instead (the default outline read as a stray boundary line on the dark cover). Removed-or-invisible focus rings are otherwise forbidden — anywhere lacking a bespoke focus affordance keeps its ring.
 - **`prefers-reduced-motion: reduce`** respected on any new motion. The existing animations should be audited for this; the Liquid Glass module's runtime fallback already handles the no-SVG-backdrop case for Safari/Firefox, which is the same disposition extended to motion preference.
 - **Dark mode works end-to-end.** The token swap in `global.css` is real and complete; new components must respect both modes.
 - **Keyboard navigation** is supported on the nav, the project cards, and the contact links.
