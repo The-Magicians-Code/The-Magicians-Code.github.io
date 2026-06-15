@@ -362,6 +362,16 @@ function doOpen(card: HTMLElement): void {
     openState.appendedBodyWrap = wrap;
     openState.pillToggle = pillToggle;
 
+    // Reset the scroll container to the top on every open. .card-body is a
+    // persistent element (only its appended content is cloned/removed per
+    // lifecycle), so its scrollTop survives a close → reopen: scroll down,
+    // close, reopen, and the case study would re-open mid-scroll with the
+    // eyebrow stranded under the top progressive-blur band. The close-time
+    // reset (parent.scrollTop = 0 in doCleanup) only fires inside the
+    // disabled sticky-header branch, so it never runs — pin it here once the
+    // fresh content is in place so every open starts at the true top.
+    body.scrollTop = 0;
+
     // STICKY HEADER DISABLED — eyebrow + title + pill flow as normal
     // scroll content (their natural positions inside .card-body) and
     // scroll with the body. Keeping the code commented intentionally so
@@ -531,6 +541,14 @@ function closeCaseStudy(): void {
       if (eyebrow) parent.insertBefore(eyebrow, stickyHeader);
       if (title) parent.insertBefore(title, stickyHeader);
       stickyHeader.remove();
+      // NOTE: this scrollTop reset is dead while the sticky header is disabled
+      // (stickyHeader is always null, so this branch never runs). It is NOT the
+      // reset that keeps every open starting at the top — that lives in
+      // mountContent (`body.scrollTop = 0`), which fires once the fresh content
+      // is mounted and the container is actually scrollable. Resetting here
+      // (at cleanup, after the scrollable content has already been removed)
+      // would be a no-op the browser can later undo via scroll restoration.
+      // Kept for if/when the sticky header is re-enabled.
       parent.scrollTop = 0;
     }
 
