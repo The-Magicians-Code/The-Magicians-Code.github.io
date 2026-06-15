@@ -67,6 +67,7 @@
 ### Glass
 - https://themagicianscode.dev/prototypes/liquid-glass-pill/
 - https://kube.io/blog/liquid-glass-css-svg/
+- [Progressive blur (Paco Coursey)](https://paco.me/craft/blur) — stacked masked `backdrop-filter` layers (the technique already used by the `.card-blur` edge strips). Also documents the Chromium bug where `overflow: hidden` + `border-radius` + `backdrop-filter` clip before filtering (hard edge) — fix is to clip with `mask` instead of `overflow: hidden`. Relevant again if the expanded cards ever keep rounded corners (currently they morph to `border-radius: 0`, which sidesteps it).
 
 ## Prompting
 - https://thariqs.github.io/html-effectiveness/
