@@ -541,6 +541,14 @@ function closeCaseStudy(): void {
       if (eyebrow) parent.insertBefore(eyebrow, stickyHeader);
       if (title) parent.insertBefore(title, stickyHeader);
       stickyHeader.remove();
+      // NOTE: this scrollTop reset is dead while the sticky header is disabled
+      // (stickyHeader is always null, so this branch never runs). It is NOT the
+      // reset that keeps every open starting at the top — that lives in
+      // mountContent (`body.scrollTop = 0`), which fires once the fresh content
+      // is mounted and the container is actually scrollable. Resetting here
+      // (at cleanup, after the scrollable content has already been removed)
+      // would be a no-op the browser can later undo via scroll restoration.
+      // Kept for if/when the sticky header is re-enabled.
       parent.scrollTop = 0;
     }
 
