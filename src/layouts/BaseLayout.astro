@@ -4,6 +4,7 @@ import '../styles/global.css';
 import '../styles/liquid-glass.css';
 
 import MorphNav from '../components/MorphNav.astro';
+import type { NavLink, NavSection } from '../components/MorphNav.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 
 interface Props {
@@ -13,7 +14,29 @@ interface Props {
   ogType?: string;
   includePersonSchema?: boolean;
   robots?: string;
+  /** Override the MorphNav scrollspy sections / menu links for pages whose
+   *  anchors live outside the homepage (e.g. /studio). Defaults below keep
+   *  every existing page exactly as it was. */
+  navSections?: NavSection[];
+  navLinks?: NavLink[];
 }
+
+const DEFAULT_NAV_SECTIONS: NavSection[] = [
+  { id: 'hero', title: 'Home' },
+  { id: 'about', title: 'About' },
+  { id: 'projects', title: 'Work' },
+  { id: 'skills-tools', title: 'Stack' },
+  { id: 'contact', title: 'Contact' },
+];
+
+const DEFAULT_NAV_LINKS: NavLink[] = [
+  { label: 'Home', href: '/#hero', icon: 'lucide:home' },
+  { label: 'About', href: '/#about', icon: 'lucide:user' },
+  { label: 'Work', href: '/#projects', icon: 'lucide:briefcase' },
+  { label: 'Stack', href: '/#skills-tools', icon: 'lucide:layers' },
+  { label: 'Resume', href: '/Tanel_Treuberg_Software_Engineer.pdf', external: true, icon: 'lucide:file-text' },
+  { label: 'Contact', href: '/#contact', icon: 'lucide:mail' },
+];
 
 const {
   title,
@@ -22,6 +45,8 @@ const {
   ogType = 'website',
   includePersonSchema = false,
   robots = 'index, follow',
+  navSections = DEFAULT_NAV_SECTIONS,
+  navLinks = DEFAULT_NAV_LINKS,
 } = Astro.props;
 
 const siteUrl = Astro.site?.toString().replace(/\/$/, '') ?? 'https://themagicianscode.dev';
@@ -220,21 +245,8 @@ const personSchema = {
   </head>
   <body class="pt-28">
     <MorphNav
-      sections={[
-        { id: 'hero', title: 'Home' },
-        { id: 'about', title: 'About' },
-        { id: 'projects', title: 'Work' },
-        { id: 'skills-tools', title: 'Stack' },
-        { id: 'contact', title: 'Contact' },
-      ]}
-      links={[
-        { label: 'Home', href: '/#hero', icon: 'lucide:home' },
-        { label: 'About', href: '/#about', icon: 'lucide:user' },
-        { label: 'Work', href: '/#projects', icon: 'lucide:briefcase' },
-        { label: 'Stack', href: '/#skills-tools', icon: 'lucide:layers' },
-        { label: 'Resume', href: '/Tanel_Treuberg_Software_Engineer.pdf', external: true, icon: 'lucide:file-text' },
-        { label: 'Contact', href: '/#contact', icon: 'lucide:mail' },
-      ]}
+      sections={navSections}
+      links={navLinks}
       themeToggle={true}
       intro={false}
       autoOpen={false}
