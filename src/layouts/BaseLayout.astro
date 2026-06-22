@@ -67,10 +67,13 @@ const personSchema = {
         flash of unstyled / not-yet-positioned content. Render-blocking inline so it
         applies before any other CSS or paint; the themed <html> background still
         shows (a calm colour, not blank). Revealed by the script below on
-        fonts.ready + 2 frames; the 2.5s CSS animation + 1.8s JS timeout are the
-        no-JS / failure safety nets so it can never stay hidden. */}
+        fonts.ready + 2 frames; the 1s CSS animation + 1s JS timeout are the
+        no-JS / failure safety nets so it can never stay hidden. Kept short
+        because the latin fonts are font-display:optional (no swap reflow to
+        wait out), so the only thing the gate masks now is the first JS
+        layout/parallax pass — a couple of frames, not seconds. */}
     <style is:inline>
-      body { opacity: 0; animation: site-reveal 0.4s ease 2.5s forwards; }
+      body { opacity: 0; animation: site-reveal 0.4s ease 1s forwards; }
       html.is-ready body { opacity: 1; animation: none; transition: opacity 0.4s ease; }
       @keyframes site-reveal { to { opacity: 1; } }
       @media (prefers-reduced-motion: reduce) {
@@ -79,7 +82,7 @@ const personSchema = {
            opacity flip in both paths. The JS path flips via .is-ready with no
            transition; the no-JS failsafe flips at the same 2.5s safety mark with
            a ~0s animation (not a shortened fade). */
-        body { animation: site-reveal 0.01s linear 2.5s forwards; }
+        body { animation: site-reveal 0.01s linear 1s forwards; }
         html.is-ready body { transition: none; }
       }
     </style>
@@ -163,7 +166,7 @@ const personSchema = {
       // Reveal the page (see the hide style above) once it's styled + the layout
       // has settled: on document.fonts.ready (the font-swap reflow + bento-title
       // positioning gate) plus two frames so the first parallax/layout pass has
-      // run. Hard 1.8s timeout so a slow/failed font load never blocks paint.
+      // run. Hard 1s timeout so a slow/failed font load never blocks paint.
       (function () {
         var revealed = false;
         function reveal() {
@@ -178,7 +181,7 @@ const personSchema = {
           if (document.fonts && document.fonts.ready) document.fonts.ready.then(settle, reveal);
           else settle();
         } catch (_) { reveal(); }
-        setTimeout(reveal, 1800);
+        setTimeout(reveal, 1000);
       })();
     </script>
 
