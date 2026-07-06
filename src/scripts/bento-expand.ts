@@ -97,7 +97,14 @@ function vtEligible(card: HTMLElement): boolean {
   return (
     vtRequested() &&
     typeof (document as { startViewTransition?: unknown }).startViewTransition === 'function' &&
-    !prefersReducedMotion()
+    !prefersReducedMotion() &&
+    // Cover-only, by design: has-cover cards morph via a single VT cross-fade
+    // (pretext is disabled for them — see pretext.ts). The VT path deliberately
+    // does NOT drive pretextAnimateCard / syncStackSubtitleX, so a coverless
+    // .cs-card or the .stack-card would capture its title words at resting
+    // (scattered/left) positions instead of the centered modal layout. Fall
+    // back to the (correct) FLIP path for those rather than render them wrong.
+    card.classList.contains('has-cover')
   );
 }
 
@@ -637,6 +644,10 @@ function doOpenVT(card: HTMLElement): void {
   };
 
   const vt = startViewTransition(() => {
+    // Defensive: bail if a close interleaved before this capture ran (mirrors
+    // every other deferred body in this file). Unreachable by human input —
+    // the gap to this callback is sub-frame — but keeps the invariant uniform.
+    if (!openState || openState.closing) return;
     // Captured "new" (expanded) state — flushed synchronously.
     card.parentNode?.insertBefore(placeholder, card);
     // VT owns the morph; the live element must NOT re-animate geometry on the
@@ -677,6 +688,14 @@ function doOpenVT(card: HTMLElement): void {
   const afterOpen = (): void => {
     if (!openState || openState.closing || openState.card !== card) return;
     card.style.removeProperty('view-transition-name');
+    // Lift the transition suppression now the open morph is done: .vt-open kills
+    // ALL descendant transitions, so leaving it on through the open lifecycle
+    // would freeze the in-modal interaction animations — the TL;DR↔Detailed pill
+    // and the content-mode opacity cross-fade (BentoGrid.astro). (The edge blur
+    // strips snap by design — a 0ms backdrop-filter radius change — so they're
+    // unaffected either way.) It's re-added in closeCaseStudyVT for the close
+    // morph, scoping suppression to just the two morph beats.
+    card.classList.remove('vt-open');
     mountChromeVT(card);
   };
   if (vt) vt.finished.then(afterOpen).catch(afterOpen);
@@ -708,6 +727,9 @@ function closeCaseStudyVT(state: OpenState): void {
   backdrop.removeEventListener('click', closeCaseStudy);
   document.removeEventListener('keydown', escClose);
 
+  // Re-arm transition suppression for the close morph (afterOpen removed it once
+  // the open settled, so the modal's own transitions could run while it sat open).
+  card.classList.add('vt-open');
   // Re-assert the name so the collapsed state is captured as the same group.
   card.style.setProperty('view-transition-name', VT_NAME);
 
@@ -737,10 +759,14 @@ function closeCaseStudyVT(state: OpenState): void {
     card.style.removeProperty('view-transition-name');
     document.documentElement.style.removeProperty('--vt-dur');
     card.blur();
-    if (document.fonts?.check?.('24px Fraunces')) pretextRenderCard(card, getViewportRect);
-    syncTitleRestY(card);
+    // Null openState BEFORE the re-measure (mirrors the FLIP cleanup order): so
+    // syncTitleRestY sees the card as idle (card !== openState?.card) and resets
+    // --modal-w to the resting value, instead of skipping it via the open-card
+    // guard and leaving the open-time --modal-w in the inline style.
     unlockBodyScroll();
     openState = null;
+    if (document.fonts?.check?.('24px Fraunces')) pretextRenderCard(card, getViewportRect);
+    syncTitleRestY(card);
   };
   if (vt) vt.finished.then(afterClose).catch(afterClose);
   else afterClose();
@@ -1092,9 +1118,20 @@ function onResize(): void {
       openState.morphDur +
       (openState.card.classList.contains('has-cover') ? COVER_MORPH_DELAY : 0);
     if (performance.now() - openState.openedAt < guardWindow) return;
-    // The VT-prototype open keeps the card as a plain fixed full-viewport box;
-    // skip the FLIP recenter snap (which assumes the FLIP inline-style regime).
-    if (openState.vt) return;
+    // VT-prototype open: the card is a plain fixed full-viewport box (with its
+    // own inline transition:none), not the FLIP is-resizing regime. Re-apply the
+    // fixed box to the NEW viewport so a rotate / iOS address-bar collapse keeps
+    // it covering the screen (jumps instantly — no is-resizing choreography).
+    if (openState.vt) {
+      const { card: vtCard } = openState;
+      const nvr = getViewportRect();
+      setModalWidthVar(vtCard, nvr);
+      vtCard.style.top = `${nvr.top}px`;
+      vtCard.style.left = `${nvr.left}px`;
+      vtCard.style.width = `${nvr.width}px`;
+      vtCard.style.height = `${nvr.height}px`;
+      return;
+    }
     const { card } = openState;
 
     card.classList.add('is-resizing');
