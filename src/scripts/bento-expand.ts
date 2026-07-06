@@ -44,6 +44,10 @@ interface OpenState {
      through the morph so it animates (instead of snapping to 0 on mobile under
      the lift's transition:none), and is restored to this on collapse. */
   restRadius: string;
+  /* PROTOTYPE: set when this lifecycle was opened via the View Transitions API
+     path (doOpenVT) rather than the hand-rolled FLIP (doOpen). Routes the close
+     + resize handlers to their VT variants. Undefined on the FLIP path. */
+  vt?: boolean;
 }
 
 function makeBlurStrip(position: 'top' | 'bottom'): HTMLElement {
@@ -66,6 +70,36 @@ const CONTENT_CLOSE_DUR = 280;
 
 const prefersReducedMotion = (): boolean =>
   window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// ── View Transitions API prototype (opt-in) ───────────────────────────────
+// Enable by adding ?vt or #vt to the URL (mirrors the fps-monitor's ?fps gate),
+// so the same Netlify preview build can A/B the compositor-driven VT morph
+// against the hand-rolled FLIP on the FPS monitor. Falls back to the FLIP path
+// when the browser lacks startViewTransition (Safari < 18.2) or under reduced
+// motion (which keeps the existing, well-tested reduced path).
+interface ViewTransitionLike {
+  finished: Promise<void>;
+  ready: Promise<void>;
+  updateCallbackDone: Promise<void>;
+  skipTransition(): void;
+}
+function startViewTransition(update: () => void): ViewTransitionLike | null {
+  const doc = document as Document & {
+    startViewTransition?: (cb: () => void) => ViewTransitionLike;
+  };
+  return doc.startViewTransition ? doc.startViewTransition(update) : null;
+}
+const VT_NAME = 'bento-expand';
+function vtRequested(): boolean {
+  return /[?#&]vt\b/.test(location.search + location.hash);
+}
+function vtEligible(card: HTMLElement): boolean {
+  return (
+    vtRequested() &&
+    typeof (document as { startViewTransition?: unknown }).startViewTransition === 'function' &&
+    !prefersReducedMotion()
+  );
+}
 
 // Effective morph duration for a card from its computed --morph-dur token
 // (handles both "760ms" and "0.76s"). Falls back to MORPH_DUR.
@@ -146,7 +180,8 @@ function makeCloseIcon(): SVGSVGElement {
 // ── Open ─────────────────────────────────────────────────────────────────
 function openCaseStudy(card: HTMLElement): void {
   if (openState) return;
-  doOpen(card);
+  if (vtEligible(card)) doOpenVT(card);
+  else doOpen(card);
 }
 
 function doOpen(card: HTMLElement): void {
@@ -461,6 +496,256 @@ function doOpen(card: HTMLElement): void {
   document.addEventListener('keydown', escClose);
 }
 
+// ── View Transitions API open path (PROTOTYPE, opt-in via ?vt) ─────────────
+// A single-beat compositor cross-fade of the whole card (cover included) via
+// document.startViewTransition, instead of the FLIP path's hand-rolled layout-
+// property morph. The card carries .vt-open for the duration so its internal
+// CSS transitions are suppressed (see src/styles/global.css) — the ONLY motion
+// is the VT group morph + root cross-fade.
+
+// Synchronous mirror of doOpen's mountContent body cloning, WITHOUT the
+// is-swapping / is-content-in opacity-fade choreography (the VT snapshot cross-
+// fades the whole card in one beat). Appends the pill + rendered wrap into
+// .card-body and returns them so the close path can remove them.
+function buildBodyContentVT(
+  card: HTMLElement,
+): { wrap: HTMLElement; pillToggle: HTMLElement | null } | null {
+  const body = card.querySelector<HTMLElement>('.card-body');
+  const source = card.querySelector<HTMLElement>('.bento-card-body');
+  if (!body || !source) return null;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'bento-card-body-rendered';
+  const initialMode = readMode();
+  applyMode(wrap, initialMode);
+  for (const child of source.children) {
+    wrap.appendChild(child.cloneNode(true) as HTMLElement);
+  }
+  const pillToggle = card.hasAttribute('data-no-mode-toggle')
+    ? null
+    : buildPillToggle(wrap, initialMode);
+  if (pillToggle) body.appendChild(pillToggle);
+  body.appendChild(wrap);
+
+  const deepwikiUrl = card.dataset.deepwikiUrl;
+  if (deepwikiUrl) {
+    const footer = document.createElement('p');
+    footer.className = 'cs-nerds-footer';
+    const link = document.createElement('a');
+    link.href = deepwikiUrl;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = 'For the nerds — full architecture wiki →';
+    footer.appendChild(link);
+    wrap.appendChild(footer);
+  }
+
+  for (const child of wrap.children) {
+    (child as HTMLElement).classList.add('body-para');
+  }
+  body.scrollTop = 0;
+  return { wrap, pillToggle };
+}
+
+// PROTOTYPE: dedupe with the mountChrome closure in doOpen once the VT path is
+// proven. Kept as a parallel module-level fn (mountChrome is a doOpen-local
+// closure over its own `card`) so refactoring can't destabilise the FLIP path.
+function mountChromeVT(card: HTMLElement): void {
+  if (!openState || openState.closing || openState.card !== card) return;
+  if (openState.closeBtn) return; // idempotent
+
+  const closeBtn = document.createElement('button');
+  closeBtn.type = 'button';
+  closeBtn.className = 'cs-close';
+  closeBtn.setAttribute('aria-label', 'Close case study');
+  closeBtn.appendChild(makeCloseIcon());
+  closeBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    closeCaseStudy();
+  });
+  card.appendChild(closeBtn);
+  openState.closeBtn = closeBtn;
+
+  const blurTop = makeBlurStrip('top');
+  const blurBottom = makeBlurStrip('bottom');
+  card.appendChild(blurTop);
+  card.appendChild(blurBottom);
+  openState.blurTop = blurTop;
+  openState.blurBottom = blurBottom;
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      if (!openState || openState.closing || openState.card !== card) return;
+      blurTop.classList.add('is-on');
+      blurBottom.classList.add('is-on');
+    });
+  });
+}
+
+function doOpenVT(card: HTMLElement): void {
+  const backdrop = document.querySelector<HTMLElement>('[data-bento-backdrop]');
+  if (!backdrop) return;
+
+  const vr = getViewportRect();
+  setModalWidthVar(card, vr);
+
+  const originalInline = card.getAttribute('style') ?? '';
+  const cs = getComputedStyle(card);
+  const restRadius = cs.borderTopLeftRadius;
+  const morphDur = readMorphDur(card);
+
+  // Build the grid placeholder DETACHED — inserted inside the VT capture
+  // callback so it isn't part of the "old" snapshot.
+  const rect = card.getBoundingClientRect();
+  const placeholder = document.createElement('div');
+  placeholder.className = 'bento-card-placeholder';
+  placeholder.style.gridColumnStart = cs.gridColumnStart;
+  placeholder.style.gridColumnEnd = cs.gridColumnEnd;
+  placeholder.style.gridRowStart = cs.gridRowStart;
+  placeholder.style.gridRowEnd = cs.gridRowEnd;
+  placeholder.style.height = `${rect.height}px`;
+  placeholder.style.aspectRatio = 'auto';
+
+  // Drive the pseudo-element animation duration so the VT morph matches the
+  // FLIP --morph-dur for a duration-fair A/B.
+  document.documentElement.style.setProperty('--vt-dur', `${morphDur}ms`);
+
+  // Suppress the card's internal CSS transitions for the whole VT lifecycle.
+  card.classList.add('vt-open');
+  // Name the card BEFORE the snapshot capture so the VT engine morphs it as a
+  // named group across the old/new states.
+  card.style.setProperty('view-transition-name', VT_NAME);
+
+  // Create openState now so the capture callback + later close can see it.
+  openState = {
+    card,
+    placeholder,
+    closeBtn: null,
+    backdrop,
+    blurTop: null,
+    blurBottom: null,
+    originalInline,
+    appendedBodyWrap: null,
+    pillToggle: null,
+    stickyHeader: null,
+    detachScrollCollapse: null,
+    closing: false,
+    openedAt: performance.now(),
+    morphDur,
+    restRadius,
+    vt: true,
+  };
+
+  const vt = startViewTransition(() => {
+    // Captured "new" (expanded) state — flushed synchronously.
+    card.parentNode?.insertBefore(placeholder, card);
+    // VT owns the morph; the live element must NOT re-animate geometry on the
+    // main thread, so lift it with transition off to its final fixed box.
+    card.style.transition = 'none';
+    card.style.position = 'fixed';
+    card.style.top = `${vr.top}px`;
+    card.style.left = `${vr.left}px`;
+    card.style.width = `${vr.width}px`;
+    card.style.height = `${vr.height}px`;
+    card.style.margin = '0';
+    card.style.transform = 'none';
+    card.style.aspectRatio = 'auto';
+    card.style.borderRadius = '0px';
+    // is-content-in is REQUIRED here, not just for the FLIP reveal beat: on
+    // has-cover cards the modal content (.card-eyebrow/.card-title/pill/prose)
+    // defaults to opacity:0 and is revealed ONLY by .is-content-in (see
+    // BentoGrid.astro). Without it the VT "new" snapshot captures an empty
+    // cover-only box with all text invisible. .vt-open suppresses the reveal
+    // transition, so it lands instantly and VT cross-fades it via the snapshot.
+    card.classList.add('is-expanding', 'is-expanded', 'is-content-in');
+    card.setAttribute('aria-expanded', 'true');
+    backdrop.classList.add('is-open');
+    lockBodyScroll();
+    const built = buildBodyContentVT(card);
+    if (built && openState) {
+      openState.appendedBodyWrap = built.wrap;
+      openState.pillToggle = built.pillToggle;
+    }
+  });
+
+  // Escape + backdrop-click close even during the morph.
+  backdrop.addEventListener('click', closeCaseStudy, { once: true });
+  document.addEventListener('keydown', escClose);
+
+  // After the morph settles, drop the name + mount chrome (close button + blur
+  // strips) off the transition.
+  const afterOpen = (): void => {
+    if (!openState || openState.closing || openState.card !== card) return;
+    card.style.removeProperty('view-transition-name');
+    mountChromeVT(card);
+  };
+  if (vt) vt.finished.then(afterOpen).catch(afterOpen);
+  else afterOpen();
+}
+
+function closeCaseStudyVT(state: OpenState): void {
+  const {
+    card,
+    placeholder,
+    backdrop,
+    closeBtn,
+    blurTop,
+    blurBottom,
+    originalInline,
+    appendedBodyWrap,
+    pillToggle,
+    restRadius,
+  } = state;
+  void restRadius; // VT owns the radius morph; unused here (kept for parity).
+
+  // Blur BEFORE the morph so the UA focus outline doesn't trace the shrink.
+  card.blur();
+  const focused = document.activeElement as HTMLElement | null;
+  if (focused && card.contains(focused)) focused.blur();
+
+  card.setAttribute('aria-expanded', 'false');
+
+  backdrop.removeEventListener('click', closeCaseStudy);
+  document.removeEventListener('keydown', escClose);
+
+  // Re-assert the name so the collapsed state is captured as the same group.
+  card.style.setProperty('view-transition-name', VT_NAME);
+
+  const vt = startViewTransition(() => {
+    // Captured "new" (collapsed) state.
+    appendedBodyWrap?.remove();
+    pillToggle?.remove();
+    closeBtn?.remove();
+    blurTop?.remove();
+    blurBottom?.remove();
+    backdrop.classList.remove('is-open');
+    // Drop is-content-in too (added in doOpenVT) so the collapsed snapshot
+    // hides the has-cover modal content again (opacity:0) and the resting
+    // .cover-resttitle shows through — otherwise the card-title stays visible
+    // in the collapsed state.
+    card.classList.remove('is-expanded', 'is-expanding', 'is-content-in');
+    // Restore resting inline styles. This wipes the inline view-transition-name,
+    // so re-set it immediately after so the collapsed snapshot keeps the group.
+    if (originalInline) card.setAttribute('style', originalInline);
+    else card.removeAttribute('style');
+    card.style.setProperty('view-transition-name', VT_NAME);
+    placeholder.remove();
+  });
+
+  const afterClose = (): void => {
+    card.classList.remove('vt-open');
+    card.style.removeProperty('view-transition-name');
+    document.documentElement.style.removeProperty('--vt-dur');
+    card.blur();
+    if (document.fonts?.check?.('24px Fraunces')) pretextRenderCard(card, getViewportRect);
+    syncTitleRestY(card);
+    unlockBodyScroll();
+    openState = null;
+  };
+  if (vt) vt.finished.then(afterClose).catch(afterClose);
+  else afterClose();
+}
+
 function escClose(e: KeyboardEvent): void {
   if (e.key === 'Escape') closeCaseStudy();
 }
@@ -470,6 +755,8 @@ function closeCaseStudy(): void {
   if (!openState || openState.closing) return;
   openState.closing = true;
   const state = openState;
+  // PROTOTYPE: route VT-opened lifecycles to the compositor-driven close.
+  if (state.vt) { closeCaseStudyVT(state); return; }
   const { card, placeholder, closeBtn, backdrop, blurTop, blurBottom, originalInline, appendedBodyWrap, pillToggle, stickyHeader, detachScrollCollapse } = state;
   detachScrollCollapse?.();
 
@@ -805,6 +1092,9 @@ function onResize(): void {
       openState.morphDur +
       (openState.card.classList.contains('has-cover') ? COVER_MORPH_DELAY : 0);
     if (performance.now() - openState.openedAt < guardWindow) return;
+    // The VT-prototype open keeps the card as a plain fixed full-viewport box;
+    // skip the FLIP recenter snap (which assumes the FLIP inline-style regime).
+    if (openState.vt) return;
     const { card } = openState;
 
     card.classList.add('is-resizing');

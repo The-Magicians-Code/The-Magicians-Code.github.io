@@ -497,3 +497,25 @@ body {
 html {
   scroll-padding-top: 7rem;
 }
+
+/* ── View Transitions API prototype (opt-in via ?vt) ──────────────────────
+   The bento expand/collapse morph, when routed through document.startViewTransition
+   (see src/scripts/bento-expand.ts), animates on the compositor. While a VT open/
+   close is in flight the card carries .vt-open; suppress its internal CSS
+   transitions so the ONLY animation is the compositor-driven group morph + root
+   cross-fade (otherwise the live element re-runs the layout-property morph on the
+   main thread under the snapshot — the very cost this prototype removes). */
+.bento-card.vt-open,
+.bento-card.vt-open * {
+  transition: none !important;
+}
+/* Match the VT group + root cross-fade to the FLIP --morph-dur (set on :root as
+   --vt-dur by the runtime) so the A/B comparison is duration-fair. */
+::view-transition-group(bento-expand) {
+  animation-duration: var(--vt-dur, 520ms);
+  animation-timing-function: cubic-bezier(0.77, 0, 0.175, 1);
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--vt-dur, 520ms);
+}
