@@ -1,0 +1,322 @@
+/* ============================================================================
+   Cover-as-hero → pinned header (scroll-driven)
+
+   Shared, single source of truth for two surfaces:
+     • the expanded bento modal  (scroller = the nested .card-body)
+     • /projects/[slug]           (scroller = the document)
+
+   The header-height "shrink" is produced by LAYOUT, not by animating any size:
+   a tall normal-flow .cs-hero scrolls away while a slim position:sticky
+   .cs-headerbar remains pinned. On top of that, native CSS scroll-driven
+   animations polish the transition using ONLY transform + opacity, so the
+   whole effect runs on the compositor thread (Chrome + Safari 26.4+). No
+   height / width / top / font-size is ever animated → the documented WebKit
+   aspect-ratio morph-jump structurally cannot recur here, and there is no
+   per-frame layout/paint.
+
+   Firefox stable (scroll timelines behind a flag) and prefers-reduced-motion
+   fall through the @supports/@media gate to a clean STATIC hero.
+
+   Design: docs/superpowers/specs/2026-07-07-cover-hero-shrink-to-header-design.md
+   This file is imported globally (not Astro-scoped) because the modal nodes
+   are built in JS (bento-expand.ts) and can't receive scoped hashes — the same
+   reason all existing modal CSS uses :global().
+   ============================================================================ */
+
+/* ── Tokens (per-surface overridable) ─────────────────────────────────────
+   Declared on both elements so their descendants inherit a consistent set
+   (the two are siblings, so neither inherits from the other). */
+.cs-hero,
+.cs-headerbar {
+  --cs-hero-h: clamp(190px, 36vh, 300px); /* resting hero band height */
+  --cs-bar-h: 64px;                       /* pinned header bar height */
+  --cs-bar-top: 0px;                      /* sticky pin offset */
+  --cs-gap: 0px;                          /* scroller's flex row-gap (modal = 12) */
+  --cs-pad-x: 48px;                       /* horizontal padding of the content column */
+  --cs-shrink: calc(var(--cs-hero-h) - var(--cs-bar-h)); /* scroll px of the transition */
+}
+@media (max-width: 540px) {
+  .cs-hero,
+  .cs-headerbar {
+    --cs-hero-h: clamp(170px, 30vh, 250px);
+    --cs-bar-h: 56px;
+    --cs-pad-x: 22px;
+  }
+}
+
+/* ── Hero band (normal flow — scrolls away) ───────────────────────────── */
+.cs-hero {
+  position: relative;
+  width: 100%;
+  height: var(--cs-hero-h);
+  overflow: hidden;
+  isolation: isolate;
+}
+.cs-hero picture {
+  display: contents; /* the cloned <picture> wrapper is layout-transparent */
+}
+.cs-hero-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 42%; /* match the resting .cover-img crop */
+  transform-origin: center;
+  will-change: transform, opacity;
+}
+.cs-hero-overlay {
+  position: absolute;
+  inset: 0;
+  /* Same dark scrim as the resting .has-cover .cover-overlay, for legibility. */
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.34) 0%,
+    rgba(0, 0, 0, 0.12) 38%,
+    rgba(0, 0, 0, 0.22) 62%,
+    rgba(0, 0, 0, 0.60) 100%
+  );
+}
+.cs-hero-title {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0 var(--cs-pad-x);
+  color: #fff;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: clamp(26px, 5vw, 40px);
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  text-shadow: 0 1px 18px rgba(0, 0, 0, 0.32);
+  transform-origin: center;
+  will-change: transform, opacity;
+}
+/* Project titles read as one uniform white weight — drop the *…* accent. */
+.cs-hero-title em {
+  font-style: normal;
+  color: inherit;
+}
+
+/* ── Header bar (STATIC base = hidden; enhanced = sticky, see @supports) ── */
+.cs-headerbar {
+  display: none;
+}
+.cs-headerbar::before {
+  /* Frosted-glass background with a feathered bottom edge — a compact
+     progressive-blur "skirt" under the header (the top progressive-blur strip
+     is suppressed for cover cards; this replaces it). Radius is STATIC (never
+     animated — animating backdrop-filter radius re-rasterizes per frame on
+     WebKit, a trap this repo already reverted); only opacity is scroll-driven. */
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: calc(100% + 16px);
+  background: color-mix(in oklab, var(--paper) 82%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  backdrop-filter: blur(14px) saturate(140%);
+  box-shadow: 0 1px 0 var(--glass-brd, rgba(0, 0, 0, 0.06));
+  -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 16px), transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 16px), transparent 100%);
+  opacity: 0; /* faded in on scroll (enhanced) */
+}
+.cs-bar-title {
+  /* Docks onto the close-button line: close is at top:16 + height:40 → its
+     vertical centre is y=36; a 40px-tall box at top:16 matches it exactly. */
+  position: absolute;
+  top: 16px;
+  left: var(--cs-pad-x);
+  height: 40px;
+  display: flex;
+  align-items: center;
+  z-index: 1; /* above ::before */
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: 17px;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  opacity: 0; /* faded in on scroll (enhanced) */
+  will-change: transform, opacity;
+}
+.cs-bar-title em {
+  font-style: normal;
+  color: inherit;
+}
+
+/* ── Keyframes — transform/opacity only (global, so fill-mode holds them) ── */
+@keyframes cs-hero-media {
+  from { transform: scale(1);    opacity: 1; }
+  to   { transform: scale(1.06); opacity: 0; } /* uniform scale ⇒ no distortion */
+}
+@keyframes cs-hero-title {
+  from { transform: translateY(0)    scale(1);   opacity: 1; }
+  to   { transform: translateY(-40px) scale(0.5); opacity: 0; }
+}
+@keyframes cs-bar-bg {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes cs-bar-title {
+  from { transform: translateY(8px); opacity: 0; }
+  to   { transform: none;            opacity: 1; }
+}
+
+/* ── Enhanced: bind the scroll timeline (Chrome + Safari 26.4+, motion on) ──
+   Firefox stable fails @supports → static hero. reduced-motion is excluded via
+   the no-preference wrapper → static hero. Each node sets animation-timeline
+   AFTER the `animation` shorthand (the shorthand resets timeline to auto), and
+   ::before is bound in its own rule (pseudo-elements are invalid inside :is()). */
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .cs-headerbar {
+      display: block;
+      position: sticky;
+      top: var(--cs-bar-top);
+      height: var(--cs-bar-h);
+      /* Overlap the hero's tail so the bar adds ZERO net flow height. The
+         scroller's row-gap (--cs-gap) sits between the two flex items, so it
+         must be cancelled too (a plain -bar-h would leave a gap-sized dead
+         band). Bar stays a DIRECT child of the scroller so its containing
+         block is the full content and it pins for the whole scroll. */
+      margin-top: calc(-1 * (var(--cs-bar-h) + var(--cs-gap)));
+      z-index: 6;          /* above content (z:1) + the bottom blur strip (z:2) */
+      pointer-events: none; /* decorative; the close button (z:3 on the card) sits above */
+    }
+
+    /* Animations only — the timeline is bound per surface below. Note: .cs-hero
+       has overflow:hidden (to clip the Ken-Burns scale), which makes it a scroll
+       container, so `scroll(nearest)` on the hero image/title would wrongly bind
+       to the non-scrolling hero. A named timeline (modal) / scroll(root) (page)
+       walks past that intermediate to the real scroller. */
+    .cs-hero-img {
+      animation: cs-hero-media linear both;
+      animation-range: 0 var(--cs-shrink);
+    }
+    .cs-hero-title {
+      animation: cs-hero-title linear both;
+      animation-range: 0 var(--cs-shrink);
+    }
+    .cs-headerbar::before {
+      animation: cs-bar-bg linear both;
+      animation-range: calc(var(--cs-shrink) * 0.30) var(--cs-shrink);
+    }
+    .cs-bar-title {
+      animation: cs-bar-title linear both;
+      animation-range: calc(var(--cs-shrink) * 0.40) var(--cs-shrink);
+    }
+
+    /* Modal binding: name .card-body's scroll timeline and reference it by name
+       (name lookup ignores the hero's overflow:hidden intermediate). */
+    .bento-card.has-cover.is-expanded .card-body {
+      scroll-timeline: --cs-body block;
+    }
+    .bento-card.has-cover.is-expanded .card-body .cs-hero-img,
+    .bento-card.has-cover.is-expanded .card-body .cs-hero-title,
+    .bento-card.has-cover.is-expanded .card-body .cs-bar-title {
+      animation-timeline: --cs-body;
+    }
+    .bento-card.has-cover.is-expanded .card-body .cs-headerbar::before {
+      animation-timeline: --cs-body;
+    }
+
+    /* Slug binding: the document is the scroller — target it explicitly. */
+    .cs-hero--page .cs-hero-img,
+    .cs-hero--page .cs-hero-title,
+    .cs-headerbar--page .cs-bar-title {
+      animation-timeline: scroll(root);
+    }
+    .cs-headerbar--page::before {
+      animation-timeline: scroll(root);
+    }
+  }
+}
+
+/* Belt-and-suspenders: if reduced-motion flips on, force the static hero. */
+@media (prefers-reduced-motion: reduce) {
+  .cs-headerbar { display: none; }
+  .cs-hero-img,
+  .cs-hero-title { animation: none; transform: none; opacity: 1; }
+}
+
+/* ==========================================================================
+   SURFACE: expanded bento modal (scroller = .card-body)
+   ========================================================================== */
+/* The modal scroller is a flex column with row-gap:12 → the bar's overlap must
+   cancel that gap (see margin-top above). */
+.bento-card.has-cover .cs-hero,
+.bento-card.has-cover .cs-headerbar {
+  --cs-gap: 12px;
+}
+/* Full-bleed: opt out of the .card-body's align-items:center so the hero + bar
+   stretch edge-to-edge (the text content stays centred at --modal-w).
+   flex-shrink:0 keeps the hero at its full --cs-hero-h — .card-body is a flex
+   column and, once the case study overflows, a default flex-shrink:1 would
+   squeeze the hero to a thin strip (the same iOS flex quirk the header siblings
+   already guard against). */
+.bento-card.has-cover .cs-hero,
+.bento-card.has-cover .cs-headerbar {
+  align-self: stretch;
+  flex-shrink: 0;
+}
+/* Reveal the hero with the existing has-cover content beat (opacity only). The
+   bar's appearance is owned by its scroll-driven ::before / title, so it needs
+   no reveal fade. */
+.bento-card.has-cover .cs-hero {
+  opacity: 0;
+  transition: opacity var(--content-reveal-dur, 420ms) var(--fade-ease, cubic-bezier(0.22, 1, 0.36, 1));
+}
+.bento-card.has-cover.is-content-in .cs-hero {
+  opacity: 1;
+}
+/* Close: fade hero + bar out in place and freeze their scroll-driven state so
+   the opacity transition wins (mirrors the existing is-closing-content beat). */
+.bento-card.has-cover.is-closing-content .cs-hero,
+.bento-card.has-cover.is-closing-content .cs-headerbar {
+  opacity: 0;
+  transition: opacity var(--content-close-dur, 280ms) var(--fade-ease, cubic-bezier(0.22, 1, 0.36, 1));
+}
+.bento-card.has-cover.is-closing-content .cs-hero-img,
+.bento-card.has-cover.is-closing-content .cs-hero-title,
+.bento-card.has-cover.is-closing-content .cs-headerbar::before,
+.bento-card.has-cover.is-closing-content .cs-bar-title {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .bento-card.has-cover .cs-hero { transition: none; }
+}
+
+/* ==========================================================================
+   SURFACE: /projects/[slug] page (scroller = the document)
+   ========================================================================== */
+.cs-hero--page,
+.cs-headerbar--page {
+  --cs-hero-h: clamp(240px, 52vh, 460px);
+  --cs-bar-top: 72px; /* just below the floating MorphNav pill (top:20 + h:43) */
+  --cs-gap: 0px;      /* block flow, no flex gap to cancel */
+}
+.cs-hero--page {
+  width: 100%;
+  /* Absorb the body's pt-28 (7rem) nav clearance so the cover fills from the
+     very top, behind the translucent nav (which floats at z:20 above it). */
+  margin-top: -7rem;
+}
+.cs-headerbar--page {
+  width: 100%;
+  z-index: 12; /* above page content, below the nav pill (z:20) */
+}
+/* No close button on the standalone page → centre the docked title in the bar. */
+.cs-headerbar--page .cs-bar-title {
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 100%;
+  justify-content: center;
+  padding: 0 var(--cs-pad-x);
+}

@@ -181,3 +181,45 @@ Feature-detect: CSS `@supports (animation-timeline: scroll())` is the source of 
 6. `/projects/[slug]` gains the same cover-hero, document-scrolled, pinned under the nav; the codename is the page `<h1>`.
 7. Firefox stable and reduced-motion render a clean static hero; no dead DOM/animation binds.
 8. `npm run check` + `npm run build` pass; no new dependency; the dead `.cs-sticky-header` scroll-listener code is removed.
+
+## Adversarial review outcome + as-built deltas
+
+The design was reviewed (GO-WITH-CHANGES) before implementation and the must-fixes
+were folded in: pseudo-elements bound in their own rules (not inside `:is()`);
+the bar's `margin-top` cancels the flex `gap` too (`-(bar-h + gap)`, bar kept a
+direct `.card-body` child so sticky persists the whole scroll); the top
+progressive-blur strip is **suppressed for cover cards** and the frosted bar
+`::before` (opacity-faded only, static blur radius) provides the top edge — we do
+**not** scroll-drive `backdrop-filter` radius (a documented WebKit re-raster
+trap); `--cs-bar-top` on the slug is the floating-pill bottom (~72px) with the
+bar `z-index` below the nav (20); hero/bar sit outside any `.section-fade-in`.
+
+Two further bugs surfaced during Chromium verification and are fixed:
+
+1. **`scroll(nearest)` bound to the wrong scroller.** `.cs-hero { overflow: hidden }`
+   (needed to clip the Ken-Burns `scale(1.06)`) is itself a scroll container, so
+   `scroll(nearest)` resolved the hero image/title timeline to the non-scrolling
+   hero (opacity stuck at 1). Fixed by binding to the real scroller explicitly: a
+   **named `scroll-timeline: --cs-body`** on `.card-body` (modal) and
+   **`scroll(root)`** on the slug — both walk past the `overflow:hidden`
+   intermediate. The bar title/`::before` (not inside the hero) use the same
+   bindings for consistency.
+2. **Flex-shrink squeezed the hero.** `.card-body` is a flex column; once the
+   case study overflows, the hero (default `flex-shrink: 1`) collapsed to a thin
+   strip. Fixed with `flex-shrink: 0` on `.cs-hero`/`.cs-headerbar` (the same
+   guard the existing header siblings already carry).
+
+Verified in Chromium: modal full hero → scroll collapses it into the pinned bar
+with the codename docked on the close-button line → clean close + re-open;
+`/projects/[slug]` full-bleed hero → pinned bar under the nav; reduced-motion and
+no-`@supports` render a static hero with no bar. `npm run check` (0 errors) +
+`npm run build` pass. **Safari 26.4+/iOS parity is NOT verified in the build env**
+— it must be checked on a real device via the PR's Netlify deploy-preview (per
+CLAUDE.md), frame-extracting the open/scroll/close if anything looks off.
+
+Deferred (noted, not blocking): the dead commented `.cs-sticky-header` block in
+`bento-expand.ts` is left in place to keep the diff minimal on the fragile file
+(it is inert); the partial-collapse state for very short case studies (content
+that overflows by less than `--cs-shrink`) is accepted as a clean intermediate
+rather than gated; the pinned-bar background is frosted paper (a slim cover-image
+strip was considered and left as an easy post-review tweak).

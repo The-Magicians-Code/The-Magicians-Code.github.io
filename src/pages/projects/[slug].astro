@@ -1,9 +1,13 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import { Picture } from 'astro:assets';
 import { Icon } from 'astro-icon/components';
 import { getCollection, render } from 'astro:content';
 import type { GetStaticPaths } from 'astro';
 import { titleToHtml, titleToText } from '../../lib/title';
+// Cover-as-hero shrink-to-fixed-header treatment, shared with the bento modal.
+// See docs/superpowers/specs/2026-07-07-cover-hero-shrink-to-header-design.md.
+import '../../styles/cs-cover-hero.css';
 
 export const getStaticPaths = (async () => {
   const projects = await getCollection('projects');
@@ -16,6 +20,7 @@ export const getStaticPaths = (async () => {
 const { project } = Astro.props;
 const { Content } = await render(project);
 const titleText = titleToText(project.data.title);
+const cover = project.data.cover;
 ---
 
 <BaseLayout
@@ -24,10 +29,30 @@ const titleText = titleToText(project.data.title);
   canonicalPath={`/projects/${project.id}/`}
   ogType="article"
 >
+  {cover && (
+    <Fragment>
+      <header class="cs-hero cs-hero--page">
+        <Picture
+          class="cs-hero-img"
+          src={cover}
+          alt=""
+          formats={['avif', 'webp']}
+          widths={[600, 960, 1440, 1920]}
+          sizes="100vw"
+          loading="eager"
+        />
+        <div class="cs-hero-overlay"></div>
+        <h1 class="cs-hero-title" set:html={titleToHtml(project.data.codename)}></h1>
+      </header>
+      <div class="cs-headerbar cs-headerbar--page" aria-hidden="true">
+        <span class="cs-bar-title" set:html={titleToHtml(project.data.codename)}></span>
+      </div>
+    </Fragment>
+  )}
   <main class="project-page">
     <header class="project-header section-fade-in" style="--delay: 0.1s">
       <div class="section-eyebrow">Project</div>
-      <h1 class="project-title" set:html={titleToHtml(project.data.codename)}></h1>
+      {!cover && <h1 class="project-title" set:html={titleToHtml(project.data.codename)}></h1>}
       <p class="project-subtitle" set:html={titleToHtml(project.data.title)}></p>
       <p class="project-lede">{project.data.description}</p>
       <a
