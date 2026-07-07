@@ -15,7 +15,11 @@ const titleText = titleToText(title);
 
 <article class="card project-card">
   <h3 class="project-title">
-    <a href={`/projects/${slug}/`} set:html={titleToHtml(codename)}></a>
+    <a
+      href={`/projects/${slug}/`}
+      aria-label={`${titleToText(codename)} — ${titleText}`}
+      set:html={titleToHtml(codename)}
+    ></a>
   </h3>
   <p class="project-subtitle" set:html={titleToHtml(title)}></p>
   <p class="project-desc">{description}</p>
