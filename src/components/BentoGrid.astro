@@ -1149,8 +1149,11 @@ import '../styles/cs-cover-hero.css';
   /* The codename now lives in the cover hero (+ docks into the pinned bar), so
      the modal's flow .card-title would duplicate it. Keep it in the a11y tree
      (sr-only clip) rather than removing it — the hero/bar titles are
-     aria-hidden clones. Placed after the has-cover title rules so it wins. */
-  :global(.bento-card.has-cover .card-title) {
+     aria-hidden clones. The extra `.card-body` in the selector raises
+     specificity above the `.has-cover .card-title { width: --modal-w }` rule so
+     the 1px sizing actually wins (the clip hides it regardless, but don't rely
+     on that). */
+  :global(.bento-card.has-cover .card-body .card-title) {
     position: absolute;
     width: 1px;
     height: 1px;

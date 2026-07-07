@@ -28,17 +28,16 @@
    (the two are siblings, so neither inherits from the other). */
 .cs-hero,
 .cs-headerbar {
-  --cs-hero-h: clamp(190px, 36vh, 300px); /* resting hero band height */
-  --cs-bar-h: 64px;                       /* pinned header bar height */
-  --cs-bar-top: 0px;                      /* sticky pin offset */
-  --cs-gap: 0px;                          /* scroller's flex row-gap (modal = 12) */
-  --cs-pad-x: 48px;                       /* horizontal padding of the content column */
+  --cs-hero-h: 100dvh;                     /* full-viewport cover (object-fit crops to keep aspect) */
+  --cs-bar-h: 64px;                        /* pinned header bar height */
+  --cs-bar-top: 0px;                       /* sticky pin offset */
+  --cs-gap: 0px;                           /* scroller's flex row-gap (modal = 12) */
+  --cs-pad-x: 48px;                        /* horizontal padding of the content column */
   --cs-shrink: calc(var(--cs-hero-h) - var(--cs-bar-h)); /* scroll px of the transition */
 }
 @media (max-width: 540px) {
   .cs-hero,
   .cs-headerbar {
-    --cs-hero-h: clamp(170px, 30vh, 250px);
     --cs-bar-h: 56px;
     --cs-pad-x: 22px;
   }
@@ -275,18 +274,20 @@
 .bento-card.has-cover.is-content-in .cs-hero {
   opacity: 1;
 }
-/* Close: fade hero + bar out in place and freeze their scroll-driven state so
-   the opacity transition wins (mirrors the existing is-closing-content beat). */
+/* Close: fade hero + bar out in place via the container opacity. The children's
+   scroll-driven opacity is frozen during the fade (scroll doesn't move while
+   closing), so the container transition carries them out smoothly — including a
+   close-while-scrolled where the bar is pinned and visible. We deliberately do
+   NOT set `animation: none` on the children here: that would revert them to
+   their base opacity (0) in one frame, and since the container fade would then
+   have nothing left to fade, the pinned bar would snap out instead of fading.
+   The later timeline-unbind jump (when .is-expanded drops at runCollapse) is
+   masked because the container reaches opacity 0 at that same moment
+   (CONTENT_CLOSE_DUR === the fade duration). */
 .bento-card.has-cover.is-closing-content .cs-hero,
 .bento-card.has-cover.is-closing-content .cs-headerbar {
   opacity: 0;
   transition: opacity var(--content-close-dur, 280ms) var(--fade-ease, cubic-bezier(0.22, 1, 0.36, 1));
-}
-.bento-card.has-cover.is-closing-content .cs-hero-img,
-.bento-card.has-cover.is-closing-content .cs-hero-title,
-.bento-card.has-cover.is-closing-content .cs-headerbar::before,
-.bento-card.has-cover.is-closing-content .cs-bar-title {
-  animation: none;
 }
 @media (prefers-reduced-motion: reduce) {
   .bento-card.has-cover .cs-hero { transition: none; }
@@ -297,7 +298,7 @@
    ========================================================================== */
 .cs-hero--page,
 .cs-headerbar--page {
-  --cs-hero-h: clamp(240px, 52vh, 460px);
+  /* --cs-hero-h inherits the default 100dvh (full-viewport cover). */
   --cs-bar-top: 72px; /* just below the floating MorphNav pill (top:20 + h:43) */
   --cs-gap: 0px;      /* block flow, no flex gap to cancel */
 }

@@ -31,7 +31,8 @@ const cover = project.data.cover;
 >
   {cover && (
     <Fragment>
-      <header class="cs-hero cs-hero--page">
+      {/* A <div>, not <header>: keeps the page <h1> out of a banner landmark. */}
+      <div class="cs-hero cs-hero--page">
         <Picture
           class="cs-hero-img"
           src={cover}
@@ -43,7 +44,7 @@ const cover = project.data.cover;
         />
         <div class="cs-hero-overlay"></div>
         <h1 class="cs-hero-title" set:html={titleToHtml(project.data.codename)}></h1>
-      </header>
+      </div>
       <div class="cs-headerbar cs-headerbar--page" aria-hidden="true">
         <span class="cs-bar-title" set:html={titleToHtml(project.data.codename)}></span>
       </div>
