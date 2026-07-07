@@ -4,18 +4,24 @@ import { titleToHtml, titleToText } from '../lib/title';
 
 interface Props {
   title: string;
+  codename: string;
   description: string;
   repoUrl: string;
   slug: string;
 }
-const { title, description, repoUrl, slug } = Astro.props;
+const { title, codename, description, repoUrl, slug } = Astro.props;
 const titleText = titleToText(title);
 ---
 
 <article class="card project-card">
   <h3 class="project-title">
-    <a href={`/projects/${slug}/`} set:html={titleToHtml(title)}></a>
+    <a
+      href={`/projects/${slug}/`}
+      aria-label={`${titleToText(codename)} — ${titleText}`}
+      set:html={titleToHtml(codename)}
+    ></a>
   </h3>
+  <p class="project-subtitle" set:html={titleToHtml(title)}></p>
   <p class="project-desc">{description}</p>
   <a
     href={repoUrl}
@@ -47,6 +53,15 @@ const titleText = titleToText(title);
     transition: color 0.2s ease;
   }
   .project-title a:hover { color: var(--accent); }
+  .project-subtitle {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: 1rem;
+    line-height: 1.3;
+    letter-spacing: -0.005em;
+    color: var(--ink-dim);
+  }
+  .project-subtitle :global(em) { font-style: italic; }
   .project-desc {
     color: var(--ink-dim);
     font-size: 0.95rem;

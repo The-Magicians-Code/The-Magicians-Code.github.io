@@ -20,11 +20,12 @@ const projectsWithContent = await Promise.all(
 ---
 
 <section id="projects" data-nav-section="projects">
-  <h2 class="section-title">Projects <em>worth</em> showing.</h2>
+  <h2 class="section-title">Projects</h2>
   <BentoGrid>
     {projectsWithContent.map(({ project, Content }) => (
       <BentoCard
         title={project.data.title}
+        codename={project.data.codename}
         eyebrow="Case study"
         slug={project.id}
         bentoSpan={project.data.bentoSpan}
