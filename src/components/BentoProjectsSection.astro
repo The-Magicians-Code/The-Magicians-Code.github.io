@@ -25,6 +25,7 @@ const projectsWithContent = await Promise.all(
     {projectsWithContent.map(({ project, Content }) => (
       <BentoCard
         title={project.data.title}
+        codename={project.data.codename}
         eyebrow="Case study"
         slug={project.id}
         bentoSpan={project.data.bentoSpan}
