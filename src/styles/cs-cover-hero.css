@@ -274,27 +274,28 @@
   align-self: stretch;
   flex-shrink: 0;
 }
-/* Reveal the hero with the existing has-cover content beat (opacity only). The
-   bar's appearance is owned by its scroll-driven ::before / title, so it needs
-   no reveal fade. */
+/* The hero is the cover layer and tracks the box: height:100% grows/shrinks it
+   with the morph so open AND close/collapse stay seamless, and it stays fully
+   opaque — it simply appears over the still-visible resting cover (matched crop)
+   so the swap is invisible. No reveal fade: a fade would expose the card-body
+   paper behind it once that background is on. */
 .bento-card.has-cover .cs-hero {
-  opacity: 0;
-  transition: opacity var(--content-reveal-dur, 420ms) var(--fade-ease, cubic-bezier(0.22, 1, 0.36, 1));
-}
-.bento-card.has-cover.is-content-in .cs-hero {
+  height: 100%;
   opacity: 1;
 }
-/* Close: fade hero + bar out in place via the container opacity. The children's
-   scroll-driven opacity is frozen during the fade (scroll doesn't move while
-   closing), so the container transition carries them out smoothly — including a
-   close-while-scrolled where the bar is pinned and visible. We deliberately do
-   NOT set `animation: none` on the children here: that would revert them to
-   their base opacity (0) in one frame, and since the container fade would then
-   have nothing left to fade, the pinned bar would snap out instead of fading.
-   The later timeline-unbind jump (when .is-expanded drops at runCollapse) is
-   masked because the container reaches opacity 0 at that same moment
-   (CONTENT_CLOSE_DUR === the fade duration). */
-.bento-card.has-cover.is-closing-content .cs-hero,
+/* Content scrolls on PAPER, not the cover. The card-body is TRANSPARENT during
+   the morph and the collapse (so the resting cover behind shows the growing /
+   shrinking cover), and carries a paper background only once settled
+   (is-content-in) and through the close content-fade (is-closing-content, before
+   the collapse) — the two states where content is read on paper. */
+.bento-card.has-cover.is-content-in .card-body,
+.bento-card.has-cover.is-closing-content:not(.is-collapsing) .card-body {
+  background: var(--paper);
+}
+/* Close: only the pinned BAR fades. The hero stays opaque and shrinks back with
+   the collapsing box, revealing the matched resting cover behind — no fade to
+   paper. The bar's scroll-driven children stay bound until .is-expanded drops at
+   runCollapse, so they fade via this container opacity rather than snapping. */
 .bento-card.has-cover.is-closing-content .cs-headerbar {
   opacity: 0;
   transition: opacity var(--content-close-dur, 280ms) var(--fade-ease, cubic-bezier(0.22, 1, 0.36, 1));
