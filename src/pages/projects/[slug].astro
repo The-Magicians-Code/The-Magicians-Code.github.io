@@ -27,7 +27,8 @@ const titleText = titleToText(project.data.title);
   <main class="project-page">
     <header class="project-header section-fade-in" style="--delay: 0.1s">
       <div class="section-eyebrow">Project</div>
-      <h1 class="project-title" set:html={titleToHtml(project.data.title)}></h1>
+      <h1 class="project-title" set:html={titleToHtml(project.data.codename)}></h1>
+      <p class="project-subtitle" set:html={titleToHtml(project.data.title)}></p>
       <p class="project-lede">{project.data.description}</p>
       <a
         href={project.data.repoUrl}
@@ -69,6 +70,15 @@ const titleText = titleToText(project.data.title);
     line-height: 1.05;
     letter-spacing: -0.015em;
     margin: 6px 0 14px;
+  }
+  .project-subtitle {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: clamp(1.25rem, 1vw + 1rem, 1.6rem);
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    color: var(--ink-dim);
+    margin: -6px 0 14px;
   }
   .project-lede {
     font-size: 1.125rem;
