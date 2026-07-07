@@ -56,13 +56,23 @@
 }
 .cs-hero-img {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
   object-position: center 42%; /* match the resting .cover-img crop */
   transform-origin: center;
   will-change: transform, opacity;
+}
+/* Modal only: match the resting .cover-img's oversized crop (top:-56px,
+   height:100%+112px) exactly, so when the hero reveals over the grown resting
+   cover at settle it's pixel-identical — the cover appears to grow straight
+   into the hero with no cross-fade seam. (The slug page has no resting cover to
+   match, so it keeps the plain full-bleed crop above.) */
+.bento-card.has-cover .cs-hero-img {
+  top: -56px;
+  height: calc(100% + 112px);
 }
 .cs-hero-overlay {
   position: absolute;
