@@ -23,6 +23,7 @@ const projects = (await getCollection('projects'))
         {projects.map((project) => (
           <ProjectCard
             title={project.data.title}
+            codename={project.data.codename}
             description={project.data.description}
             repoUrl={project.data.repoUrl}
             slug={project.id}
