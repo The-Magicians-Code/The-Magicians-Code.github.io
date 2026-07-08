@@ -1,13 +1,12 @@
 // Lenis smooth scroll — the lerp-based "can't-slam-it" easing (same lib as the
 // reference site). Scope: smooth WHEEL/pointer only; native momentum on touch
 // (syncTouch: false), and fully disabled under prefers-reduced-motion. Lenis
-// drives the real window scroll (no transform), so the MorphNav progress ring
-// and the scrollspy IntersectionObserver — both of which read window.scrollY /
-// getBoundingClientRect — follow the smoothed position with no changes of their
-// own.
+// drives the real window scroll (no transform), so scroll-coupled consumers
+// (e.g. liquid-glass) — which read window.scrollY / getBoundingClientRect —
+// follow the smoothed position with no changes of their own.
 //
-// ⚠️ NO-TEARDOWN ASSUMPTION (load-bearing). This module — and bento-expand.ts,
-// MorphNav.astro, and liquid-glass.ts — register IntersectionObservers /
+// ⚠️ NO-TEARDOWN ASSUMPTION (load-bearing). This module — and bento-expand.ts
+// and liquid-glass.ts — register IntersectionObservers /
 // ResizeObservers / MutationObservers / rAF loops / Lenis instances and never
 // tear them down, because every navigation is a full page RELOAD (MPA) that
 // wipes them. This holds ONLY while the site has no Astro <ClientRouter> /
@@ -115,8 +114,8 @@ if (!reduceMotion) {
 
   // Route same-page hash links through Lenis (it owns smooth scroll now that the
   // native `scroll-behavior: smooth` is gone). Lenis honours the page's
-  // `scroll-padding-top: 7rem`, so targets clear the fixed nav with no extra
-  // offset needed.
+  // `scroll-padding-top`, so anchored targets land with a little top breathing
+  // room rather than flush against the viewport edge.
   document.addEventListener('click', (event) => {
     const link = (event.target as Element)?.closest?.('a[href]') as HTMLAnchorElement | null;
     if (!link) return;

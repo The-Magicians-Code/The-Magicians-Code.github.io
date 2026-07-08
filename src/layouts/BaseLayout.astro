@@ -3,7 +3,6 @@ import '../styles/fonts.css';
 import '../styles/global.css';
 import '../styles/liquid-glass.css';
 
-import MorphNav from '../components/MorphNav.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 
 interface Props {
@@ -145,8 +144,9 @@ const personSchema = {
       // Detect engines that don't render url(#filter) inside backdrop-filter
       // (Safari, Firefox). CSS @supports gives a false-positive on Safari
       // because its parser accepts the syntax without rendering. Setting a
-      // class pre-paint lets global.css swap the desktop nav pill to the
-      // mobile-icon frosted-glass treatment without FOUC.
+      // class pre-paint lets the liquid-glass surface (the musicplayer
+      // #player-pill) swap to the mobile-icon frosted-glass fallback without
+      // FOUC.
       (function () {
         try {
           var ua = navigator.userAgent;
@@ -183,13 +183,13 @@ const personSchema = {
     </script>
 
     {/* ⚠️ Before adding an Astro <ClientRouter> / view-transitions here: the
-        scripts below (and bento-expand, MorphNav) never tear down their
-        observers / rAF loops / Lenis — they rely on a full reload per
-        navigation. Client-side swaps would leak them. See the NO-TEARDOWN note
-        atop src/scripts/smooth-scroll.ts and wire astro:before-swap cleanup. */}
+        scripts below (and bento-expand) never tear down their observers / rAF
+        loops / Lenis — they rely on a full reload per navigation. Client-side
+        swaps would leak them. See the NO-TEARDOWN note atop
+        src/scripts/smooth-scroll.ts and wire astro:before-swap cleanup. */}
     <script>
       // Mounted first so Lenis drives window scroll before the scroll-coupled
-      // consumers (liquid-glass, MorphNav ring/scrollspy) read it.
+      // consumers (liquid-glass) read it.
       import '../scripts/smooth-scroll';
     </script>
 
@@ -218,27 +218,7 @@ const personSchema = {
       }
     </script>
   </head>
-  <body class="pt-28">
-    <MorphNav
-      sections={[
-        { id: 'hero', title: 'Home' },
-        { id: 'about', title: 'About' },
-        { id: 'projects', title: 'Work' },
-        { id: 'skills-tools', title: 'Stack' },
-        { id: 'contact', title: 'Contact' },
-      ]}
-      links={[
-        { label: 'Home', href: '/#hero', icon: 'lucide:home' },
-        { label: 'About', href: '/#about', icon: 'lucide:user' },
-        { label: 'Work', href: '/#projects', icon: 'lucide:briefcase' },
-        { label: 'Stack', href: '/#skills-tools', icon: 'lucide:layers' },
-        { label: 'Resume', href: '/Tanel_Treuberg_Software_Engineer.pdf', external: true, icon: 'lucide:file-text' },
-        { label: 'Contact', href: '/#contact', icon: 'lucide:mail' },
-      ]}
-      themeToggle={true}
-      intro={false}
-      autoOpen={false}
-    />
+  <body>
     <slot />
     <SiteFooter />
   </body>
