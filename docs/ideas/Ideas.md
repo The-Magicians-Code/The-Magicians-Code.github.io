@@ -1,4 +1,5 @@
 ## Ideas
+- **TODO:** Petal wind — falling peach-blossom petals with mouse-as-wind physics (canvas, velocity force + radial displacement, reduced-motion → static scatter) for the Xuan & Seal redesign. Tuned prototype: [petal-wind-playground.html](petal-wind-playground.html) · [live artifact](https://claude.ai/code/artifact/b5b48894-e85d-4bc2-8e37-923dff57c080)
 - Animated SVG Claude in the site
 - Animated different Claude Code text [statuses](https://claude-spinner-verbs.vercel.app)
 - https://tympanus.net/codrops/2026/05/05/reverse-engineering-claude-ais-mascot-animations-with-svg-and-gsap/
