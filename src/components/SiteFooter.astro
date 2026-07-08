@@ -1,4 +1,6 @@
 ---
+import ThemeToggle from './ThemeToggle.astro';
+
 const year = new Date().getFullYear();
 ---
 
@@ -7,6 +9,9 @@ const year = new Date().getFullYear();
     <span>&copy; {year} Tanel Treuberg.</span>
     <span class="dot" aria-hidden="true">·</span>
     <span>Built with Astro.</span>
+    <div class="footer-toggle">
+      <ThemeToggle />
+    </div>
   </footer>
 </div>
 
@@ -34,4 +39,9 @@ const year = new Date().getFullYear();
     flex-wrap: wrap;
   }
   .dot { color: var(--ink-3); opacity: 0.6; }
+  .footer-toggle {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+  }
 </style>

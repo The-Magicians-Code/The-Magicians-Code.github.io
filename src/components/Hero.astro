@@ -1,35 +1,25 @@
 ---
 ---
 
-<header class="hero" id="hero" aria-label="Intro" data-nav-section="hero">
+<header class="hero" id="hero" aria-label="Intro">
   <div class="hero-layer hero-back" aria-hidden="true">
     <span class="hero-ghost">Code</span>
   </div>
   <div class="hero-layer hero-mid">
     <div>
       <h1 class="hero-headline">Tanel <em>Treuberg</em></h1>
-      <p class="hero-sub">Software engineer working across backend, infrastructure, and applied ML.</p>
+      <p class="hero-sub">Software engineer building thoughtful, reliable products.</p>
     </div>
-  </div>
-  <div class="hero-layer hero-front">
-    <ul class="hero-pills">
-      <li class="hero-pill">Backend</li>
-      <li class="hero-pill">Infrastructure</li>
-      <li class="hero-pill">Applied ML</li>
-    </ul>
   </div>
 </header>
 
 <style>
-  /* Full-bleed: hero is a direct child of <body class="pt-28"> (hoisted out
-     of .page in index.astro). Negative margin cancels the body's 7rem nav
-     padding; padding-top re-inserts breathing room so content clears the nav. */
+  /* Full-bleed: hero is a direct child of <body> (hoisted out of .page in
+     index.astro) and fills the viewport, centering its content. */
   .hero {
     position: relative;
     width: 100%;
     min-height: 100svh;
-    margin-top: -7rem;
-    padding-top: 7rem;
     overflow: clip;
     display: flex;
     align-items: center;
@@ -73,32 +63,6 @@
     max-width: 480px;
     margin: 18px auto 0;
     line-height: 1.5;
-  }
-  .hero-front {
-    inset: -12% 0 0; /* pin bottom to hero edge so pills can't clip; keep top headroom for upward travel */
-    align-items: flex-end;
-    padding-bottom: 11vh;
-  }
-  .hero-pills {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-    justify-content: center;
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
-  /* Token-only glass: NO live backdrop-filter on a moving surface
-     (per spec — avoids per-frame WebKit repaint glitches). */
-  .hero-pill {
-    font-family: var(--font-mono);
-    font-size: 0.82rem;
-    color: var(--ink);
-    padding: 10px 18px;
-    border-radius: 999px;
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-brd);
-    box-shadow: 0 6px 20px rgba(26, 26, 28, 0.07);
   }
   @media (max-width: 641px) {
     .hero-ghost { font-size: 38vw; }
