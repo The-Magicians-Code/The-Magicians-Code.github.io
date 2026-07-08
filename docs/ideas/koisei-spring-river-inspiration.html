@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><script id="aura-preview-performance-controller">
+(function() {
+if (window.__auraPreviewPerformanceController) return;
+const nativeRequestAnimationFrame = window.requestAnimationFrame
+? window.requestAnimationFrame.bind(window)
+: function(callback) { return window.setTimeout(function() { callback(Date.now()); }, 16); };
+const nativeCancelAnimationFrame = window.cancelAnimationFrame
+? window.cancelAnimationFrame.bind(window)
+: window.clearTimeout.bind(window);
+const nativeSetInterval = window.setInterval.bind(window);
+let paused = false;
+let nextFrameId = 1;
+const frameRecords = new Map();
+const pausedFrameCallbacks = new Map();
+const style = document.createElement('style');
+style.id = 'aura-preview-performance-style';
+style.textContent = [
+'html[data-aura-preview-paused="true"] *,',
+'html[data-aura-preview-paused="true"] *::before,',
+'html[data-aura-preview-paused="true"] *::after {',
+'  animation-play-state: paused !important;',
+'  transition-duration: 0s !important;',
+'  scroll-behavior: auto !important;',
+'}'
+].join('\n');
+document.head.appendChild(style);
+window.requestAnimationFrame = function(callback) {
+const frameId = nextFrameId++;
+if (paused) {
+pausedFrameCallbacks.set(frameId, callback);
+frameRecords.set(frameId, { paused: true });
+return frameId;
+}
+const nativeFrameId = nativeRequestAnimationFrame(function(timestamp) {
+frameRecords.delete(frameId);
+callback(timestamp);
+});
+frameRecords.set(frameId, { nativeFrameId: nativeFrameId });
+return frameId;
+};
+window.cancelAnimationFrame = function(frameId) {
+const record = frameRecords.get(frameId);
+pausedFrameCallbacks.delete(frameId);
+if (record && typeof record.nativeFrameId !== 'undefined') {
+nativeCancelAnimationFrame(record.nativeFrameId);
+}
+frameRecords.delete(frameId);
+};
+window.setInterval = function(callback, delay) {
+const args = Array.prototype.slice.call(arguments, 2);
+return nativeSetInterval(function() {
+if (paused) return;
+callback.apply(this, args);
+}, delay);
+};
+const flushPausedFrames = function() {
+const callbacks = Array.from(pausedFrameCallbacks.entries());
+pausedFrameCallbacks.clear();
+callbacks.forEach(function(entry) {
+const frameId = entry[0];
+const callback = entry[1];
+const nativeFrameId = nativeRequestAnimationFrame(function(timestamp) {
+frameRecords.delete(frameId);
+callback(timestamp);
+});
+frameRecords.set(frameId, { nativeFrameId: nativeFrameId });
+});
+};
+const setPaused = function(nextPaused) {
+const shouldPause = Boolean(nextPaused);
+if (paused === shouldPause) return;
+paused = shouldPause;
+document.documentElement.toggleAttribute('data-aura-preview-paused', paused);
+if (!paused) {
+flushPausedFrames();
+}
+};
+window.__auraPreviewPerformanceController = {
+setPaused: setPaused,
+get paused() {
+return paused;
+}
+};
+window.addEventListener('message', function(event) {
+if (event.source !== window.parent) return;
+if (!event.data || event.data.type !== 'aura-preview-performance-mode') return;
+setPaused(event.data.paused);
+});
+})();
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Koisei — Down the Spring River</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Space+Grotesk:wght@400;500&family=Noto+Serif+JP:wght@400&display=swap" rel="stylesheet">
+<script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://unpkg.com/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
+<style>
+::selection{background:#C4472F;color:#F1E9DE}
+.nav-shell{transition:height .5s cubic-bezier(.22,1,.36,1),background .5s,backdrop-filter .5s}
+.nav--scrolled .nav-shell{background:rgba(241,233,222,.82);backdrop-filter:blur(12px);height:68px}
+.nav--night .nav-shell{background:rgba(36,27,21,.82)!important}
+.nav--night .nav-ink{color:#EDE9DF!important}
+.nav--night .nav-border{border-color:rgba(237,233,223,.3)!important}
+.u-link{position:relative}
+.u-link::after{content:'';position:absolute;left:0;bottom:-3px;width:100%;height:1px;background:#C4472F;transform:scaleX(0);transform-origin:left;transition:transform .35s cubic-bezier(.22,1,.36,1)}
+.u-link:hover::after{transform:scaleX(1)}
+@keyframes scrollDot{0%{transform:translateY(0);opacity:0}15%{opacity:1}85%{opacity:1}100%{transform:translateY(34px);opacity:0}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style><!-- aura-ga4-start -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-2M6V79H761"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-2M6V79H761');
+</script>
+<!-- aura-ga4-end -->
+</head>
+<body class="antialiased overflow-x-hidden" style="--washi:#F1E9DE;--washi-warm:#ECE4D9;--washi-deep:#E4DED5;--sand:#E9D4BD;--river-stone:#C1BBB2;--ink:#251C16;--night:#241B15;--night-deep:#1A130E;--cream:#EDE9DF;--sakura:#E8B4C0;--sakura-deep:#D98E9F;--vermilion:#C4472F;--lantern:#E8A54B;background:var(--washi);color:var(--ink);font-family:'Space Grotesk',sans-serif">
+
+<!-- ============ PRELOADER ============ -->
+<div id="loader" class="fixed inset-0 z-[110] flex flex-col items-center justify-center" style="background:var(--washi)">
+  <svg width="34" height="26" viewBox="0 0 34 26" fill="none" class="mb-5"><path d="M2 6 H32 M5 11 H29 M9 6 V25 M25 6 V25 M17 2 V6" stroke="#C4472F" stroke-width="2.2" stroke-linecap="round"/></svg>
+  <div id="loaderWord" class="text-4xl md:text-5xl tracking-tight" style="font-family:'Cormorant Garamond',serif;letter-spacing:.5em;color:var(--ink)">KOISEI</div>
+  <div class="mt-8 w-48 relative">
+    <div class="h-px w-full" style="background:rgba(37,28,22,.15)"></div>
+    <div id="loaderBar" class="h-px absolute left-0 top-0 origin-left" style="background:var(--ink);width:100%;transform:scaleX(0)"></div>
+  </div>
+  <div id="loaderPct" class="mt-3 text-xs" style="letter-spacing:.2em;color:rgba(37,28,22,.6)">0%</div>
+</div>
+
+<!-- ============ SHARED WEBGL (hero plane + petals) ============ -->
+<canvas id="gl" class="fixed inset-0 w-full h-full pointer-events-none" style="z-index:5"></canvas>
+
+<!-- ============ GRAIN ============ -->
+<canvas id="grain" class="fixed inset-0 w-full h-full pointer-events-none" style="z-index:80;opacity:.05;mix-blend-mode:overlay"></canvas>
+
+<!-- ============ CURSOR ============ -->
+<div id="curDot" class="fixed top-0 left-0 w-2 h-2 rounded-full pointer-events-none hidden md:block" style="z-index:100;background:var(--ink);mix-blend-mode:difference;background:#fff"></div>
+<div id="curRing" class="fixed top-0 left-0 w-8 h-8 rounded-full pointer-events-none hidden md:flex items-center justify-center text-xs" style="z-index:100;border:1px solid #fff;mix-blend-mode:difference;color:#fff;transition:width .3s,height .3s"></div>
+
+<!-- ============ NAV ============ -->
+<header id="nav" class="fixed top-0 left-0 right-0 z-[90]">
+  <div class="nav-shell flex items-center justify-between px-6 md:px-12" style="height:88px">
+    <a href="#" class="flex items-center gap-3">
+      <svg width="22" height="17" viewBox="0 0 34 26" fill="none"><path d="M2 6 H32 M5 11 H29 M9 6 V25 M25 6 V25 M17 2 V6" stroke="#C4472F" stroke-width="2.4" stroke-linecap="round"/></svg>
+      <span class="nav-ink text-sm" style="letter-spacing:.2em;font-weight:500;color:var(--ink)">KOISEI</span>
+    </a>
+    <nav class="hidden md:flex items-center gap-8">
+      <a href="#journey" class="u-link nav-ink text-xs" style="letter-spacing:.12em;color:var(--ink)">Journey</a>
+      <a href="#stories" class="u-link nav-ink text-xs" style="letter-spacing:.12em;color:var(--ink)">Stories</a>
+      <a href="#gallery" class="u-link nav-ink text-xs" style="letter-spacing:.12em;color:var(--ink)">Gallery</a>
+      <a href="#visit" class="u-link nav-ink text-xs" style="letter-spacing:.12em;color:var(--ink)">Visit</a>
+      <span class="nav-ink text-sm" style="font-family:'Noto Serif JP',serif;color:var(--ink)">旅</span>
+      <a href="#visit" class="nav-ink nav-border text-xs rounded-full px-5 py-2.5 transition-colors hover:!bg-[#251C16] hover:!text-[#F1E9DE]" style="border:1px solid rgba(37,28,22,.4);letter-spacing:.08em;color:var(--ink)">Begin</a>
+    </nav>
+    <button class="md:hidden nav-ink" style="color:var(--ink)"><iconify-icon icon="solar:hamburger-menu-linear" width="24" stroke-width="1.5"></iconify-icon></button>
+  </div>
+</header>
+
+<!-- ============ PROGRESS RAIL ============ -->
+<div class="fixed left-6 top-1/2 -translate-y-1/2 z-[90] hidden lg:flex flex-col items-center gap-4 pointer-events-none">
+  <div class="relative" style="height:160px;width:1px;background:rgba(37,28,22,.2)">
+    <div id="railFill" class="absolute top-0 left-0 w-full origin-top" style="background:var(--vermilion);height:100%;transform:scaleY(0)"></div>
+  </div>
+  <div id="secIdx" class="text-xs" style="letter-spacing:.15em;writing-mode:vertical-rl;color:rgba(37,28,22,.55)">01 / 07</div>
+</div>
+
+<main class="relative">
+
+<!-- ============ 1 · HERO ============ -->
+<section id="hero" class="relative h-screen flex flex-col items-center justify-center" style="z-index:6">
+  <div id="heroContent" class="relative z-10 flex flex-col items-center text-center px-6 mt-[8vh]">
+    <div class="overflow-hidden mb-6"><p class="heroLine text-xs uppercase" style="letter-spacing:.32em;color:var(--cream)">— A Journey Down the Spring River</p></div>
+    <h1 class="tracking-tight" style="font-family:'Cormorant Garamond',serif;font-size:clamp(4rem,11vw,11.5rem);line-height:.95;letter-spacing:-.015em;color:var(--cream);text-shadow:0 2px 40px rgba(37,28,22,.35)">
+      <span class="block overflow-hidden"><span class="heroLine block" style="font-weight:500">Where Petals</span></span>
+      <span class="block overflow-hidden"><span class="heroLine block" style="font-weight:500"><em>Drift</em> Downstream</span></span>
+    </h1>
+    <div class="heroFade mt-8 h-px w-16" style="background:rgba(237,233,223,.7)"></div>
+    <p class="heroFade mt-4 text-sm" style="color:rgba(237,233,223,.85);letter-spacing:.08em">Koisei — <span style="font-family:'Noto Serif JP',serif">恋静</span></p>
+  </div>
+  <div class="heroFade absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-3">
+    <span class="text-xs" style="letter-spacing:.32em;color:rgba(237,233,223,.8)">SCROLL</span>
+    <div class="relative w-px h-10" style="background:rgba(237,233,223,.35)">
+      <div class="absolute left-1/2 -translate-x-1/2 w-1 h-1 rounded-full" style="background:var(--cream);animation:scrollDot 1.8s ease-in-out infinite"></div>
+    </div>
+  </div>
+  <div class="heroFade absolute right-6 top-1/2 -translate-y-1/2 z-10 hidden md:block" style="writing-mode:vertical-rl;font-family:'Noto Serif JP',serif;color:rgba(237,233,223,.6);letter-spacing:.4em">桜の川を下る</div>
+</section>
+
+<!-- ============ 2 · MANIFESTO ============ -->
+<section id="journey" class="relative rounded-t-[32px]" style="z-index:20;background:var(--washi);padding:16vh 0">
+  <div class="pointer-events-none absolute inset-0" style="background:radial-gradient(120% 90% at 50% 50%, transparent 60%, rgba(37,28,22,.03) 100%)"></div>
+  <div class="max-w-[1400px] mx-auto px-6 md:px-12 relative">
+    <p class="text-xs uppercase mb-10 flex items-center gap-3" style="letter-spacing:.32em;color:var(--ink)"><span class="inline-block w-1.5 h-1.5" style="background:var(--vermilion)"></span>— 01 · The Philosophy</p>
+    <h2 class="manifesto tracking-tight" style="font-family:'Cormorant Garamond',serif;font-size:clamp(2.6rem,5.6vw,6.2rem);line-height:1.08;letter-spacing:-.015em;font-weight:400;max-width:62ch">
+      <span class="mLine block overflow-hidden"><span class="block">Every spring, the river carries</span></span>
+      <span class="mLine block overflow-hidden"><span class="block">a <em>million petals</em> <span class="mImg hidden md:inline-block align-middle overflow-hidden rounded-full mx-2" style="width:0;height:70px"><img src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/sakura-river-2026-07-05/sakura-koi-river-plate-742cc19de6b5_original.png" class="h-full w-[140px] object-cover" decoding="async" alt=""></span> from the</span></span>
+      <span class="mLine block overflow-hidden"><span class="block">mountains to the sea — and</span></span>
+      <span class="mLine block overflow-hidden"><span class="block">every petal <span class="mImg hidden md:inline-block align-middle overflow-hidden rounded-full mx-2" style="width:0;height:70px"><img src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/sakura-river-2026-07-05/kyoto-temple-canal-plate-60699d609a45_original.png" class="h-full w-[140px] object-cover" decoding="async" alt=""></span> <em>remembers</em></span></span>
+      <span class="mLine block overflow-hidden"><span class="block">the tree it fell from.</span></span>
+    </h2>
+    <div class="flex justify-end mt-16">
+      <div style="max-width:34em">
+        <p class="leading-[1.7]" style="font-size:clamp(1rem,1.15vw,1.185rem);color:rgba(37,28,22,.78)">Koisei is a slow descent — from the sakura headwaters above Kyoto to the lantern estuaries of Tokyo. A route drawn by water, printed in woodblock light, and walked one petal at a time.</p>
+        <a href="#stories" class="u-link inline-flex items-center gap-2 mt-6 text-xs" style="letter-spacing:.12em">Read the story of Koisei <iconify-icon icon="solar:arrow-right-linear" width="16" stroke-width="1.5"></iconify-icon></a>
+      </div>
+    </div>
+    <div class="grid grid-cols-2 gap-8 mt-24 max-w-2xl">
+      <div><div class="tracking-tight" style="font-family:'Cormorant Garamond',serif;font-size:clamp(2.5rem,5vw,4.5rem);font-weight:500"><span class="counter" data-to="1200">0</span> km</div><p class="text-xs uppercase mt-1" style="letter-spacing:.32em;color:rgba(37,28,22,.55)">River travelled</p></div>
+      <div><div class="tracking-tight" style="font-family:'Cormorant Garamond',serif;font-size:clamp(2.5rem,5vw,4.5rem);font-weight:500"><span class="counter" data-to="4">0</span> seasons</div><p class="text-xs uppercase mt-1" style="letter-spacing:.32em;color:rgba(37,28,22,.55)">One current</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 3 · SCROLL FILM I ============ -->
+<section id="film1" class="filmSec relative h-screen overflow-hidden" style="z-index:20;background:var(--night)">
+  <video class="filmVid absolute inset-0 w-full h-full object-cover" src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/sakura-river-2026-07-05/koi-bridge-temple-scroll-film-12s-ce0df14b7596_video.mp4" muted playsinline preload="auto"></video>
+  <div class="pointer-events-none absolute inset-0" style="box-shadow:inset 0 0 18vmin rgba(26,19,14,.75)"></div>
+  <div class="chapter absolute inset-0 flex flex-col items-center justify-center text-center px-6 opacity-0">
+    <p class="text-xs uppercase mb-4" style="letter-spacing:.32em;color:rgba(237,233,223,.85)">First Bend</p>
+    <h3 class="tracking-tight" style="font-family:'Cormorant Garamond',serif;font-size:clamp(2rem,4vw,3.5rem);color:var(--cream);font-weight:500;text-shadow:0 2px 30px rgba(26,19,14,.5)"><em>Koi</em> swim against the falling sky</h3>
+  </div>
+  <div class="chapter absolute inset-0 flex flex-col items-center justify-center text-center px-6 opacity-0">
+    <p class="text-xs uppercase mb-4" style="letter-spacing:.32em;color:rgba(237,233,223,.85)">Under the Bridge</p>
+    <h3 class="tracking-tight" style="font-family:'Cormorant Garamond',serif;font-size:clamp(2rem,4vw,3.5rem);color:var(--cream);font-weight:500;text-shadow:0 2px 30px rgba(26,19,14,.5)">Stone arches hold the <em>morning</em> still</h3>
+  </div>
+  <div class="chapter absolute inset-0 flex flex-col items-center justify-center text-center px-6 opacity-0">
+    <p class="text-xs uppercase mb-4" style="letter-spacing:.32em;color:rgba(237,233,223,.85)">The Temple Gate</p>
+    <h3 class="tracking-tight" style="font-family:'Cormorant Garamond',serif;font-size:clamp(2rem,4vw,3.5rem);color:var(--cream);font-weight:500;text-shadow:0 2px 30px rgba(26,19,14,.5)">Incense rises where the water <em>bows</em></h3>
+  </div>
+  <div class="absolute right-6 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-4 text-sm" style="font-family:'Cormorant Garamond',serif">
+    <span class="romNum" style="color:rgba(237,233,223,.5)">Ⅰ</span><span class="romNum" style="color:rgba(237,233,223,.5)">Ⅱ</span><span class="romNum" style="color:rgba(237,233,223,.5)">Ⅲ</span>
+  </div>
+  <div class="absolute bottom-8 left-6 md:left-12 right-6 md:right-12 flex items-center gap-4">
+    <div class="relative flex-1 h-px" style="background:rgba(237,233,223,.25)"><div class="filmBar absolute inset-0 origin-left" style="background:var(--cream);transform:scaleX(0)"></div></div>
+    <span class="filmTime text-xs tabular-nums" style="letter-spacing:.1em;color:rgba(237,233,223,.8)">00:00 / 00:12</span>
+  </div>
+</section>
+
+<!-- ============ 4 · HORIZONTAL GALLERY ============ -->
+<section id="gallery" class="relative overflow-hidden" style="z-index:20;background:var(--washi)">
+  <div class="h-screen flex flex-col justify-center">
+    <div class="px-6 md:px-12 max-w-[1600px] w-full mx-auto flex items-end justify-between pb-8 md:pb-12">
+      <div>
+        <p class="text-xs uppercase mb-4 flex items-center gap-3" style="letter-spacing:.32em"><span class="inline-block w-1.5 h-1.5" style="background:var(--vermilion)"></span>— 02 · Stations</p>
+        <h2 class="tracking-tight" style="font-family:'Cormorant Garamond',serif;font-size:clamp(2.6rem,5.5vw,6rem);line-height:1;letter-spacing:-.015em;font-weight:500">Three <em>stations</em>, one current</h2>
+      </div>
+      <span class="hidden md:block text-xs" style="letter-spacing:.2em;color:rgba(37,28,22,.5)">( scroll )</span>
+    </div>
+    <div id="galTrack" class="flex gap-[6vw] pl-6 md:pl-12 items-start will-change-transform overflow-x-auto md:overflow-visible pb-6 md:pb-0" style="scrollbar-width:none">
+      <!-- CARD 1 -->
+      <article class="galCard shrink-0 relative" style="width:min(66vw,900px)">
+        <span class="galNum absolute -top-10 -left-3 md:-left-6 z-10 tracking-tight" style="font-family:'Cormorant Garamond',serif;font-size:clamp(5rem,9vw,9rem);line-height:1;-webkit-text-stroke:1px var(--ink);color:transparent;transition:color .5s">01</span>
+        <div class="relative h-[46vh] md:h-[54vh] overflow-hidden rounded"><div class="absolute -inset-[10px] border pointer-events-none z-10 rounded" style="border-color:rgba(37,28,22,.15)"></div>
+          <img class="galImg w-full h-full object-cover will-change-transform" style="transform:scale(1.15)" src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/sakura-river-2026-07-05/kyoto-temple-canal-plate-60699d609a45_original.png" decoding="async" alt="Higashiyama Canal">
+        </div>
+        <h3 class="mt-6 tracking-tight" style="font-family:'Cormorant Garamond',serif;font-size:clamp(1.8rem,3vw,3rem);font-weight:500">Higashiyama Canal</h3>
+        <p class="mt-1 text-sm" style="color:rgba(37,28,22,.65)">Stone bridges, incense, morning bells.</p>
+        <a href="#visit" class="u-link inline-flex items-center gap-2 mt-3 text-xs" style="letter-spacing:.12em">Visit station <iconify-icon icon="solar:arrow-right-linear" width="14" stroke-width="1.5"></iconify-icon></a>
+      </article>
+      <!-- CARD 2 -->
+      <article class="galCard shrink-0 relative" style="width:min(66vw,900px)">
+        <span class="galNum absolute -top-10 -left-3 md:-left-6 z-10 tracking-tight" style="font-family:'Cormorant Garamond',serif;font-size:clamp(5rem,9vw,9rem);line-height:1;-webkit-text-stroke:1px var(--ink);color:transparent;transition:color .5s">02</span>
+        <div class="relative h-[46vh] md:h-[54vh] overflow-hidden rounded"><div class="absolute -inset-[10px] border pointer-events-none z-10 rounded" style="border-color:rgba(37,28,22,.15)"></div>
+          <img class="galImg w-full h-full object-cover will-change-transform" style="transform:scale(1.15)" src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/sakura-river-2026-07-05/rural-kimono-lane-plate-edb1d9bf1d3d_original.png" decoding="async" alt="The Kimono Lane">
+        </div>
+        <h3 class="mt-6 tracking-tight" style="font-family:'Cormorant Garamond',serif;font-size:clamp(1.8rem,3vw,3rem);font-weight:500">The Kimono Lane</h3>
+        <p class="mt-1 text-sm" style="color:rgba(37,28,22,.65)">Where the road remembers slower centuries.</p>
+        <a href="#visit" class="u-link inline-flex items-center gap-2 mt-3 text-xs" style="letter-spacing:.12em">Visit station <iconify-icon icon="solar:arrow-right-linear" width="14" stroke-width="1.5"></iconify-icon></a>
+      </article>
+      <!-- CARD 3 -->
+      <article class="galCard shrink-0 relative pr-6 md:pr-12" style="width:min(66vw,900px)">
+        <span class="galNum absolute -top-10 -left-3 md:-left-6 z-10 tracking-tight" style="font-family:'Cormorant Garamond',serif;font-size:clamp(5rem,9vw,9rem);line-height:1;-webkit-text-stroke:1px var(--ink);color:transparent;transition:color .5s">03</span>
+        <div class="relative h-[46vh] md:h-[54vh] overflow-hidden rounded"><div class="absolute -inset-[10px] border pointer-events-none z-10 rounded" style="border-color:rgba(37,28,22,.15)"></div>
+          <img class="galImg w-full h-full object-cover will-change-transform" style="transform:scale(1.15)" src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/sakura-river-2026-07-05/asakusa-lantern-water-plate-73b3e135a98d_original.png" decoding="async" alt="Asakusa Waterside">
+        </div>
+        <h3 class="mt-6 tracking-tight" style="font-family:'Cormorant Garamond',serif;font-size:clamp(1.8rem,3vw,3rem);font-weight:500">Asakusa Waterside</h3>
+        <p class="mt-1 text-sm" style="color:rgba(37,28,22,.65)">Lanterns lean over the current at dusk.</p>
+        <a href="#visit" class="u-link inline-flex items-center gap-2 mt-3 text-xs" style="letter-spacing:.12em">Visit station <iconify-icon icon="solar:arrow-right-linear" width="14" stroke-width="1.5"></iconify-icon></a>
+      </article>
+    </div>
+    <div class="px-6 md:px-12 max-w-[1600px] w-full mx-auto flex items-center gap-6 pt-8">
+      <div class="relative flex-1 h-px" style="background:rgba(37,28,22,.15)"><div id="galBar" class="absolute inset-0 origin-left" style="background:var(--ink);transform:scaleX(0)"></div></div>
+      <span id="galCount" class="text-xs tabular-nums" style="letter-spacing:.2em">01 — 03</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 5 · DAY TO NIGHT ============ -->
+<section id="nightfall" class="relative h-screen overflow-hidden flex items-center justify-center" style="z-index:20;background:var(--washi)">
+  <div id="dissolveWrap" class="absolute inset-0" style="clip-path:inset(11vh 24vw);will-change:clip-path">
+    <canvas id="dissolve" class="w-full h-full block"></canvas>
+  </div>
+  <div class="relative z-10 text-center px-6 pointer-events-none">
+    <p id="nfKicker" class="text-xs uppercase mb-5" style="letter-spacing:.32em;color:var(--ink);opacity:0">— 03 · Nightfall</p>
+    <h2 id="nfTitle" class="tracking-tight" style="font-family:'Cormorant Garamond',serif;font-size:clamp(2.6rem,5.5vw,6rem);line-height:1.05;letter-spacing:-.015em;font-weight:500;color:var(--ink);opacity:0;text-shadow:0 2px 40px rgba(26,19,14,.35)">The river doesn't sleep —<br>it <em>dreams</em></h2>
+  </div>
+</section>
+
+<!-- ============ 6 · SCROLL FILM II ============ -->
+<section id="film2" class="filmSec relative h-screen overflow-hidden" style="z-index:20;background:var(--night)">
+  <video class="filmVid absolute inset-0 w-full h-full object-cover" src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/sakura-river-2026-07-05/kimono-asakusa-night-scroll-film-12s-bd5434347f42_video.mp4" muted playsinline preload="auto"></video>
+  <div class="filmDark absolute inset-0 pointer-events-none" style="background:var(--night-deep);opacity:0"></div>
+  <div class="pointer-events-none absolute inset-0" style="box-shadow:inset 0 0 18vmin rgba(26,19,14,.8)"></div>
+  <div class="chapter absolute inset-0 flex flex-col items-center justify-center text-center px-6 opacity-0">
+    <p class="text-xs uppercase mb-4" style="letter-spacing:.32em;color:rgba(237,233,223,.85)">The Last Lane</p>
+    <h3 class="tracking-tight" style="font-family:'Cormorant Garamond',serif;font-size:clamp(2rem,4vw,3.5rem);color:var(--cream);font-weight:500;text-shadow:0 2px 30px rgba(26,19,14,.6)">She walks where the lanterns <em>lean</em></h3>
+  </div>
+  <div class="chapter absolute inset-0 flex flex-col items-center justify-center text-center px-6 opacity-0">
+    <p class="text-xs uppercase mb-4" style="letter-spacing:.32em;color:rgba(237,233,223,.85)">Asakusa at Night</p>
+    <h3 class="tracking-tight" style="font-family:'Cormorant Garamond',serif;font-size:clamp(2rem,4vw,3.5rem);color:var(--cream);font-weight:500;text-shadow:0 2px 30px rgba(26,19,14,.6)">Every light is a <em>wish</em> going downstream</h3>
+  </div>
+  <div class="quote absolute inset-0 flex flex-col items-center justify-center text-center px-6 opacity-0">
+    <p class="tracking-tight" style="font-family:'Cormorant Garamond',serif;font-size:clamp(1.6rem,3vw,2.6rem);color:var(--cream);font-style:italic">"<span style="font-family:'Noto Serif JP',serif;font-style:normal">恋静</span> — quiet love, moving water."</p>
+    <p class="mt-4 text-xs uppercase" style="letter-spacing:.32em;color:var(--lantern)">— Koisei</p>
+  </div>
+  <div class="absolute bottom-8 left-6 md:left-12 right-6 md:right-12 flex items-center gap-4">
+    <div class="relative flex-1 h-px" style="background:rgba(237,233,223,.25)"><div class="filmBar absolute inset-0 origin-left" style="background:var(--cream);transform:scaleX(0)"></div></div>
+    <span class="filmTime text-xs tabular-nums" style="letter-spacing:.1em;color:rgba(237,233,223,.8)">00:00 / 00:12</span>
+  </div>
+</section>
+
+<!-- ============ 7 · FOOTER ============ -->
+<footer id="visit" class="relative overflow-hidden" style="z-index:20;background:var(--washi);padding-top:16vh">
+  <div class="pointer-events-none absolute inset-0" style="background:radial-gradient(120% 90% at 50% 50%, transparent 60%, rgba(37,28,22,.03) 100%)"></div>
+  <div class="max-w-[1400px] mx-auto px-6 md:px-12 relative">
+    <p class="text-xs uppercase mb-8 flex items-center gap-3" style="letter-spacing:.32em"><span class="inline-block w-1.5 h-1.5" style="background:var(--vermilion)"></span>— Begin Your Journey</p>
+    <div class="flex flex-col md:flex-row md:items-center gap-10 md:gap-16">
+      <h2 class="tracking-tight" style="font-family:'Cormorant Garamond',serif;font-size:clamp(2.6rem,5.5vw,6rem);line-height:1.02;letter-spacing:-.015em;font-weight:500">Come see the<br>river <em>bloom</em></h2>
+      <a id="magnet" href="#" class="shrink-0 w-[120px] h-[120px] rounded-full flex flex-col items-center justify-center gap-1 will-change-transform" style="background:var(--vermilion);color:var(--washi)">
+        <span class="text-sm" style="letter-spacing:.08em">Begin</span>
+        <iconify-icon icon="solar:arrow-right-linear" width="18" stroke-width="1.5"></iconify-icon>
+      </a>
+    </div>
+    <div id="stories" class="grid grid-cols-2 md:grid-cols-4 gap-10 mt-24 pb-10 relative">
+      <div class="flex flex-col gap-3 text-xs" style="letter-spacing:.12em">
+        <span class="uppercase mb-2" style="letter-spacing:.32em;color:rgba(37,28,22,.5)">Explore</span>
+        <a href="#journey" class="u-link w-fit">Journey</a><a href="#" class="u-link w-fit">Stories</a><a href="#gallery" class="u-link w-fit">Gallery</a><a href="#" class="u-link w-fit">Visit</a>
+      </div>
+      <div class="flex flex-col gap-3 text-xs" style="letter-spacing:.12em">
+        <span class="uppercase mb-2" style="letter-spacing:.32em;color:rgba(37,28,22,.5)">Elsewhere</span>
+        <a href="#" class="u-link w-fit">Instagram</a><a href="#" class="u-link w-fit">Vimeo</a><a href="#" class="u-link w-fit">Are.na</a>
+      </div>
+      <div class="flex flex-col gap-3 text-xs" style="letter-spacing:.12em">
+        <span class="uppercase mb-2" style="letter-spacing:.32em;color:rgba(37,28,22,.5)">Studio</span>
+        <a href="#" class="u-link w-fit">Contact</a><a href="#" class="u-link w-fit">Press</a>
+      </div>
+      <div class="hidden md:flex justify-end"><span style="writing-mode:vertical-rl;font-family:'Noto Serif JP',serif;color:rgba(37,28,22,.5);letter-spacing:.4em">ありがとう</span></div>
+    </div>
+  </div>
+  <div class="overflow-hidden px-2 text-center">
+    <div id="wordmark" class="tracking-tight leading-none whitespace-nowrap" style="font-family:'Cormorant Garamond',serif;font-weight:500;letter-spacing:-.015em;color:var(--ink);transform:translateY(110%)">KOISEI</div>
+  </div>
+  <div class="border-t" style="border-color:rgba(37,28,22,.12)">
+    <div class="max-w-[1400px] mx-auto px-6 md:px-12 py-4 flex justify-between text-xs" style="letter-spacing:.15em;color:rgba(37,28,22,.55)">
+      <span>© 2026 Koisei — down the spring river</span><span>Kyoto → Tokyo</span>
+    </div>
+  </div>
+</footer>
+</main>
+
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js"}}</script>
+<script type="module">
+import * as THREE from 'three';
+gsap.registerPlugin(ScrollTrigger);
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const isMobile = matchMedia('(max-width: 767px)').matches;
+const V = { washi:'#F1E9DE', night:'#241B15', ink:'#251C16', cream:'#EDE9DF' };
+
+/* ---------- Smooth scroll ---------- */
+let lenis;
+if(!reduced){
+  lenis = new Lenis({lerp:.08, wheelMultiplier:1});
+  lenis.on('scroll', ScrollTrigger.update);
+  gsap.ticker.add(t=>lenis.raf(t*1000));
+  gsap.ticker.lagSmoothing(0);
+}
+
+/* ---------- Grain ---------- */
+const gCan = document.getElementById('grain'), gCtx = gCan.getContext('2d');
+gCan.width = 180; gCan.height = 180;
+let gf = 0;
+(function grain(){
+  if(++gf % 2 === 0){
+    const d = gCtx.createImageData(180,180), p = d.data;
+    for(let i=0;i<p.length;i+=4){const v=Math.random()*255;p[i]=p[i+1]=p[i+2]=v;p[i+3]=255;}
+    gCtx.putImageData(d,0,0);
+  }
+  requestAnimationFrame(grain);
+})();
+
+/* ---------- Shared GL: hero plane + petals ---------- */
+const glCan = document.getElementById('gl');
+const renderer = new THREE.WebGLRenderer({canvas:glCan, alpha:true, antialias:false});
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.75));
+const scene = new THREE.Scene();
+let W = innerWidth, H = innerHeight;
+const cam = new THREE.OrthographicCamera(-W/2,W/2,H/2,-H/2,-100,100);
+renderer.setSize(W,H);
+
+const heroUniforms = {
+  uTex:{value:null}, uTime:{value:0}, uDarken:{value:0}, uWaveT:{value:10},
+  uMouse:{value:new THREE.Vector2(.5,.5)}, uScale:{value:new THREE.Vector2(1,1)}, uOffset:{value:new THREE.Vector2(0,0)}
+};
+const heroMat = new THREE.ShaderMaterial({
+  uniforms:heroUniforms,
+  vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+  fragmentShader:`
+    uniform sampler2D uTex;uniform float uTime,uDarken,uWaveT;uniform vec2 uMouse,uScale,uOffset;varying vec2 vUv;
+    void main(){
+      vec2 uv=vUv*uScale+uOffset;
+      float wm=smoothstep(.38,.05,vUv.y);
+      uv.x+=sin(vUv.y*40.+uTime*1.2)*.0015*wm;
+      float d=distance(vUv,uMouse);
+      uv+=sin(d*46.-uWaveT*7.)*exp(-d*9.)*exp(-uWaveT*1.2)*.008;
+      vec3 col=texture2D(uTex,uv).rgb*(1.-uDarken);
+      gl_FragColor=vec4(col,1.);
+    }`
+});
+const heroPlane = new THREE.Mesh(new THREE.PlaneGeometry(1,1), heroMat);
+heroPlane.position.z=-5; scene.add(heroPlane);
+let imgAspect = 1;
+function fitHero(){
+  heroPlane.scale.set(W*1.001,H*1.001,1);
+  const pa=W/H;
+  if(pa>imgAspect){heroUniforms.uScale.value.set(1,imgAspect/pa);heroUniforms.uOffset.value.set(0,(1-imgAspect/pa)/2);}
+  else{heroUniforms.uScale.value.set(pa/imgAspect,1);heroUniforms.uOffset.value.set((1-pa/imgAspect)/2,0);}
+}
+
+/* petal texture */
+function petalTex(){
+  const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d');
+  x.translate(32,32);x.fillStyle='#E8B4C0';
+  x.beginPath();x.moveTo(0,-26);x.bezierCurveTo(17,-20,19,4,0,26);x.bezierCurveTo(-19,4,-17,-20,0,-26);x.fill();
+  x.fillStyle='rgba(217,142,159,.55)';
+  x.beginPath();x.moveTo(0,-16);x.bezierCurveTo(8,-8,8,8,0,22);x.bezierCurveTo(-5,6,-7,-8,0,-16);x.fill();
+  return new THREE.CanvasTexture(c);
+}
+const COUNT = isMobile?120:380;
+const petMat = new THREE.MeshBasicMaterial({map:petalTex(),transparent:true,depthWrite:false,opacity:0});
+const petMesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(14,14), petMat, COUNT);
+scene.add(petMesh);
+const dummy = new THREE.Object3D();
+const pets = Array.from({length:COUNT},()=>({
+  x:(Math.random()-.5)*W*1.2, y:(Math.random()-.5)*H*1.2, z:(Math.random()*4)-2,
+  s:.5+Math.random()*1.1, ph:Math.random()*Math.PI*2, r1:Math.random()*Math.PI*2, r2:Math.random()*Math.PI*2,
+  rs:(Math.random()-.5)*2, vy:.5+Math.random()*1.1, vx:0, vyImp:0
+}));
+let mode='down'; // down | up | settle
+const mouse={x:-9999,y:-9999};
+addEventListener('pointermove',e=>{
+  mouse.x=e.clientX-W/2; mouse.y=H/2-e.clientY;
+  const nx=e.clientX/W, ny=1-e.clientY/H;
+  if(Math.hypot(nx-heroUniforms.uMouse.value.x,ny-heroUniforms.uMouse.value.y)>.06){
+    heroUniforms.uMouse.value.set(nx,ny); heroUniforms.uWaveT.value=0;
+  }
+});
+
+function updatePetals(t,dt){
+  for(const p of pets){
+    const sway=Math.sin(t*.8+p.ph)*.45 + Math.sin(t*.31+p.ph*2.1)*.3;
+    /* mouse impulse */
+    const dx=p.x-mouse.x, dy=p.y-mouse.y, dist=Math.hypot(dx,dy);
+    if(dist<180 && dist>1){const f=(1-dist/180); const q=f*f*9; p.vx+=dx/dist*q; p.vyImp+=dy/dist*q;}
+    p.vx*=.9; p.vyImp*=.9;
+    if(mode==='down'){ p.y-=p.vy*(dt*60)*.9; }
+    else if(mode==='up'){ p.y+=p.vy*.55*(dt*60); }
+    else { p.y+= (Math.max(-H*.28,p.y)-p.y); p.y-=p.vy*.08*(dt*60)*Math.max(0,(p.y+H*.28)/(H*.28)); }
+    p.x+=sway+p.vx*dt*6; p.y+=p.vyImp*dt*6;
+    p.r1+=p.rs*dt; p.r2+=p.rs*.7*dt;
+    if(mode!=='up' && p.y<-H/2-30){p.y=H/2+30;p.x=(Math.random()-.5)*W*1.2;}
+    if(mode==='up' && p.y>H/2+30){p.y=-H/2-30;p.x=(Math.random()-.5)*W*1.2;}
+    if(p.x>W/2+40)p.x=-W/2-40; if(p.x<-W/2-40)p.x=W/2+40;
+  }
+  pets.forEach((p,i)=>{
+    dummy.position.set(p.x,p.y,p.z);
+    dummy.rotation.set(p.r1,p.r2,p.r1*.5);
+    dummy.scale.setScalar(p.s);
+    dummy.updateMatrix();
+    petMesh.setMatrixAt(i,dummy.matrix);
+  });
+  petMesh.instanceMatrix.needsUpdate=true;
+}
+
+/* ---------- Dissolve scene ---------- */
+const dCan=document.getElementById('dissolve');
+const dRen=new THREE.WebGLRenderer({canvas:dCan,antialias:false});
+dRen.setPixelRatio(Math.min(devicePixelRatio,1.5));
+const dScene=new THREE.Scene(), dCam=new THREE.OrthographicCamera(-1,1,1,-1,0,10);
+const dUni={uA:{value:null},uB:{value:null},uP:{value:0},uScaleA:{value:new THREE.Vector2(1,1)},uOffA:{value:new THREE.Vector2(0,0)},uScaleB:{value:new THREE.Vector2(1,1)},uOffB:{value:new THREE.Vector2(0,0)}};
+const dMat=new THREE.ShaderMaterial({uniforms:dUni,
+  vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position,1.);}`,
+  fragmentShader:`
+    uniform sampler2D uA,uB;uniform float uP;uniform vec2 uScaleA,uOffA,uScaleB,uOffB;varying vec2 vUv;
+    float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+    float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
+      return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x),f.y);}
+    float fbm(vec2 p){float v=0.,a=.55;for(int i=0;i<4;i++){v+=a*noise(p);p*=2.1;a*=.5;}return v;}
+    void main(){
+      float n=fbm(vUv*4.);
+      float p=uP*1.3-.15;
+      float m=smoothstep(p-.08,p+.08,n);
+      vec3 a=texture2D(uA,vUv*uScaleA+uOffA).rgb;
+      vec3 b=texture2D(uB,vUv*uScaleB+uOffB).rgb;
+      gl_FragColor=vec4(mix(b,a,m),1.);
+    }`});
+dScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2,2),dMat));
+let aAsp=1,bAsp=1;
+function coverFit(asp,scale,off){const pa=W/H;
+  if(pa>asp){scale.set(1,asp/pa);off.set(0,(1-asp/pa)/2);}else{scale.set(pa/asp,1);off.set((1-pa/asp)/2,0);}}
+function fitDissolve(){dRen.setSize(W,H);coverFit(aAsp,dUni.uScaleA.value,dUni.uOffA.value);coverFit(bAsp,dUni.uScaleB.value,dUni.uOffB.value);}
+
+/* ---------- Render loop ---------- */
+let heroVisible=true, dissolveVisible=false, last=0;
+new IntersectionObserver(e=>heroVisible=e[0].isIntersecting,{rootMargin:'20%'}).observe(document.getElementById('hero'));
+new IntersectionObserver(e=>dissolveVisible=e[0].isIntersecting,{rootMargin:'20%'}).observe(document.getElementById('nightfall'));
+gsap.ticker.add((t)=>{
+  const dt=Math.min(.05,t-last); last=t;
+  heroUniforms.uTime.value=t; heroUniforms.uWaveT.value+=dt;
+  if(!reduced) updatePetals(t,dt);
+  heroPlane.visible = heroVisible;
+  renderer.render(scene,cam);
+  if(dissolveVisible) dRen.render(dScene,dCam);
+});
+
+/* ---------- Preloader ---------- */
+const loader=new THREE.TextureLoader();
+let prog={v:0}, realDone=false, minDone=false;
+const pctEl=document.getElementById('loaderPct'), barEl=document.getElementById('loaderBar');
+gsap.to(prog,{v:88,duration:1.4,ease:'power2.out',onUpdate:()=>{pctEl.textContent=Math.round(prog.v)+'%';barEl.style.transform=`scaleX(${prog.v/100})`;}});
+setTimeout(()=>{minDone=true;tryFinish();},1600);
+loader.load('https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/sakura-river-2026-07-05/sakura-river-hero-plate-875acd7a5205_original.png',tex=>{
+  tex.colorSpace=THREE.SRGBColorSpace; heroUniforms.uTex.value=tex;
+  imgAspect=tex.image.width/tex.image.height; fitHero();
+  realDone=true; tryFinish();
+});
+loader.load('https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/sakura-river-2026-07-05/asakusa-lantern-water-plate-73b3e135a98d_original.png',t=>{t.colorSpace=THREE.SRGBColorSpace;dUni.uA.value=t;aAsp=t.image.width/t.image.height;fitDissolve();});
+loader.load('https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/sakura-river-2026-07-05/night-river-lantern-plate-510dc7d4315d_original.png',t=>{t.colorSpace=THREE.SRGBColorSpace;dUni.uB.value=t;bAsp=t.image.width/t.image.height;fitDissolve();});
+gsap.fromTo('#loaderWord',{letterSpacing:'.5em'},{letterSpacing:'.02em',duration:1.2,ease:'power3.out'});
+
+function tryFinish(){
+  if(!realDone||!minDone)return;
+  gsap.to(prog,{v:100,duration:.3,onUpdate:()=>{pctEl.textContent=Math.round(prog.v)+'%';barEl.style.transform=`scaleX(${prog.v/100})`;},onComplete:()=>{
+    barEl.style.background='#C4472F';
+    gsap.to('#loader',{clipPath:'inset(0 0 100% 0)',duration:.9,ease:'power4.inOut',delay:.15,onComplete:()=>{document.getElementById('loader').remove();}});
+    heroEntrance();
+  }});
+}
+
+/* ---------- Hero entrance + exit ---------- */
+function heroEntrance(){
+  gsap.fromTo(heroPlane.scale,{x:W*1.12,y:H*1.12},{x:W,y:H,duration:2.4,ease:'power2.out'});
+  gsap.fromTo('.heroLine',{yPercent:110,rotate:2},{yPercent:0,rotate:0,duration:1.1,ease:'power4.out',stagger:.12,delay:.35});
+  gsap.fromTo('.heroFade',{opacity:0},{opacity:1,duration:1,delay:1,stagger:.1});
+  gsap.to(petMat,{opacity:.95,duration:1.6,delay:.8});
+}
+if(!reduced){
+  ScrollTrigger.create({trigger:'#hero',start:'top top',end:'+=120%',pin:true,pinSpacing:true,scrub:1,
+    onUpdate:s=>{
+      heroUniforms.uDarken.value=s.progress*.25;
+      const sc=1+s.progress*.18; heroPlane.scale.set(W*sc,H*sc,1);
+      gsap.set('#heroContent',{y:-s.progress*H*.4,opacity:1-s.progress*1.3});
+    }});
+  gsap.fromTo('#journey',{borderTopLeftRadius:32,borderTopRightRadius:32},{borderTopLeftRadius:0,borderTopRightRadius:0,ease:'none',
+    scrollTrigger:{trigger:'#journey',start:'top 60%',end:'top top',scrub:true}});
+}
+
+/* ---------- Nav states ---------- */
+ScrollTrigger.create({start:120,onToggle:s=>document.getElementById('nav').classList.toggle('nav--scrolled',s.isActive)});
+ScrollTrigger.create({trigger:'#nightfall',start:'top 40%',endTrigger:'#visit',end:'top 60%',
+  onToggle:s=>document.getElementById('nav').classList.toggle('nav--night',s.isActive)});
+
+/* ---------- Rail + section index ---------- */
+ScrollTrigger.create({start:0,end:'max',onUpdate:s=>{document.getElementById('railFill').style.transform=`scaleY(${s.progress})`;}});
+['hero','journey','film1','gallery','nightfall','film2','visit'].forEach((id,i)=>{
+  ScrollTrigger.create({trigger:'#'+id,start:'top 50%',end:'bottom 50%',
+    onToggle:st=>{if(st.isActive)document.getElementById('secIdx').textContent=String(i+1).padStart(2,'0')+' / 07';}});
+});
+
+/* ---------- Manifesto ---------- */
+gsap.utils.toArray('.mLine > span').forEach((el,i)=>{
+  gsap.fromTo(el,{yPercent:110,rotate:1.5},{yPercent:0,rotate:0,duration:1.1,ease:'power4.out',delay:i*.09,
+    scrollTrigger:{trigger:'.manifesto',start:'top 70%',toggleActions:'play none none reverse'}});
+});
+gsap.utils.toArray('.mImg').forEach(el=>{
+  gsap.to(el,{width:140,duration:1.2,ease:'power4.inOut',scrollTrigger:{trigger:'.manifesto',start:'top 65%',toggleActions:'play none none reverse'}});
+});
+gsap.utils.toArray('.counter').forEach(el=>{
+  const to=+el.dataset.to;
+  gsap.fromTo(el,{textContent:0},{textContent:to,duration:1.6,ease:'power2.out',snap:{textContent:1},
+    onUpdate:function(){el.textContent=Math.round(this.targets()[0].textContent).toLocaleString();},
+    scrollTrigger:{trigger:el,start:'top 85%',once:true}});
+});
+
+/* ---------- Petal opacity across journey ---------- */
+if(!reduced){
+  gsap.to(petMat,{opacity:0,ease:'none',scrollTrigger:{trigger:'#journey',start:'top 60%',end:'bottom top',scrub:true}});
+  ScrollTrigger.create({trigger:'#nightfall',start:'top 30%',
+    onEnter:()=>{mode='up';glCan.style.zIndex=45;gsap.to(petMat.color,{r:.91,g:.65,b:.29,duration:1});gsap.to(petMat,{opacity:.85,duration:1.5});},
+    onLeaveBack:()=>{mode='down';glCan.style.zIndex=5;gsap.to(petMat.color,{r:1,g:1,b:1,duration:1});gsap.to(petMat,{opacity:0,duration:.8});}});
+  ScrollTrigger.create({trigger:'#visit',start:'top 50%',
+    onEnter:()=>{mode='settle';gsap.to(petMat.color,{r:1,g:1,b:1,duration:1.2});},
+    onLeaveBack:()=>{mode='up';gsap.to(petMat.color,{r:.91,g:.65,b:.29,duration:1});}});
+}
+
+/* ---------- Scroll films ---------- */
+function setupFilm(sec, pinLen, chapterCfg){
+  const video=sec.querySelector('.filmVid'), bar=sec.querySelector('.filmBar'), time=sec.querySelector('.filmTime');
+  let target=0, cur=0;
+  const tl=gsap.timeline({scrollTrigger:{trigger:sec,start:'top top',end:'+='+pinLen,pin:true,scrub:1,
+    onUpdate:s=>{target=s.progress;}}});
+  chapterCfg(tl,sec);
+  (function loop(){
+    cur+=(target-cur)*.1;
+    if(video.duration){ const t=cur*video.duration;
+      if(Math.abs(video.currentTime-t)>.02) video.currentTime=t;
+      bar.style.transform=`scaleX(${cur})`;
+      time.textContent=`00:${String(Math.floor(t)).padStart(2,'0')} / 00:${String(Math.floor(video.duration)).padStart(2,'0')}`;
+    }
+    requestAnimationFrame(loop);
+  })();
+}
+if(!reduced){
+  setupFilm(document.getElementById('film1'), isMobile?'250%':'400%',(tl,sec)=>{
+    const ch=sec.querySelectorAll('.chapter'), roms=sec.querySelectorAll('.romNum');
+    const spans=[[5,30],[38,63],[70,95]];
+    spans.forEach((sp,i)=>{
+      tl.fromTo(ch[i],{autoAlpha:0,y:40},{autoAlpha:1,y:0,duration:6},sp[0])
+        .to(ch[i],{autoAlpha:0,y:-40,duration:5},sp[1]-5)
+        .to(roms[i],{color:'#C4472F',duration:1},sp[0])
+        .to(roms[i],{color:'rgba(237,233,223,.5)',duration:1},sp[1]);
+    });
+    tl.to({},{duration:1},100);
+  });
+  setupFilm(document.getElementById('film2'), isMobile?'250%':'350%',(tl,sec)=>{
+    const ch=sec.querySelectorAll('.chapter'), q=sec.querySelector('.quote'), dark=sec.querySelector('.filmDark');
+    tl.fromTo(ch[0],{autoAlpha:0,y:40},{autoAlpha:1,y:0,duration:8},6).to(ch[0],{autoAlpha:0,y:-40,duration:6},34)
+      .fromTo(ch[1],{autoAlpha:0,y:40},{autoAlpha:1,y:0,duration:8},44).to(ch[1],{autoAlpha:0,y:-40,duration:6},72)
+      .to(dark,{opacity:.3,duration:6},82)
+      .fromTo(q,{autoAlpha:0,y:30},{autoAlpha:1,y:0,duration:8},85)
+      .to({},{duration:1},100);
+  });
+}
+
+/* ---------- Horizontal gallery ---------- */
+const track=document.getElementById('galTrack');
+if(!reduced && !isMobile){
+  track.classList.remove('overflow-x-auto');
+  const getDist=()=>track.scrollWidth-innerWidth+48;
+  const st=gsap.to(track,{x:()=>-getDist(),ease:'none',
+    scrollTrigger:{trigger:'#gallery',start:'top top',end:'+=250%',pin:true,scrub:1,invalidateOnRefresh:true,
+      onUpdate:s=>{
+        document.getElementById('galBar').style.transform=`scaleX(${s.progress})`;
+        document.getElementById('galCount').textContent=String(Math.min(3,1+Math.floor(s.progress*3))).padStart(2,'0')+' — 03';
+        document.querySelectorAll('.galCard').forEach(card=>{
+          const r=card.getBoundingClientRect(), c=r.left+r.width/2;
+          const near=Math.abs(c-innerWidth/2)<r.width/2;
+          card.querySelector('.galNum').style.color=near?V.ink:'transparent';
+          const off=(c-innerWidth/2)/innerWidth;
+          card.querySelector('.galImg').style.transform=`scale(1.15) translateX(${off*7}%)`;
+        });
+      }}});
+}
+
+/* ---------- Day → Night ---------- */
+if(!reduced){
+  const nf=gsap.timeline({scrollTrigger:{trigger:'#nightfall',start:'top top',end:'+=200%',pin:true,scrub:1}});
+  nf.fromTo('#dissolveWrap',{clipPath:'inset(11vh 24vw)'},{clipPath:'inset(0vh 0vw)',ease:'none',duration:40},0)
+    .fromTo('#nfKicker',{opacity:0,y:20},{opacity:1,y:0,duration:8},8)
+    .fromTo('#nfTitle',{opacity:0,y:30},{opacity:1,y:0,duration:10},10)
+    .to('#nightfall',{backgroundColor:V.night,duration:50,ease:'none'},20)
+    .to(dUni.uP,{value:1,duration:55,ease:'none'},35)
+    .to('#nfKicker',{color:V.cream,duration:30},30)
+    .to('#nfTitle',{color:V.cream,duration:30},30)
+    .to({},{duration:5},95);
+} else { dUni.uP.value=1; document.getElementById('nightfall').style.background=V.night; }
+
+/* ---------- Footer wordmark ---------- */
+function fitWordmark(){
+  const el=document.getElementById('wordmark');
+  el.style.fontSize=(Math.max(3, innerWidth/3.95/16))+'rem';
+}
+fitWordmark();
+gsap.to('#wordmark',{y:0,duration:1.3,ease:'power4.out',scrollTrigger:{trigger:'#visit',start:'top 30%',toggleActions:'play none none reverse'}});
+
+/* magnetic button */
+const mag=document.getElementById('magnet');
+if(!isMobile){
+  mag.addEventListener('mousemove',e=>{
+    const r=mag.getBoundingClientRect();
+    gsap.to(mag,{x:(e.clientX-r.left-r.width/2)*.3,y:(e.clientY-r.top-r.height/2)*.3,duration:.4});
+  });
+  mag.addEventListener('mouseleave',()=>gsap.to(mag,{x:0,y:0,duration:.8,ease:'elastic.out(1,0.4)'}));
+}
+
+/* ---------- Custom cursor ---------- */
+if(!isMobile && matchMedia('(pointer:fine)').matches){
+  document.body.style.cursor='none';
+  const dot=document.getElementById('curDot'), ring=document.getElementById('curRing');
+  let rx=0,ry=0,tx=0,ty=0;
+  addEventListener('pointermove',e=>{tx=e.clientX;ty=e.clientY;dot.style.transform=`translate(${tx-4}px,${ty-4}px)`;});
+  gsap.ticker.add(()=>{rx+=(tx-rx)*.15;ry+=(ty-ry)*.15;ring.style.transform=`translate(${rx-16}px,${ry-16}px)`;});
+  document.querySelectorAll('a,button').forEach(el=>{
+    el.addEventListener('mouseenter',()=>{ring.style.width='56px';ring.style.height='56px';ring.style.marginLeft='-12px';ring.style.marginTop='-12px';});
+    el.addEventListener('mouseleave',()=>{ring.style.width='32px';ring.style.height='32px';ring.style.marginLeft='0';ring.style.marginTop='0';});
+  });
+}
+
+/* ---------- Resize ---------- */
+addEventListener('resize',()=>{
+  W=innerWidth;H=innerHeight;
+  cam.left=-W/2;cam.right=W/2;cam.top=H/2;cam.bottom=-H/2;cam.updateProjectionMatrix();
+  renderer.setSize(W,H); fitHero(); fitDissolve(); fitWordmark();
+  ScrollTrigger.refresh();
+});
+</script>
+</body>
+</html>
