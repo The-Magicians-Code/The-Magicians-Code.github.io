@@ -1,14 +1,13 @@
 // Lenis smooth scroll — the lerp-based "can't-slam-it" easing (same lib as the
 // reference site). Scope: smooth WHEEL/pointer only; native momentum on touch
 // (syncTouch: false), and fully disabled under prefers-reduced-motion. Lenis
-// drives the real window scroll (no transform), so scroll-coupled consumers
-// (e.g. liquid-glass) — which read window.scrollY / getBoundingClientRect —
-// follow the smoothed position with no changes of their own.
+// drives the real window scroll (no transform), so scroll-coupled consumers —
+// which read window.scrollY / getBoundingClientRect — follow the smoothed
+// position with no changes of their own.
 //
-// ⚠️ NO-TEARDOWN ASSUMPTION (load-bearing). This module — and bento-expand.ts
-// and liquid-glass.ts — register IntersectionObservers /
-// ResizeObservers / MutationObservers / rAF loops / Lenis instances and never
-// tear them down, because every navigation is a full page RELOAD (MPA) that
+// ⚠️ NO-TEARDOWN ASSUMPTION (load-bearing). This module — and bento-expand.ts —
+// register IntersectionObservers / ResizeObservers / MutationObservers / rAF
+// loops / Lenis instances and never tear them down, because every navigation is a full page RELOAD (MPA) that
 // wipes them. This holds ONLY while the site has no Astro <ClientRouter> /
 // view-transitions. The moment client-side swaps are enabled, navigations stop
 // reloading and all of the above LEAK on every navigation (~a dozen observers +
