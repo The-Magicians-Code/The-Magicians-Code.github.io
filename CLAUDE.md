@@ -38,7 +38,7 @@ Precedent: the bento card morph-jump ("expands right, then jumps to center", Saf
 
 ## Liquid Glass (extracted)
 
-The Liquid Glass module (CSS+SVG+Canvas Snell's-law refraction runtime, dev tuner, stylesheet) and its `musicplayer` showcase page were **extracted on 2026-07-08** to the standalone repo [liquid-glass](https://github.com/The-Magicians-Code/liquid-glass) (being published by the user), along with the module's design spec and implementation plan from `docs/superpowers/`. Nothing on this site consumes the module anymore — the former nav pill was already gone, and the `lg-no-svg-backdrop` UA sniff was removed from `BaseLayout.astro` with it. Full module docs live in the new repo's README/CLAUDE.md.
+The Liquid Glass module (CSS+SVG+Canvas Snell's-law refraction runtime, dev tuner, stylesheet) and its `musicplayer` showcase page were **extracted on 2026-07-08** to the standalone repo [musicplayer](https://github.com/The-Magicians-Code/musicplayer) (named after the showcase; being published by the user), along with the module's design spec and implementation plan from `docs/superpowers/`. Nothing on this site consumes the module anymore — the former nav pill was already gone, and the `lg-no-svg-backdrop` UA sniff was removed from `BaseLayout.astro` with it. Full module docs live in the new repo's README/CLAUDE.md.
 
 ## Content Collections
 
