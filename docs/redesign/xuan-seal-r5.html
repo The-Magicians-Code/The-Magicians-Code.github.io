@@ -1,0 +1,1643 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+<title>Spirit Realm — Xuan &amp; Seal r5</title>
+<style>
+  /* ============ Root & tokens ============ */
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #141210; /* night base — the day ground layers over it */
+    overflow-x: hidden;
+  }
+  /* Native scrollbar hidden — the rail IS the scrollbar. Scrolling itself
+     (wheel / keys / touch / spacebar) is untouched. */
+  html { scrollbar-width: none; }
+  html::-webkit-scrollbar { display: none; }
+  :root {
+    --paper: #F5F1E8;
+    --paper-ink: #1A1A18;
+    --paper-ink-soft: rgba(26, 26, 24, 0.62);
+    --lacquer: #141210;
+    --porcelain: #F0EDE4;
+    --porcelain-soft: rgba(240, 237, 228, 0.66);
+    --gold: #C9A961;
+    --gold-soft: rgba(201, 169, 97, 0.5);
+    --vermillion: #B33A2B;
+    --vermillion-core: #C9472F;
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --serif: 'Iowan Old Style', Georgia, 'Times New Roman', 'Songti SC', serif;
+  }
+  #realm {
+    font-family: var(--serif);
+    color: var(--porcelain);
+    -webkit-font-smoothing: antialiased;
+  }
+  #realm a { color: inherit; }
+
+  /* Underline-reveal links (site-wide) */
+  .u-link {
+    position: relative;
+    text-decoration: none;
+  }
+  .u-link::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -3px;
+    width: 100%;
+    height: 1px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.35s var(--ease-out);
+  }
+  .u-link:hover::after, .u-link:focus-visible::after { transform: scaleX(1); }
+
+  /* Scroll spacer — the "depth" of the world */
+  #depth { height: 800vh; }
+
+  /* All layers are fixed full-viewport; JS choreographs them */
+  .layer {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    will-change: transform, opacity;
+  }
+  canvas.layer { width: 100%; height: 100%; display: block; }
+
+  #day-ground      { z-index: 1; }
+  #dissolve-canvas { z-index: 1; }
+  #scene-hero      { z-index: 2; }
+  #scene-manifesto { z-index: 2; }
+  #scene-nightfall { z-index: 2; }
+  .project-scene   { z-index: 3; }
+  #red-wipe        { z-index: 6; }
+  #scene-drench    { z-index: 7; }
+  #fx-canvas       { z-index: 8; } /* petals ride above everything but the rail */
+  #rail            { z-index: 9; }
+
+  /* ============ Day ground (washi paper) ============ */
+  #day-ground { background: var(--paper); }
+  #dissolve-canvas { visibility: hidden; }
+
+  /* ============ Interactive rail — the site's scrollbar (pointer-fine desktop) ============ */
+  #rail {
+    position: fixed;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    pointer-events: none; /* only the hit area takes the pointer */
+    color: var(--paper-ink);
+    transition: color 0.6s ease;
+    outline: none;
+  }
+  @media (min-width: 1024px) and (pointer: fine) { #rail { display: flex; } }
+  #rail:focus-visible .rail-hit {
+    outline: 2px solid var(--vermillion);
+    outline-offset: 4px;
+    border-radius: 4px;
+  }
+  .rail-hit {
+    position: relative;
+    width: 24px;            /* comfortable pointer target… */
+    height: 40vh;
+    pointer-events: auto;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    touch-action: none;
+  }
+  .rail-track {
+    position: relative;
+    width: 1px;             /* …around a 1px visual line */
+    height: 100%;
+    background: rgba(26, 26, 24, 0.22);
+    transition: background 0.6s ease;
+  }
+  #rail.rail--night { color: var(--porcelain); }
+  #rail.rail--night .rail-track { background: rgba(240, 237, 228, 0.25); }
+  .rail-fill {
+    position: absolute;
+    inset: 0;
+    background: var(--vermillion);
+    transform: scaleY(0);
+    transform-origin: top;
+    will-change: transform;
+  }
+  /* the thumb: a small seal riding the fill's leading edge */
+  .rail-thumb {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    background: var(--vermillion);
+    transform: translate(-50%, -50%) rotate(-4deg);
+    transition: transform 0.18s var(--ease-out);
+    will-change: top;
+    pointer-events: none;
+  }
+  .rail-thumb--drag { transform: translate(-50%, -50%) rotate(-4deg) scale(1.5); }
+  .rail-tick {
+    position: absolute;
+    left: 0;
+    width: 24px;
+    height: 14px;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .rail-tick > span {
+    width: 9px;
+    height: 1px;
+    background: currentColor;
+    opacity: 0.55;
+    transition: width 0.2s var(--ease-out), opacity 0.2s ease;
+  }
+  .rail-tick:hover > span { opacity: 1; width: 13px; }
+  .rail-label {
+    position: absolute;
+    left: 32px;
+    top: 0;
+    transform: translateY(-50%);
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+  }
+  .rail-label--on { opacity: 0.9; }
+  .rail-idx {
+    font-size: 0.68rem;
+    letter-spacing: 0.18em;
+    writing-mode: vertical-rl;
+    opacity: 0.75;
+    font-family: var(--serif);
+  }
+
+  /* ============ Scene · hero (xuan morning) ============ */
+  #scene-hero {
+    display: grid;
+    place-items: center;
+    /* faint warmth so the paper isn't dead flat under the name */
+    background: radial-gradient(85vmax 62vmax at 50% 66%,
+      rgba(201, 169, 97, 0.12) 0%, rgba(201, 169, 97, 0.045) 40%, rgba(201, 169, 97, 0) 68%);
+  }
+  .hero-inner {
+    text-align: center;
+    padding: 0 6vw;
+    max-width: 60rem;
+    color: var(--paper-ink);
+  }
+  .hero-name {
+    margin: 0 0 0.28em;
+    font-size: clamp(2.6rem, 8.5vw, 6rem);
+    font-weight: 400;
+    line-height: 1.02;
+    letter-spacing: 0.005em;
+    color: var(--paper-ink);
+    text-wrap: balance;
+    opacity: 0;
+    /* Koisei preloader energy: tracking settles from wide to normal */
+    animation: name-settle 0.95s var(--ease-out) 0.15s forwards;
+  }
+  @keyframes name-settle {
+    0%   { opacity: 0; letter-spacing: 0.22em; }
+    100% { opacity: 1; letter-spacing: 0.005em; }
+  }
+  .hero-thesis {
+    margin: 0 auto;
+    max-width: 34ch;
+    font-style: italic;
+    font-size: clamp(1rem, 1.9vw, 1.25rem);
+    line-height: 1.55;
+    color: var(--paper-ink-soft);
+    opacity: 0;
+    animation: fade-up 1.2s var(--ease-out) 0.75s forwards;
+  }
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* The vermillion seal — stamps in after the name */
+  .seal-wrap {
+    position: relative;
+    display: inline-block;
+    margin-top: clamp(1.6rem, 4vh, 2.6rem);
+  }
+  .seal {
+    width: 58px;
+    height: 58px;
+    border-radius: 11px;
+    background: var(--vermillion);
+    color: var(--paper);
+    display: grid;
+    place-items: center;
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    user-select: none;
+    opacity: 0;
+    transform: scale(1.4) rotate(-7deg);
+    animation: seal-stamp 0.55s var(--ease-out) 1.4s forwards;
+  }
+  @keyframes seal-stamp {
+    0%   { opacity: 0; transform: scale(1.4) rotate(-7deg); }
+    55%  { opacity: 1; transform: scale(0.96) rotate(1.2deg); }
+    100% { opacity: 1; transform: scale(1) rotate(0deg); }
+  }
+  .seal-wrap::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 15px;
+    border: 2px solid rgba(179, 58, 43, 0.85);
+    opacity: 0;
+    pointer-events: none;
+    animation: ink-ring 0.8s var(--ease-out) 1.67s forwards;
+  }
+  @keyframes ink-ring {
+    0%   { opacity: 0.9; transform: scale(1); }
+    100% { opacity: 0;   transform: scale(1.9); }
+  }
+  .hero-scrollhint {
+    position: absolute;
+    left: 50%;
+    bottom: clamp(18px, 4vh, 40px);
+    transform: translateX(-50%);
+    font-size: 0.72rem;
+    letter-spacing: 0.34em;
+    text-transform: uppercase;
+    color: rgba(26, 26, 24, 0.48);
+    opacity: 0;
+    animation: fade-up 1.2s var(--ease-out) 2.1s forwards, hint-drift 3.2s ease-in-out 3.3s infinite;
+  }
+  @keyframes hint-drift {
+    0%, 100% { transform: translate(-50%, 0); }
+    50%      { transform: translate(-50%, 7px); }
+  }
+
+  /* ============ Scene · manifesto (light) ============ */
+  #scene-manifesto {
+    display: grid;
+    place-items: center;
+    color: var(--paper-ink);
+    visibility: hidden;
+  }
+  .mani-inner {
+    width: min(1200px, 100%);
+    padding: 0 clamp(1.4rem, 6vw, 5rem);
+  }
+  .mani-kicker {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 clamp(1.2rem, 3.5vh, 2.4rem);
+    font-size: 0.72rem;
+    letter-spacing: 0.34em;
+    text-transform: uppercase;
+    color: var(--paper-ink-soft);
+  }
+  .mani-kicker::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    background: var(--vermillion);
+  }
+  .manifesto {
+    margin: 0;
+    font-weight: 400;
+    font-size: clamp(2.2rem, 4.6vw, 4.5rem);
+    line-height: 1.12;
+    letter-spacing: -0.015em;
+    color: var(--paper-ink);
+  }
+  .mline {
+    display: block;
+    overflow: hidden; /* the reveal mask */
+    padding-bottom: 0.06em;
+  }
+  .mline > span {
+    display: block;
+    transform: translateY(112%) rotate(1.5deg);
+    transform-origin: left bottom;
+    will-change: transform;
+  }
+  /* inline ink-wash placeholder — pure gradient, no image.
+     Width is FIXED at 140px so line 2's wrap point can never change while
+     scrolling (animating width re-wrapped the line and vertically shifted
+     everything below it). The reveal is a clip-path sweep — layout-stable. */
+  .ink-wash {
+    display: inline-block;
+    vertical-align: middle;
+    width: 140px;
+    height: 0.82em;
+    margin: 0 0.12em;
+    border-radius: 999px;
+    overflow: hidden;
+    background:
+      radial-gradient(120% 140% at 25% 30%, rgba(26, 26, 24, 0.78) 0%, rgba(26, 26, 24, 0.35) 45%, rgba(26, 26, 24, 0.12) 70%, rgba(26, 26, 24, 0.05) 100%),
+      linear-gradient(100deg, #3A3833 0%, #6E685C 55%, #A79F8D 100%);
+    clip-path: inset(0 100% 0 0 round 999px);
+    will-change: clip-path;
+  }
+  .mani-aside {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: clamp(1.8rem, 5vh, 3.4rem);
+    opacity: 0;
+    will-change: transform, opacity;
+  }
+  .mani-aside > div { max-width: 34em; }
+  .mani-aside p {
+    margin: 0 0 1.1rem;
+    font-size: clamp(0.95rem, 1.25vw, 1.1rem);
+    line-height: 1.7;
+    color: rgba(26, 26, 24, 0.76);
+  }
+  .mani-aside a {
+    font-size: 0.8rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--vermillion);
+    pointer-events: auto;
+  }
+  .mani-aside a:focus-visible { outline: 2px solid var(--vermillion); outline-offset: 4px; }
+
+  /* ============ Scene · nightfall (the dissolve) ============ */
+  #scene-nightfall {
+    display: grid;
+    place-items: center;
+    visibility: hidden;
+  }
+  .nf-line {
+    padding: 0 8vw;
+    text-align: center;
+    font-style: italic;
+    font-size: clamp(1.5rem, 3.2vw, 2.6rem);
+    line-height: 1.3;
+    color: var(--paper-ink);
+    text-wrap: balance;
+    will-change: opacity;
+  }
+
+  /* ============ Transition · the chroma spike ============ */
+  #red-wipe {
+    background:
+      radial-gradient(120vmax 90vmax at 50% 46%, var(--vermillion-core) 0%, var(--vermillion) 52%, #96301F 100%);
+    visibility: hidden;
+    display: grid;
+    place-items: center;
+  }
+  /* The mark pressed at the threshold — inverted seal on the vermillion field.
+     Opacity/scale are scroll-driven in choreograph(); no time-based animation. */
+  .wipe-seal {
+    width: 72px;
+    height: 72px;
+    border-radius: 13px;
+    background: #FBF7EC;
+    color: var(--vermillion);
+    display: grid;
+    place-items: center;
+    font-size: 1.65rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    user-select: none;
+    opacity: 0;
+    will-change: transform, opacity;
+  }
+
+  /* ============ Project scenes — three full-viewport tableaux ============ */
+  /* Flat lacquer grounds with one barely-there tint per world; the animated
+     line-art illustration IS the scene now. */
+  .project-scene { visibility: hidden; overflow: hidden; }
+  #scene-heimdall { background: #111716; }
+  #scene-volta    { background: #171310; }
+  #scene-nagare   { background: #10141A; }
+
+  .island-stage {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 6vh 6vw;
+    will-change: transform;
+  }
+  .tableau {
+    text-align: center;
+    padding: 0 6vw;
+    max-width: 68rem;
+  }
+
+  /* Animated line-art illustrations — one per world, the visual identity */
+  .illo {
+    display: block;
+    margin: 0 auto clamp(0.6rem, 2.4vh, 1.6rem);
+    width: min(78vw, 600px);
+    max-height: 50vh;
+    opacity: 0;
+    will-change: opacity;
+  }
+  /* Heimdall: lighthouse beam sweep + drifting wave dashes */
+  .lh-beam {
+    transform-box: fill-box;
+    transform-origin: left center;
+    animation: beam-sweep 7s ease-in-out infinite alternate;
+  }
+  @keyframes beam-sweep {
+    from { transform: rotate(-14deg); }
+    to   { transform: rotate(14deg); }
+  }
+  .wave-a { animation: dash-drift 9s linear infinite; }
+  .wave-b { animation: dash-drift 13s linear infinite reverse; }
+  .wave-c { animation: dash-drift 17s linear infinite; }
+  @keyframes dash-drift { to { stroke-dashoffset: -96; } } /* 4 × (10+14) pattern */
+  /* Volta: charge breathing + self-drawing energy arc */
+  .vt-charge {
+    transform-box: fill-box;
+    transform-origin: left center;
+    transform: scaleX(0.55);
+    animation: charge-breathe 6.5s ease-in-out infinite alternate;
+  }
+  @keyframes charge-breathe {
+    from { transform: scaleX(0.30); }
+    to   { transform: scaleX(0.80); }
+  }
+  .vt-arc {
+    stroke-dasharray: 100;
+    stroke-dashoffset: 0;
+    opacity: 0.55;
+    animation: arc-draw 5.5s ease-in-out infinite;
+  }
+  @keyframes arc-draw {
+    0%   { stroke-dashoffset: 100; opacity: 0; }
+    12%  { opacity: 1; }
+    55%  { stroke-dashoffset: 0; opacity: 1; }
+    74%  { stroke-dashoffset: 0; opacity: 0; }
+    100% { stroke-dashoffset: 100; opacity: 0; }
+  }
+  /* Nagare: layered flowing currents + gliding koi */
+  .flow-a { animation: flow-a 11s linear infinite; }
+  .flow-b { animation: flow-b 15s linear infinite; }
+  .flow-c { animation: flow-c 19s linear infinite; }
+  .flow-d { animation: flow-d 13s linear infinite; }
+  @keyframes flow-a { to { stroke-dashoffset: -252; } } /* 2 × (80+46) */
+  @keyframes flow-b { to { stroke-dashoffset: 188; } }  /* 2 × (60+34), upstream */
+  @keyframes flow-c { to { stroke-dashoffset: -320; } } /* 2 × (100+60) */
+  @keyframes flow-d { to { stroke-dashoffset: -132; } } /* 2 × (40+26) */
+  .koi {
+    opacity: 0;
+    animation: koi-glide 8.5s ease-in-out infinite;
+  }
+  @keyframes koi-glide {
+    0%   { transform: translate(-70px, 244px) rotate(3deg); opacity: 0; }
+    7%   { opacity: 0.8; }
+    38%  { transform: translate(300px, 230px) rotate(-4deg); opacity: 0.8; }
+    54%  { transform: translate(540px, 240px) rotate(2deg); opacity: 0; }
+    100% { transform: translate(540px, 240px) rotate(2deg); opacity: 0; }
+  }
+
+  /* Codename — huge, blur-resolves in on scroll (JS drives filter/opacity/transform) */
+  .codename {
+    margin: 0;
+    font-size: clamp(3.2rem, 7.6vw, 7.5rem);
+    font-weight: 400;
+    line-height: 1;
+    letter-spacing: -0.015em;
+    color: var(--porcelain);
+    opacity: 0;
+  }
+  .tableau-desc {
+    margin: clamp(0.9rem, 2.6vh, 1.5rem) auto 0;
+    max-width: 52ch;
+    font-style: italic;
+    font-size: clamp(0.98rem, 1.7vw, 1.15rem);
+    line-height: 1.6;
+    color: rgba(240, 237, 228, 0.78);
+    opacity: 0;
+  }
+
+  /* ============ Scene · vermillion drench + wordmark + footer ============ */
+  #scene-drench {
+    display: flex;
+    flex-direction: column;
+    transform: translateY(102vh);
+    visibility: hidden;
+  }
+  .drench {
+    flex: 1;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    padding: 6vh 7vw;
+    background:
+      radial-gradient(110vmax 85vmax at 50% 30%, var(--vermillion-core) 0%, var(--vermillion) 55%, #9C3222 100%);
+    pointer-events: auto;
+  }
+  .drench-inner { max-width: 52rem; }
+  .drench-seal {
+    width: 52px;
+    height: 52px;
+    margin: 0 auto clamp(1.4rem, 4vh, 2.4rem);
+    border-radius: 10px;
+    background: #FBF7EC;
+    color: var(--vermillion);
+    display: grid;
+    place-items: center;
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    user-select: none;
+  }
+  .drench-line {
+    margin: 0 0 clamp(1.8rem, 5vh, 3rem);
+    font-size: clamp(1.7rem, 4.6vw, 3.3rem);
+    font-weight: 400;
+    line-height: 1.22;
+    color: #FBF7EC;
+    text-wrap: balance;
+  }
+  .drench-links {
+    display: flex;
+    justify-content: center;
+    gap: clamp(1.4rem, 5vw, 3.2rem);
+    flex-wrap: wrap;
+  }
+  .drench-links a {
+    color: #FBF7EC;
+    font-size: 0.92rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    padding-bottom: 4px;
+  }
+  .drench-links a:focus-visible { outline: 2px solid #FBF7EC; outline-offset: 4px; }
+
+  /* Koisei-style giant rising wordmark above the footer strip */
+  .wordmark-block {
+    background: var(--lacquer);
+    overflow: hidden;
+    text-align: center;
+    padding: 0.5rem 8px 0;
+    line-height: 0;
+  }
+  .wordmark {
+    display: inline-block;
+    font-weight: 400;
+    letter-spacing: -0.015em;
+    line-height: 0.92;
+    white-space: nowrap;
+    color: rgba(240, 237, 228, 0.9);
+    transform: translateY(110%);
+    will-change: transform;
+  }
+  .footer-strip {
+    background: var(--lacquer);
+    color: rgba(240, 237, 228, 0.58);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.1rem clamp(1.2rem, 5vw, 3rem);
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    border-top: 1px solid rgba(201, 169, 97, 0.22);
+    pointer-events: auto;
+  }
+  .footer-strip .theme-hint {
+    letter-spacing: 0.34em;
+    text-transform: uppercase;
+    color: var(--gold-soft);
+    white-space: nowrap;
+  }
+
+  /* ============ Reduced motion ============ */
+  @media (prefers-reduced-motion: reduce) {
+    .hero-name { animation: none; opacity: 1; letter-spacing: 0.005em; }
+    .hero-thesis, .hero-scrollhint { animation: none; opacity: 1; transform: none; }
+    .seal { animation: none; opacity: 1; transform: none; }
+    .seal-wrap::after { animation: none; opacity: 0; }
+    /* illustrations render complete and static */
+    .lh-beam, .wave-a, .wave-b, .wave-c, .vt-charge, .vt-arc,
+    .flow-a, .flow-b, .flow-c, .flow-d, .koi { animation: none !important; }
+    .lh-beam { transform: rotate(7deg); }
+    .vt-charge { transform: scaleX(0.55); }
+    .vt-arc { stroke-dashoffset: 0; opacity: 0.5; }
+    .koi { opacity: 0; }
+    .mline > span { transform: none !important; }
+    .ink-wash { clip-path: none !important; }
+    .mani-aside { opacity: 1 !important; transform: none !important; }
+    .wordmark { transform: translateY(0) !important; }
+    .u-link::after { transition: none; }
+    .rail-thumb { transition: none; }
+    .rail-thumb--drag { transform: translate(-50%, -50%) rotate(-4deg); } /* no scale-up */
+  }
+</style>
+
+<div id="realm">
+  <div id="depth" aria-hidden="true"></div>
+
+  <!-- Day ground: washi paper under the light half -->
+  <div id="day-ground" class="layer" aria-hidden="true"></div>
+  <canvas id="dissolve-canvas" class="layer" aria-hidden="true"></canvas>
+
+  <!-- Interactive rail — the site's scrollbar (desktop) -->
+  <div id="rail" role="scrollbar" tabindex="0" aria-controls="realm" aria-orientation="vertical"
+       aria-label="Page position" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+    <div class="rail-hit" id="rail-hit">
+      <div class="rail-track" id="rail-track">
+        <div class="rail-fill" id="rail-fill"></div>
+        <div class="rail-thumb" id="rail-thumb"></div>
+      </div>
+      <div class="rail-label" id="rail-label"></div>
+    </div>
+    <div class="rail-idx" id="rail-idx">01 / 05</div>
+  </div>
+
+  <!-- 01 · Hero — xuan morning -->
+  <section id="scene-hero" class="layer" aria-label="Introduction">
+    <div class="hero-inner">
+      <h1 class="hero-name">Tanel Treuberg</h1>
+      <p class="hero-thesis">Playful, technical, generous &mdash; magic is real.</p>
+      <div class="seal-wrap"><div class="seal" aria-hidden="true">TT</div></div>
+    </div>
+    <div class="hero-scrollhint">Descend</div>
+  </section>
+
+  <!-- 02 · Manifesto (light) -->
+  <section id="scene-manifesto" class="layer" aria-label="Philosophy">
+    <div class="mani-inner">
+      <p class="mani-kicker">The Philosophy</p>
+      <h2 class="manifesto">
+        <span class="mline"><span data-mline>Every project starts as a question;</span></span>
+        <span class="mline"><span data-mline>the river carries it <span class="ink-wash" id="ink-wash" aria-hidden="true"></span> &mdash; wrong turns and all &mdash;</span></span>
+        <span class="mline"><span data-mline>from the first sketch to the sea,</span></span>
+        <span class="mline"><span data-mline>and what ships still remembers</span></span>
+        <span class="mline"><span data-mline>the problem it grew from.</span></span>
+      </h2>
+      <div class="mani-aside" id="mani-aside">
+        <div>
+          <p>I build software the way water finds the sea &mdash; patiently, testing every bank, keeping what the current teaches. Three of those journeys wait below, in the dark.</p>
+          <a class="u-link" href="#" onclick="return false">Read how I work &rarr;</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 · Nightfall — the washi world dissolves into lacquer -->
+  <section id="scene-nightfall" class="layer" aria-label="Nightfall">
+    <p class="nf-line" id="nf-line">The work doesn&rsquo;t sleep &mdash; it dreams.</p>
+  </section>
+
+  <!-- 04 · Heimdall — the lighthouse -->
+  <section id="scene-heimdall" class="layer project-scene" aria-label="Project: Heimdall">
+    <div class="island-stage" data-stage>
+      <div class="tableau">
+        <svg class="illo" data-illo viewBox="0 0 600 420" fill="none" aria-hidden="true">
+          <!-- sweeping light -->
+          <g class="lh-beam">
+            <polygon points="304,126 522,84 522,168" fill="rgba(127,216,196,0.07)"/>
+            <line x1="304" y1="126" x2="522" y2="84" stroke="#7FD8C4" stroke-width="1.2" opacity="0.55"/>
+            <line x1="304" y1="126" x2="522" y2="168" stroke="#7FD8C4" stroke-width="1.2" opacity="0.55"/>
+          </g>
+          <!-- lantern glow -->
+          <circle cx="304" cy="126" r="5" fill="rgba(127,216,196,0.9)"/>
+          <circle cx="304" cy="126" r="11" stroke="#7FD8C4" stroke-width="1" opacity="0.35"/>
+          <!-- tower -->
+          <g stroke="#C9A961" stroke-width="1.8" stroke-linecap="round">
+            <path d="M289 258 L297 140"/>
+            <path d="M319 258 L311 140"/>
+            <path d="M285 258 L323 258"/>
+            <path d="M293 222 L316 222"/>
+            <path d="M295 192 L314 192"/>
+            <path d="M291 140 L317 140"/>
+            <path d="M298 140 L298 118"/>
+            <path d="M310 140 L310 118"/>
+            <path d="M296 118 L312 118"/>
+            <path d="M296 118 Q304 103 312 118"/>
+          </g>
+          <!-- headland -->
+          <path d="M20 322 C120 318 208 306 264 286 C296 274 318 264 326 254 L326 322"
+                stroke="#C9A961" stroke-width="1.8" stroke-linecap="round"/>
+          <!-- waves -->
+          <path class="wave-a" d="M28 352 C88 344 128 360 188 352 S 288 344 348 352 S 468 360 572 350"
+                stroke="#7FD8C4" stroke-width="1.6" stroke-linecap="round" opacity="0.55" stroke-dasharray="10 14"/>
+          <path class="wave-b" d="M48 374 C108 366 148 382 208 374 S 308 366 368 374 S 488 382 566 372"
+                stroke="#7FD8C4" stroke-width="1.4" stroke-linecap="round" opacity="0.38" stroke-dasharray="10 14"/>
+          <path class="wave-c" d="M34 396 C94 388 134 404 194 396 S 294 388 354 396 S 474 404 560 394"
+                stroke="#7FD8C4" stroke-width="1.2" stroke-linecap="round" opacity="0.25" stroke-dasharray="10 14"/>
+        </svg>
+        <h2 class="codename" data-codename>Heimdall</h2>
+        <p class="tableau-desc" data-desc>Maritime object detection at the edge &mdash; a watchtower that never blinks.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 · Volta — the cell -->
+  <section id="scene-volta" class="layer project-scene" aria-label="Project: Volta">
+    <div class="island-stage" data-stage>
+      <div class="tableau">
+        <svg class="illo" data-illo viewBox="0 0 600 420" fill="none" aria-hidden="true">
+          <!-- self-drawing energy arc -->
+          <path class="vt-arc" d="M172 158 C238 62 362 62 428 158" pathLength="100"
+                stroke="#F5C07A" stroke-width="1.8" stroke-linecap="round"/>
+          <!-- battery body -->
+          <rect x="150" y="180" width="280" height="110" rx="16" stroke="#C9A961" stroke-width="2"/>
+          <rect x="434" y="209" width="24" height="52" rx="8" stroke="#C9A961" stroke-width="2"/>
+          <!-- charge level (breathing) -->
+          <rect class="vt-charge" x="162" y="192" width="256" height="86" rx="8" fill="rgba(245,192,122,0.20)"/>
+          <!-- polarity marks -->
+          <g stroke="#C9A961" stroke-width="1.6" stroke-linecap="round" opacity="0.6">
+            <path d="M480 170 H500"/>
+            <path d="M490 160 V180"/>
+            <path d="M104 170 H124"/>
+          </g>
+          <!-- ground shadow line -->
+          <path d="M180 322 H420" stroke="#C9A961" stroke-width="1" opacity="0.22" stroke-linecap="round"/>
+        </svg>
+        <h2 class="codename" data-codename>Volta</h2>
+        <p class="tableau-desc" data-desc>Battery telemetry for electric fleets &mdash; every cell has a heartbeat.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 · Nagare — the night river -->
+  <section id="scene-nagare" class="layer project-scene" aria-label="Project: Nagare">
+    <div class="island-stage" data-stage>
+      <div class="tableau">
+        <svg class="illo" data-illo viewBox="0 0 600 420" fill="none" aria-hidden="true">
+          <!-- moon -->
+          <circle cx="464" cy="92" r="36" stroke="#9FC4DE" stroke-width="1.5" fill="rgba(159,196,222,0.08)"/>
+          <path d="M404 118 H444" stroke="#9FC4DE" stroke-width="1" opacity="0.35" stroke-linecap="round"/>
+          <path d="M488 138 H524" stroke="#9FC4DE" stroke-width="1" opacity="0.25" stroke-linecap="round"/>
+          <!-- currents -->
+          <path class="flow-a" d="M-20 208 C80 190 160 226 260 208 S440 190 620 208"
+                stroke="#9FC4DE" stroke-width="1.8" stroke-linecap="round" opacity="0.7" stroke-dasharray="80 46"/>
+          <path class="flow-b" d="M-20 254 C90 240 170 270 270 254 S450 238 620 254"
+                stroke="#9FC4DE" stroke-width="1.5" stroke-linecap="round" opacity="0.5" stroke-dasharray="60 34"/>
+          <path class="flow-c" d="M-20 300 C80 286 170 316 270 300 S450 284 620 300"
+                stroke="#9FC4DE" stroke-width="1.3" stroke-linecap="round" opacity="0.36" stroke-dasharray="100 60"/>
+          <path class="flow-d" d="M-20 346 C90 334 180 358 280 346 S460 332 620 346"
+                stroke="#9FC4DE" stroke-width="1.1" stroke-linecap="round" opacity="0.25" stroke-dasharray="40 26"/>
+          <!-- koi silhouette gliding by -->
+          <g class="koi">
+            <path d="M0 0 C10 -7 26 -7 36 0 C26 7 10 7 0 0 Z" fill="rgba(159,196,222,0.5)"/>
+            <path d="M36 0 L49 -7 L44 0 L49 7 Z" fill="rgba(159,196,222,0.4)"/>
+          </g>
+        </svg>
+        <h2 class="codename" data-codename>Nagare</h2>
+        <p class="tableau-desc" data-desc>Streaming pipelines that don&rsquo;t wake you at 3&nbsp;a.m. &mdash; data as a river at night.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Transition · the chroma spike into the project worlds -->
+  <div id="red-wipe" class="layer" aria-hidden="true">
+    <div id="wipe-seal" class="wipe-seal">TT</div>
+  </div>
+
+  <!-- 05 · Vermillion drench + wordmark + footer -->
+  <section id="scene-drench" class="layer" aria-label="Contact">
+    <div class="drench">
+      <div class="drench-inner">
+        <div class="drench-seal" aria-hidden="true">TT</div>
+        <p class="drench-line">If you have a thoughtful thing to put into the world &mdash; so do I.</p>
+        <nav class="drench-links" aria-label="Contact links">
+          <a class="u-link" href="mailto:hello@themagicianscode.dev">Email</a>
+          <a class="u-link" href="https://github.com/The-Magicians-Code" target="_blank" rel="noopener">GitHub</a>
+          <a class="u-link" href="#" onclick="return false">LinkedIn</a>
+        </nav>
+      </div>
+    </div>
+    <div class="wordmark-block" aria-hidden="true">
+      <div class="wordmark" id="wordmark">THEMAGICIANSCODE</div>
+    </div>
+    <div class="footer-strip">
+      <span>&copy; 2026 Tanel Treuberg &middot; themagicianscode.dev</span>
+      <span class="theme-hint">Xuan &#9681;</span>
+    </div>
+  </section>
+
+  <canvas id="fx-canvas" class="layer" aria-hidden="true"></canvas>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  const TAU = Math.PI * 2;
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+  const RM = reducedMotion.matches;
+
+  const clamp01 = x => x < 0 ? 0 : x > 1 ? 1 : x;
+  const smooth = x => { x = clamp01(x); return x * x * (3 - 2 * x); };
+  const easeOut = x => 1 - Math.pow(1 - clamp01(x), 3);   // cubic
+  const easeOutQ = x => 1 - Math.pow(1 - clamp01(x), 4);  // quart (line reveals)
+  const seg = (p, a, b) => clamp01((p - a) / (b - a));
+  const lerp = (a, b, t) => a + (b - a) * t;
+
+  // ---------- DOM ----------
+  const fxCanvas = document.getElementById('fx-canvas');
+  const fctx = fxCanvas.getContext('2d');
+  const heroEl = document.getElementById('scene-hero');
+  const maniEl = document.getElementById('scene-manifesto');
+  const mlines = Array.from(document.querySelectorAll('[data-mline]'));
+  const inkWashEl = document.getElementById('ink-wash');
+  const maniAsideEl = document.getElementById('mani-aside');
+  const nightfallEl = document.getElementById('scene-nightfall');
+  const nfLineEl = document.getElementById('nf-line');
+  const dayGroundEl = document.getElementById('day-ground');
+  const dissolveCanvas = document.getElementById('dissolve-canvas');
+  const dctx = dissolveCanvas.getContext('2d');
+  const redEl = document.getElementById('red-wipe');
+  const wipeSealEl = document.getElementById('wipe-seal');
+  const drenchEl = document.getElementById('scene-drench');
+  const wordmarkEl = document.getElementById('wordmark');
+  const depthEl = document.getElementById('depth');
+  const railEl = document.getElementById('rail');
+  const railFillEl = document.getElementById('rail-fill');
+  const railIdxEl = document.getElementById('rail-idx');
+  const railHitEl = document.getElementById('rail-hit');
+  const railTrackEl = document.getElementById('rail-track');
+  const railThumbEl = document.getElementById('rail-thumb');
+  const railLabelEl = document.getElementById('rail-label');
+
+  // ---------- The three project worlds ----------
+  // Seams between worlds are closed by overlapping the out/in windows —
+  // a quiet crossfade through a briefly co-visible state (no wash, no shimmer).
+  const WORLDS = [
+    { el: document.getElementById('scene-heimdall'),
+      in0: 0.525, in1: 0.565, out0: 0.625, out1: 0.668, rng0: 0.51, rng1: 0.67 },
+    { el: document.getElementById('scene-volta'),
+      in0: 0.628, in1: 0.668, out0: 0.735, out1: 0.778, rng0: 0.62, rng1: 0.78 },
+    { el: document.getElementById('scene-nagare'),
+      in0: 0.738, in1: 0.778, out0: 0.855, out1: 0.885, rng0: 0.73, rng1: 0.895 }
+  ];
+  for (const w of WORLDS) {
+    w.stage = w.el.querySelector('[data-stage]');
+    w.cod = w.el.querySelector('[data-codename]');
+    w.desc = w.el.querySelector('[data-desc]');
+    w.illo = w.el.querySelector('[data-illo]');
+    w.active = false;
+  }
+
+  // ---------- Sizing (DPR-aware, capped at 2) ----------
+  let W = 0, H = 0, dpr = 1;
+  let lastDissolveT = -1;
+
+  function fitWordmark() {
+    wordmarkEl.style.fontSize = '100px';
+    const w = wordmarkEl.scrollWidth || 1;
+    wordmarkEl.style.fontSize = (100 * (window.innerWidth * 0.965) / w).toFixed(2) + 'px';
+  }
+
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth;
+    H = window.innerHeight;
+    fxCanvas.width = Math.round(W * dpr);
+    fxCanvas.height = Math.round(H * dpr);
+    fctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    // dissolve canvas: viewport size at DPR 1 — the upscale of the low-res
+    // noise mask is what gives the soft organic ink-wash edge
+    dissolveCanvas.width = W;
+    dissolveCanvas.height = H;
+    lastDissolveT = -1;
+    fitWordmark();
+    if (RM) staticRender();
+  }
+
+  // ---------- Pointer (petal wind) ----------
+  const mouse = { x: -9999, y: -9999, vx: 0, vy: 0, lastX: -9999, lastY: -9999, moved: false, active: false };
+  function onPointerMove(x, y) {
+    if (!mouse.active) { mouse.lastX = x; mouse.lastY = y; mouse.active = true; }
+    mouse.x = x; mouse.y = y; mouse.moved = true;
+  }
+  window.addEventListener('pointermove', e => onPointerMove(e.clientX, e.clientY), { passive: true });
+  window.addEventListener('touchmove', e => {
+    if (e.touches.length) onPointerMove(e.touches[0].clientX, e.touches[0].clientY);
+  }, { passive: true });
+  document.addEventListener('mouseleave', () => { mouse.active = false; mouse.vx = mouse.vy = 0; });
+
+  function updateMouse(dt) {
+    let ivx = 0, ivy = 0;
+    if (mouse.moved && dt > 0) {
+      ivx = (mouse.x - mouse.lastX) / dt;
+      ivy = (mouse.y - mouse.lastY) / dt;
+    }
+    mouse.lastX = mouse.x; mouse.lastY = mouse.y; mouse.moved = false;
+    const k = Math.min(1, (1 - Math.pow(0.0001, dt)) * 0.35 * 60 * dt + 0.25);
+    mouse.vx += (ivx - mouse.vx) * k;
+    mouse.vy += (ivy - mouse.vy) * k;
+    const sp = Math.hypot(mouse.vx, mouse.vy), cap = 3200;
+    if (sp > cap) { mouse.vx *= cap / sp; mouse.vy *= cap / sp; }
+  }
+
+  // ---------- Nightfall dissolve (hand-rolled fbm, 2D canvas) ----------
+  // Precomputed value-noise fbm field at low res; each frame in the zone we
+  // threshold it into a paper-colored alpha mask and upscale-blit. No libs,
+  // no WebGL boilerplate — 23k pixels/frame only while the seam is on screen.
+  const NZ_W = 192, NZ_H = 120;
+  const noiseField = new Float32Array(NZ_W * NZ_H);
+  (function buildNoise() {
+    function hash2(ix, iy) {
+      let h = (ix * 374761393 + iy * 668265263) | 0;
+      h = Math.imul(h ^ (h >>> 13), 1274126177);
+      return ((h ^ (h >>> 16)) >>> 0) / 4294967295;
+    }
+    function vnoise(x, y) {
+      const ix = Math.floor(x), iy = Math.floor(y);
+      const fx = x - ix, fy = y - iy;
+      const u = fx * fx * (3 - 2 * fx), v = fy * fy * (3 - 2 * fy);
+      return hash2(ix, iy) * (1 - u) * (1 - v)
+           + hash2(ix + 1, iy) * u * (1 - v)
+           + hash2(ix, iy + 1) * (1 - u) * v
+           + hash2(ix + 1, iy + 1) * u * v;
+    }
+    let mn = Infinity, mx = -Infinity;
+    for (let y = 0; y < NZ_H; y++) {
+      for (let x = 0; x < NZ_W; x++) {
+        const nx = (x / NZ_W) * 5.3, ny = (y / NZ_H) * 3.4;
+        let val = 0, amp = 0.55, f = 1;
+        for (let o = 0; o < 4; o++) {
+          val += amp * vnoise(nx * f + o * 17.7, ny * f + o * 9.1);
+          f *= 2.1; amp *= 0.5;
+        }
+        noiseField[y * NZ_W + x] = val;
+        if (val < mn) mn = val;
+        if (val > mx) mx = val;
+      }
+    }
+    const inv = 1 / (mx - mn);
+    for (let i = 0; i < noiseField.length; i++) noiseField[i] = (noiseField[i] - mn) * inv;
+  })();
+  const nzCanvas = document.createElement('canvas');
+  nzCanvas.width = NZ_W; nzCanvas.height = NZ_H;
+  const nzCtx = nzCanvas.getContext('2d');
+  const nzImage = nzCtx.createImageData(NZ_W, NZ_H);
+  (function initMask() {
+    const d = nzImage.data;
+    for (let i = 0; i < d.length; i += 4) { d[i] = 245; d[i + 1] = 241; d[i + 2] = 232; d[i + 3] = 255; }
+  })();
+  function renderDissolve(t) {
+    if (Math.abs(t - lastDissolveT) < 0.0005) return;
+    lastDissolveT = t;
+    const thr = t * 1.3 - 0.15, e0 = thr - 0.09, e1 = thr + 0.09, inv = 1 / (e1 - e0);
+    const d = nzImage.data;
+    for (let i = 0; i < noiseField.length; i++) {
+      let m = (noiseField[i] - e0) * inv;
+      m = m < 0 ? 0 : m > 1 ? 1 : m;
+      m = m * m * (3 - 2 * m);
+      d[i * 4 + 3] = (m * 255) | 0; // paper survives where noise > threshold
+    }
+    nzCtx.putImageData(nzImage, 0, 0);
+    dctx.clearRect(0, 0, W, H);
+    dctx.imageSmoothingEnabled = true;
+    dctx.drawImage(nzCanvas, 0, 0, W, H);
+  }
+  function applyGround(t) {
+    if (RM) {
+      // reduced motion: the dissolve is a plain crossfade of the paper ground
+      dissolveCanvas.style.visibility = 'hidden';
+      dayGroundEl.style.opacity = (1 - t).toFixed(3);
+      dayGroundEl.style.visibility = t >= 1 ? 'hidden' : 'visible';
+      return;
+    }
+    if (t <= 0) {
+      dayGroundEl.style.visibility = 'visible';
+      dissolveCanvas.style.visibility = 'hidden';
+    } else if (t >= 1) {
+      dayGroundEl.style.visibility = 'hidden';
+      dissolveCanvas.style.visibility = 'hidden';
+    } else {
+      dayGroundEl.style.visibility = 'hidden';
+      dissolveCanvas.style.visibility = 'visible';
+      renderDissolve(t);
+    }
+  }
+
+  // ---------- Petals (playground physics; day + night sprite sets) ----------
+  const MAX_PETALS = 60;
+  const BASE_MIN = 8, BASE_MAX = 16;
+  const P = {
+    density: 35, fallSpeed: 1.0, sway: 1.0,
+    windRadius: 190, windStrength: 1.15, petalScale: 1.0
+  };
+  const SPRITE_LEN = 44, SPRITE_PAD = 12;
+  let spritesDay = [], spritesNight = [];
+  const PALETTE_DAY = [ // blush pinks on paper (original playground xuan values)
+    ['#F3C6C9', '#F9DDDE'],
+    ['#F3C6C9', '#F6D2D3'],
+    ['#E8A0A8', '#F2C3C8'],
+    ['#E8A0A8', '#EFB7BD'],
+    ['#D98A94', '#EAB2B8']
+  ];
+  const PALETTE_NIGHT = [ // luminous rosy / lantern-warm on lacquer
+    ['#F7CED2', '#FBE2E3'],
+    ['#F2B4BC', '#F8D3D7'],
+    ['#F2B4BC', '#F6CCD1'],
+    ['#E99AA6', '#F3C0C7'],
+    ['#E495A2', '#F0BAC2']
+  ];
+
+  function drawSinglePetal(c, w, l, skew) {
+    c.beginPath();
+    c.moveTo(0, l * 0.5);
+    c.bezierCurveTo(-w * 0.58, l * 0.34, -w * 0.52 + skew, -l * 0.22, -w * 0.19, -l * 0.47);
+    c.quadraticCurveTo(-w * 0.02, -l * 0.40, 0, -l * 0.345);
+    c.quadraticCurveTo(w * 0.05, -l * 0.43, w * 0.22, -l * 0.50);
+    c.bezierCurveTo(w * 0.56 + skew, -l * 0.18, w * 0.52, l * 0.36, 0, l * 0.5);
+    c.closePath();
+  }
+  function makeSprite(colorPair, kind, skew, centerColor) {
+    const px = SPRITE_LEN + SPRITE_PAD * 2;
+    const s = document.createElement('canvas');
+    s.width = px * 2; s.height = px * 2;
+    const c = s.getContext('2d');
+    c.scale(2, 2);
+    c.translate(px / 2, px / 2);
+    const [base, tip] = colorPair;
+    if (kind === 'petal') {
+      const l = SPRITE_LEN, w = SPRITE_LEN * 0.62;
+      const g = c.createLinearGradient(0, l * 0.5, skew * 2, -l * 0.5);
+      g.addColorStop(0, base);
+      g.addColorStop(1, tip);
+      c.fillStyle = g;
+      drawSinglePetal(c, w, l, skew);
+      c.fill();
+      c.strokeStyle = 'rgba(255,255,255,0.28)';
+      c.lineWidth = 0.9;
+      c.beginPath();
+      c.moveTo(-w * 0.05, l * 0.42);
+      c.quadraticCurveTo(-w * 0.16, 0, -w * 0.06, -l * 0.30);
+      c.stroke();
+    } else {
+      const pl = SPRITE_LEN * 0.46, pw = pl * 0.72;
+      for (let i = 0; i < 5; i++) {
+        c.save();
+        c.rotate((i / 5) * TAU + (i % 2 ? 0.09 : -0.06));
+        c.translate(0, -pl * 0.46);
+        const g = c.createLinearGradient(0, pl * 0.5, 0, -pl * 0.5);
+        g.addColorStop(0, base);
+        g.addColorStop(1, tip);
+        c.fillStyle = g;
+        drawSinglePetal(c, pw, pl, i % 2 ? 1.2 : -1.0);
+        c.fill();
+        c.restore();
+      }
+      c.fillStyle = centerColor;
+      c.beginPath();
+      c.arc(0, 0, SPRITE_LEN * 0.055, 0, TAU);
+      c.fill();
+    }
+    return { canvas: s, size: px };
+  }
+  function buildSpriteSet(palette, centerColor) {
+    const set = [];
+    palette.forEach((pair, i) => {
+      set.push(makeSprite(pair, 'petal', i % 2 ? 2.2 : -1.6, centerColor));
+      set.push(makeSprite(pair, 'petal', i % 2 ? -2.4 : 1.8, centerColor));
+    });
+    set.push(makeSprite(palette[1], 'blossom', 0, centerColor));
+    set.push(makeSprite(palette[3], 'blossom', 0, centerColor));
+    set.push(makeSprite(palette[2], 'blossom', 0, centerColor));
+    return set;
+  }
+  function buildSprites() {
+    spritesDay = buildSpriteSet(PALETTE_DAY, 'rgba(214,160,74,0.85)');
+    spritesNight = buildSpriteSet(PALETTE_NIGHT, 'rgba(255,236,214,0.9)');
+  }
+  function pickSpriteIndex() {
+    const n = spritesDay.length;
+    if (Math.random() < 0.22) return (n - 3) + (Math.random() * 3 | 0);
+    return Math.random() * (n - 3) | 0;
+  }
+
+  const petals = [];
+  function targetCount() {
+    const areaFactor = (W * H) / (1280 * 800);
+    return Math.max(6, Math.min(MAX_PETALS, Math.round(P.density * areaFactor)));
+  }
+  function initPetal(p, where) {
+    // where: 'field' | 'top' | 'bottom'
+    const depth = Math.random();
+    const t = Math.pow(depth, 0.85);
+    p.size = (BASE_MIN + (BASE_MAX - BASE_MIN) * t) * P.petalScale;
+    p.depth = depth;
+    p.alpha = 0.75 + 0.20 * t;
+    p.sprite = pickSpriteIndex();
+    p.x = Math.random() * (W + 160) - 80;
+    p.y = where === 'field' ? Math.random() * H
+        : where === 'bottom' ? H + 40 + Math.random() * 120
+        : -40 - Math.random() * 120;
+    p.vx = 0; p.vy = 0;
+    p.term = (16 + p.size * 2.6) * (0.6 + 0.5 * depth);
+    p.phase = Math.random() * TAU;
+    p.omega = TAU * (0.22 + Math.random() * 0.42);
+    p.swayAmp = 9 + p.size * 1.6;
+    p.rot = Math.random() * TAU;
+    p.av = (Math.random() - 0.5) * 0.7;
+    p.baseAv = p.av;
+    p.tilt = 0.30 + Math.random() * 0.30;
+    p.rest = false;
+    return p;
+  }
+  function syncPetalCount(fullField, fallMult) {
+    const n = targetCount();
+    while (petals.length < n) petals.push(initPetal({}, fullField ? 'field' : (fallMult < 0 ? 'bottom' : 'top')));
+    if (petals.length > n) petals.length = n;
+  }
+
+  function breezeAt(t) {
+    return (Math.sin(t * 0.13) * 0.55 + Math.sin(t * 0.047 + 1.7) * 0.45 + Math.sin(t * 0.021 + 4.1) * 0.35) * 14;
+  }
+
+  let simTime = 0;
+  // fallMult: +1 day fall … -0.35 night rise … +0.22 settle sink (lerped, no pop)
+  function stepPetals(dt, gust, fallMult, settleP, swayScale) {
+    simTime += dt;
+    const breeze = breezeAt(simTime) * P.fallSpeed * swayScale;
+    const R = P.windRadius;
+    const mSpeed = Math.hypot(mouse.vx, mouse.vy);
+    const windOn = mouse.active && P.windStrength > 0;
+    const dampWind = Math.pow(0.955, dt * 60);
+    const dampAv = Math.pow(0.985, dt * 60);
+    const settling = settleP > 0.5;
+
+    for (let i = 0; i < petals.length; i++) {
+      const p = petals[i];
+      if (p.rest && settling) {
+        // resting on the footer sill — the tumble almost stops
+        p.rot += p.av * dt * 0.15;
+        continue;
+      }
+      p.rest = false;
+      const sw = P.sway * swayScale;
+      const ph = p.phase + simTime * p.omega;
+      const swayV = Math.cos(ph) * p.swayAmp * sw * P.fallSpeed;
+      const bobV = Math.sin(ph * 2) * p.swayAmp * 0.22 * sw;
+      const fallV = p.term * P.fallSpeed * fallMult;
+
+      if (windOn) {
+        const dx = p.x - mouse.x, dy = p.y - mouse.y;
+        const d = Math.hypot(dx, dy);
+        if (d < R && mSpeed > 8) {
+          const f = smooth(1 - d / R);
+          const s = P.windStrength;
+          p.vx += mouse.vx * 1.05 * f * s * dt;
+          p.vy += mouse.vy * 1.05 * f * s * dt;
+          if (d > 0.5) {
+            const push = mSpeed * 0.38 * f * s * dt;
+            p.vx += (dx / d) * push;
+            p.vy += (dy / d) * push;
+          }
+          const side = Math.sign(mouse.vx * dy - mouse.vy * dx) || 1;
+          p.av += side * mSpeed * f * s * 0.004 * dt * 60 * 0.02;
+        }
+      }
+
+      // scroll gust: upward blast with the chroma spike
+      if (gust > 0) {
+        p.vy -= gust * (0.6 + p.depth * 0.8) * dt;
+        p.vx += gust * (Math.sin(p.phase * 3.1) * 0.22) * dt;
+        p.av += gust * 0.00035 * (i % 2 ? 1 : -1) * dt * 60;
+      }
+
+      p.vx *= dampWind;
+      p.vy *= dampWind;
+      p.av = p.baseAv + (p.av - p.baseAv) * dampAv;
+
+      p.x += (breeze + swayV + p.vx) * dt;
+      p.y += (fallV + bobV + p.vy) * dt;
+      p.rot += p.av * dt;
+
+      // settle: come to rest on the bottom sill
+      if (settling && p.y >= H - 8) {
+        p.y = H - 8;
+        p.vy = 0;
+        p.rest = true;
+        continue;
+      }
+
+      // mode-aware recycling (works in both scroll directions)
+      if (p.x < -220 || p.x > W + 220) initPetal(p, fallMult < 0 ? 'bottom' : 'top');
+      else if (fallMult >= 0 && p.y > H + 80) initPetal(p, 'top');
+      else if (fallMult < 0 && p.y < -80) initPetal(p, 'bottom');
+      else if (p.y < -300 || p.y > H + 300) initPetal(p, fallMult < 0 ? 'bottom' : 'top');
+    }
+  }
+
+  function renderPetals(alpha, nightP) {
+    if (alpha <= 0.01) return;
+    // crossfade the two sprite sets across the nightfall boundary (no pop)
+    const passes = [];
+    if (nightP < 0.01) passes.push([spritesDay, 1]);
+    else if (nightP > 0.99) passes.push([spritesNight, 1]);
+    else { passes.push([spritesDay, 1 - nightP]); passes.push([spritesNight, nightP]); }
+    const sw = P.sway;
+    for (const [set, wgt] of passes) {
+      for (let i = 0; i < petals.length; i++) {
+        const p = petals[i];
+        const spr = set[p.sprite];
+        const scale = p.size / SPRITE_LEN;
+        const half = spr.size * 0.5 * scale;
+        const ph = p.phase + simTime * p.omega;
+        fctx.globalAlpha = p.alpha * alpha * wgt;
+        fctx.setTransform(dpr, 0, 0, dpr, p.x * dpr, p.y * dpr);
+        fctx.rotate(p.rot + Math.sin(ph) * p.tilt * sw);
+        const fold = 0.62 + 0.38 * Math.abs(Math.sin(ph * 0.5));
+        fctx.scale(fold, 1);
+        fctx.drawImage(spr.canvas, -half, -half, spr.size * scale, spr.size * scale);
+      }
+    }
+    fctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    fctx.globalAlpha = 1;
+  }
+
+  // ---------- Red wipe geometry (irregular brush edge) ----------
+  const JAG_X = [], JAG_TOP = [], JAG_BOT = [];
+  (function buildJag() {
+    const N = 13;
+    let s = 7;
+    const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+    for (let i = 0; i <= N; i++) {
+      JAG_X.push(-2 + (104 * i) / N);
+      JAG_TOP.push((rnd() - 0.35) * 9);
+      JAG_BOT.push((rnd() - 0.35) * 9);
+    }
+  })();
+  function wipeClip(phase, t) {
+    const base = 114 - t * 136;
+    const pts = [];
+    if (phase === 'cover') {
+      pts.push('-2% 120%', '104% 120%');
+      for (let i = JAG_X.length - 1; i >= 0; i--) pts.push(`${JAG_X[i]}% ${base + JAG_TOP[i]}%`);
+    } else {
+      pts.push('-2% -20%', '104% -20%');
+      for (let i = JAG_X.length - 1; i >= 0; i--) pts.push(`${JAG_X[i]}% ${base + JAG_BOT[i]}%`);
+    }
+    return `polygon(${pts.join(',')})`;
+  }
+
+  // ---------- Scroll state ----------
+  let scrollP = 0;
+  let scrollVel = 0;
+  let lastScrollY = window.scrollY;
+
+  function readScroll(dt) {
+    const y = window.scrollY;
+    const max = Math.max(1, depthEl.offsetHeight - window.innerHeight);
+    scrollP = clamp01(y / max);
+    if (dt > 0) {
+      const iv = (y - lastScrollY) / dt;
+      const k = 1 - Math.pow(0.001, dt);
+      scrollVel += (iv - scrollVel) * k;
+    }
+    lastScrollY = y;
+  }
+
+  function setLayer(el, opacity, transform) {
+    const on = opacity > 0.004;
+    el.style.opacity = opacity.toFixed(3);
+    el.style.visibility = on ? 'visible' : 'hidden';
+    if (transform !== undefined) el.style.transform = transform;
+  }
+
+  // ---------- Rail (the site's scrollbar) ----------
+  const SECTIONS = [
+    { name: 'Hero',      p: 0 },
+    { name: 'Manifesto', p: 0.145 },
+    { name: 'Nightfall', p: 0.315 },
+    { name: 'Projects',  p: 0.55 },
+    { name: 'Contact',   p: 0.98 }
+  ];
+  const sectionNameAt = p =>
+    p < 0.105 ? 'Hero' : p < 0.265 ? 'Manifesto' : p < 0.51 ? 'Nightfall' : p < 0.87 ? 'Projects' : 'Contact';
+
+  let lastIdx = 0, lastRailNight = null, lastAria = -1;
+  function updateRail(p, nightP) {
+    railFillEl.style.transform = `scaleY(${p.toFixed(4)})`;
+    railThumbEl.style.top = (p * 100).toFixed(2) + '%';
+    // sections: 01 hero · 02 manifesto · 03 nightfall · 04 projects (all three) · 05 contact
+    const idx = p < 0.105 ? 1 : p < 0.265 ? 2 : p < 0.51 ? 3 : p < 0.87 ? 4 : 5;
+    if (idx !== lastIdx) { railIdxEl.textContent = '0' + idx + ' / 05'; lastIdx = idx; }
+    const night = nightP > 0.5;
+    if (night !== lastRailNight) { railEl.classList.toggle('rail--night', night); lastRailNight = night; }
+    const now = Math.round(p * 100);
+    if (now !== lastAria) { railEl.setAttribute('aria-valuenow', String(now)); lastAria = now; }
+  }
+
+  // --- interaction: ticks, drag-scrub, keyboard ---
+  const maxScroll = () => Math.max(1, depthEl.offsetHeight - window.innerHeight);
+
+  function showRailLabel(name, f) {
+    railLabelEl.textContent = name;
+    railLabelEl.style.top = (f * 100).toFixed(2) + '%';
+    railLabelEl.classList.add('rail-label--on');
+  }
+  function hideRailLabel() {
+    railLabelEl.classList.remove('rail-label--on');
+  }
+
+  // section ticks — hover shows the name, click jumps (smooth unless RM;
+  // native smooth scrolling stays interruptible by the wheel)
+  for (const s of SECTIONS) {
+    const tick = document.createElement('div');
+    tick.className = 'rail-tick';
+    tick.style.top = (s.p * 100).toFixed(2) + '%';
+    tick.appendChild(document.createElement('span'));
+    tick.addEventListener('pointerdown', ev => ev.stopPropagation()); // ticks jump, they don't scrub
+    tick.addEventListener('click', ev => {
+      ev.stopPropagation();
+      window.scrollTo({ top: s.p * maxScroll(), behavior: RM ? 'auto' : 'smooth' });
+    });
+    tick.addEventListener('mouseenter', () => showRailLabel(s.name, s.p));
+    tick.addEventListener('mouseleave', () => { if (!railDragging) hideRailLabel(); });
+    railHitEl.appendChild(tick);
+  }
+
+  // drag-scrub: pointer Y along the track maps 1:1 to scrollY (instant)
+  let railDragging = false;
+  function scrubTo(clientY) {
+    const r = railTrackEl.getBoundingClientRect();
+    const f = clamp01((clientY - r.top) / Math.max(1, r.height));
+    window.scrollTo({ top: f * maxScroll(), behavior: 'instant' });
+    showRailLabel(sectionNameAt(f), f);
+  }
+  railHitEl.addEventListener('pointerdown', e => {
+    railDragging = true;
+    railHitEl.setPointerCapture(e.pointerId);
+    railThumbEl.classList.add('rail-thumb--drag');
+    scrubTo(e.clientY);
+    e.preventDefault();
+  });
+  railHitEl.addEventListener('pointermove', e => { if (railDragging) scrubTo(e.clientY); });
+  function endRailDrag() {
+    if (!railDragging) return;
+    railDragging = false;
+    railThumbEl.classList.remove('rail-thumb--drag');
+    hideRailLabel();
+  }
+  railHitEl.addEventListener('pointerup', endRailDrag);
+  railHitEl.addEventListener('pointercancel', endRailDrag);
+
+  // keyboard: the rail is a real scrollbar (role="scrollbar", focusable)
+  railEl.addEventListener('keydown', e => {
+    const beh = RM ? 'auto' : 'smooth';
+    let top = null;
+    switch (e.key) {
+      case 'ArrowDown':  top = window.scrollY + 90; break;
+      case 'ArrowUp':    top = window.scrollY - 90; break;
+      case 'PageDown':   top = window.scrollY + window.innerHeight * 0.9; break;
+      case 'PageUp':     top = window.scrollY - window.innerHeight * 0.9; break;
+      case 'Home':       top = 0; break;
+      case 'End':        top = maxScroll(); break;
+      default: return;
+    }
+    e.preventDefault();
+    window.scrollTo({ top, behavior: beh });
+  });
+
+  // ---------- Choreography ----------
+  // p is 0..1 across 700vh of scrolling (800vh world − 100vh viewport).
+  //  01 HERO (xuan morning): dwell 0 – 0.075, out 0.075 – 0.125
+  //  02 MANIFESTO (light):   in 0.105 – 0.14 | lines 0.112 – 0.19 | out 0.245 – 0.285
+  //  03 NIGHTFALL dissolve:  threshold 0.275 – 0.395 | quiet line 0.30 – 0.455
+  //     red spike:           cover 0.42 – 0.475 | hold 0.475 – 0.50 | reveal 0.50 – 0.55
+  //  04 PROJECTS (night):    Heimdall 0.525… → Volta 0.628… → Nagare 0.738 – 0.885
+  //                          (seams close via overlapping crossfades)
+  //  05 DRENCH:              rises 0.86 – 0.935 | wordmark 0.93 – 0.985 | settle 0.90 – 0.96
+  function choreograph(p) {
+    const nightP = smooth(seg(p, 0.275, 0.395));
+
+    // --- hero: answers the very first scroll pixel (no inert runway) ---
+    // gentle linear drift from p=0 that steepens toward the manifesto handoff
+    const heroT = seg(p, 0, 0.125);
+    const heroLift = heroT * (7 + 7 * heroT); // vh — ~1vh within the first 100px
+    const heroFade = RM ? seg(p, 0.05, 0.125) : easeOut(seg(p, 0.05, 0.125));
+    setLayer(heroEl, 1 - heroFade, `translateY(${(-heroLift).toFixed(2)}vh)`);
+
+    // --- manifesto ---
+    const maniIn = easeOut(seg(p, 0.105, 0.14));
+    const maniOut = seg(p, 0.245, 0.285);
+    const maniA = clamp01(Math.min(maniIn, 1 - maniOut));
+    setLayer(maniEl, maniA, `translateY(${((1 - maniIn) * 6 - easeOut(maniOut) * 6).toFixed(2)}vh)`);
+    if (!RM && maniA > 0) {
+      for (let i = 0; i < mlines.length; i++) {
+        const r = easeOutQ(seg(p, 0.112 + i * 0.008, 0.155 + i * 0.008));
+        mlines[i].style.transform = `translateY(${((1 - r) * 112).toFixed(1)}%) rotate(${((1 - r) * 1.5).toFixed(2)}deg)`;
+      }
+      // clip-path sweep, not width — the 140px stays reserved in layout
+      const inkR = easeOut(seg(p, 0.128, 0.168));
+      inkWashEl.style.clipPath = `inset(0 ${((1 - inkR) * 100).toFixed(2)}% 0 0 round 999px)`;
+      const aside = easeOut(seg(p, 0.155, 0.20));
+      maniAsideEl.style.opacity = aside.toFixed(3);
+      maniAsideEl.style.transform = `translateY(${((1 - aside) * 2.4).toFixed(2)}vh)`;
+    }
+
+    // --- nightfall ground + quiet line ---
+    const dissolveT = seg(p, 0.275, 0.395);
+    applyGround(dissolveT);
+    const nfA = clamp01(Math.min(smooth(seg(p, 0.30, 0.34)), 1 - smooth(seg(p, 0.415, 0.455))));
+    setLayer(nightfallEl, nfA);
+    if (nfA > 0) {
+      // ink → porcelain as the ground goes dark beneath the line
+      const r = Math.round(lerp(26, 240, nightP));
+      const g = Math.round(lerp(26, 237, nightP));
+      const b = Math.round(lerp(24, 228, nightP));
+      nfLineEl.style.color = `rgb(${r},${g},${b})`;
+    }
+
+    // --- red wipe (chroma spike into the project worlds) ---
+    const cover = seg(p, 0.42, 0.475);
+    const reveal = seg(p, 0.50, 0.55);
+    let redOn = false;
+    if (RM) {
+      const a = Math.min(seg(p, 0.42, 0.47), 1 - seg(p, 0.505, 0.55));
+      redOn = a > 0.004;
+      redEl.style.clipPath = 'none';
+      setLayer(redEl, clamp01(a));
+    } else {
+      if (cover > 0 && cover < 1) {
+        redEl.style.clipPath = wipeClip('cover', smooth(cover));
+        redOn = true;
+      } else if (cover >= 1 && reveal <= 0) {
+        redEl.style.clipPath = 'none';
+        redOn = true;
+      } else if (reveal > 0 && reveal < 1) {
+        redEl.style.clipPath = wipeClip('reveal', smooth(reveal));
+        redOn = true;
+      }
+      redEl.style.opacity = '1';
+      redEl.style.visibility = redOn ? 'visible' : 'hidden';
+    }
+
+    // --- the seal pressed at the threshold (scroll-mapped, scrubbable) ---
+    {
+      const sIn = RM ? seg(p, 0.462, 0.483) : easeOut(seg(p, 0.468, 0.487));
+      const sOut = seg(p, 0.498, 0.518);
+      const sA = clamp01(Math.min(sIn, 1 - sOut));
+      wipeSealEl.style.opacity = sA.toFixed(3);
+      wipeSealEl.style.transform = RM
+        ? 'rotate(-4deg)'
+        : `scale(${(1.3 - 0.3 * sIn).toFixed(4)}) rotate(${(-4 * sIn).toFixed(2)}deg)`;
+    }
+
+    // --- project worlds ---
+    for (const w of WORLDS) {
+      const aIn = easeOut(seg(p, w.in0, w.in1));
+      const aOut = seg(p, w.out0, w.out1);
+      const a = clamp01(Math.min(aIn, 1 - aOut));
+      setLayer(w.el, a);
+
+      const active = a > 0.004;
+      if (!RM && active !== w.active) {
+        w.active = active;
+        const wc = active ? 'filter, opacity, transform' : 'auto';
+        w.cod.style.willChange = wc;
+        w.desc.style.willChange = wc;
+      }
+
+      const span = w.in1 - w.in0;
+      const codIn = easeOut(seg(p, w.in0 + span * 0.15, w.in1 + span * 0.30));
+      const codOutSeg = seg(p, w.out0, w.out1);
+      const cod = clamp01(Math.min(codIn, 1 - codOutSeg));
+      const descIn = easeOut(seg(p, w.in0 + span * 0.60, w.in1 + span * 0.85));
+      const desc = clamp01(Math.min(descIn, 1 - codOutSeg));
+      // the illustration settles in slightly ahead of the codename
+      const illoIn = easeOut(seg(p, w.in0, w.in1 + span * 0.10));
+      const illo = clamp01(Math.min(illoIn, 1 - codOutSeg));
+
+      if (RM) {
+        w.cod.style.opacity = cod.toFixed(3);
+        w.desc.style.opacity = (desc * 0.92).toFixed(3);
+        w.illo.style.opacity = illo.toFixed(3);
+      } else if (active) {
+        const cb = (1 - cod) * 18;
+        w.cod.style.filter = cb > 0.05 ? `blur(${cb.toFixed(2)}px)` : 'none';
+        w.cod.style.opacity = cod.toFixed(3);
+        w.cod.style.transform =
+          `translateY(${((1 - cod) * 3.2).toFixed(2)}vh) scale(${(0.985 + 0.015 * cod).toFixed(4)})`;
+        const db = (1 - desc) * 12;
+        w.desc.style.filter = db > 0.05 ? `blur(${db.toFixed(2)}px)` : 'none';
+        w.desc.style.opacity = (desc * 0.92).toFixed(3);
+        w.desc.style.transform = `translateY(${((1 - desc) * 2.2).toFixed(2)}vh)`;
+        w.illo.style.opacity = illo.toFixed(3);
+      }
+
+      if (a > 0 && !RM) {
+        const drift = seg(p, w.rng0, w.rng1);
+        w.stage.style.transform = `translateY(${((0.5 - drift) * 8).toFixed(2)}vh)`;
+      }
+    }
+
+    // --- vermillion drench + wordmark ---
+    const rise = RM ? seg(p, 0.87, 0.945) : easeOut(seg(p, 0.86, 0.935));
+    if (RM) {
+      setLayer(drenchEl, rise, 'translateY(0)');
+    } else {
+      const on = rise > 0.001;
+      drenchEl.style.visibility = on ? 'visible' : 'hidden';
+      drenchEl.style.opacity = '1';
+      drenchEl.style.transform = `translateY(${((1 - rise) * 102).toFixed(2)}vh)`;
+      const wm = easeOut(seg(p, 0.93, 0.985));
+      wordmarkEl.style.transform = `translateY(${((1 - wm) * 110).toFixed(1)}%)`;
+    }
+
+    // --- rail ---
+    updateRail(p, nightP);
+
+    // --- petal state ---
+    const settleP = smooth(seg(p, 0.90, 0.96));
+    const fallMult = lerp(lerp(1, -0.35, nightP), 0.22, settleP);
+    return {
+      nightP, settleP, fallMult,
+      swayScale: lerp(1, 0.7, nightP),
+      // full presence in the day, ~40% through the night worlds, a touch back for the settle
+      petalAlpha: 1 - 0.6 * smooth(seg(p, 0.50, 0.56)) + 0.15 * settleP,
+      gustZone: smooth(seg(p, 0.40, 0.45)) * (1 - smooth(seg(p, 0.52, 0.58)))
+    };
+  }
+
+  // ---------- Main loop ----------
+  let rafId = 0, lastT = 0, running = false;
+
+  function frame(now) {
+    if (!running) return;
+    const dt = Math.min((now - lastT) / 1000, 1 / 30);
+    lastT = now;
+
+    readScroll(dt);
+    updateMouse(dt);
+    const state = choreograph(scrollP);
+
+    const gust = state.gustZone * Math.max(0, Math.min(scrollVel, 4200)) * 0.9;
+
+    if (dt > 0 && state.petalAlpha > 0.01) {
+      stepPetals(dt, gust, state.fallMult, state.settleP, state.swayScale);
+      syncPetalCount(false, state.fallMult);
+    }
+
+    fctx.clearRect(0, 0, W, H);
+    renderPetals(state.petalAlpha, state.nightP);
+
+    rafId = requestAnimationFrame(frame);
+  }
+
+  function start() {
+    if (running || RM) return;
+    running = true;
+    lastT = performance.now();
+    lastScrollY = window.scrollY;
+    scrollVel = 0;
+    rafId = requestAnimationFrame(frame);
+  }
+  function stop() {
+    running = false;
+    cancelAnimationFrame(rafId);
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) stop();
+    else start();
+  });
+
+  // ---------- Reduced-motion static composition ----------
+  function staticRender() {
+    fctx.clearRect(0, 0, W, H);
+    const st = choreograph(scrollP);
+    renderPetals(st.petalAlpha * 0.9, st.nightP);
+  }
+
+  function rmScrollUpdate() {
+    readScroll(0);
+    staticRender();
+  }
+
+  // ---------- Boot ----------
+  buildSprites();
+  resize();
+  window.addEventListener('resize', resize);
+
+  if (RM) {
+    syncPetalCount(true, 1);
+    simTime = 12;
+    readScroll(0);
+    staticRender();
+    window.addEventListener('scroll', rmScrollUpdate, { passive: true });
+  } else {
+    syncPetalCount(true, 1);
+    readScroll(0);
+    choreograph(scrollP);
+    start();
+  }
+})();
+</script>
+
+</body></html>
