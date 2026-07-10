@@ -1,4 +1,6 @@
 ## Ideas
+- **TODO:** Petal wind — falling peach-blossom petals with mouse-as-wind physics (canvas, velocity force + radial displacement, reduced-motion → static scatter) for the Xuan & Seal redesign. Tuned prototype: [petal-wind-playground.html](petal-wind-playground.html) · [live artifact](https://claude.ai/code/artifact/b5b48894-e85d-4bc2-8e37-923dff57c080)
+- **TODO:** Koisei "Down the Spring River" — key inspiration page for the redesign overall: [koisei-spring-river-inspiration.html](koisei-spring-river-inspiration.html) (reference copy, CDN-dependent — Tailwind/GSAP/three/Lenis from CDNs without SRI, external media; open online, never ship as-is). Devices to steal: WebGL petal field with modes (down/up/settle) + mouse impulse, scroll-scrubbed video "films", day→night fbm dissolve, pinned horizontal gallery, manifesto line-reveals with inline expanding images, progress rail + section index, preloader wordmark, magnetic CTA, custom cursor. Palette is near-ours (washi #F1E9DE ≈ xuan, vermilion #C4472F ≈ seal red).
 - Animated SVG Claude in the site
 - Animated different Claude Code text [statuses](https://claude-spinner-verbs.vercel.app)
 - https://tympanus.net/codrops/2026/05/05/reverse-engineering-claude-ais-mascot-animations-with-svg-and-gsap/
@@ -85,6 +87,7 @@
 
 ### Performance
 - WebGPU or WebGL
+- WebGL petal sim (PixiJS/three.js) — considered for the sakura hero (2026-07); passed over in favour of Canvas 2D to stay dependency-free. Revisit if the effect ever needs thousands of petals with depth-of-field/DoF blur or 3D petal tumble.
 - Web Animaions API
 - Lottie animations
 - [GSAP](https://gsap.com)

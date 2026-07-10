@@ -1,0 +1,765 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Petal Wind — Xuan &amp; Seal</title>
+<style>
+  /* ---------- Theme tokens ---------- */
+  #app {
+    --paper: #F5F1E8;
+    --ink: #1A1A18;
+    --ink-soft: rgba(26, 26, 24, 0.62);
+    --hairline: rgba(26, 26, 24, 0.18);
+    --hairline-soft: rgba(26, 26, 24, 0.10);
+    --vermillion: #C93A2B;
+    --vermillion-ink: #F5F1E8;
+    --panel-bg: rgba(245, 241, 232, 0.92);
+    --accent-track: rgba(26, 26, 24, 0.14);
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: Georgia, 'Times New Roman', 'Songti SC', serif;
+    transition: background-color 0.45s ease, color 0.45s ease;
+  }
+  #app[data-theme="lacquer"] {
+    --paper: #141210;
+    --ink: #F0EDE4;
+    --ink-soft: rgba(240, 237, 228, 0.60);
+    --hairline: rgba(240, 237, 228, 0.22);
+    --hairline-soft: rgba(240, 237, 228, 0.10);
+    --vermillion: #C93A2B;
+    --vermillion-ink: #F0EDE4;
+    --panel-bg: rgba(20, 18, 16, 0.90);
+    --accent-track: rgba(240, 237, 228, 0.18);
+  }
+
+  #petal-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    z-index: 0;
+  }
+
+  /* ---------- Mock hero ---------- */
+  .hero {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none; /* wind passes through; panel re-enables */
+  }
+  .hero-name {
+    position: absolute;
+    left: clamp(20px, 5vw, 72px);
+    bottom: clamp(24px, 8vh, 88px);
+    max-width: min(34ch, 78vw);
+  }
+  .hero-name h1 {
+    margin: 0 0 0.35em;
+    font-size: clamp(2rem, 5.4vw, 3.6rem);
+    font-weight: 400;
+    letter-spacing: 0.01em;
+    line-height: 1.08;
+  }
+  .hero-name p {
+    margin: 0;
+    font-size: clamp(0.95rem, 1.6vw, 1.1rem);
+    font-style: italic;
+    color: var(--ink-soft);
+    line-height: 1.5;
+  }
+  .hero-rule {
+    width: 3.5em;
+    height: 1px;
+    background: var(--hairline);
+    margin-bottom: 1.1em;
+  }
+  .seal {
+    position: absolute;
+    right: clamp(20px, 5vw, 72px);
+    bottom: clamp(84px, 14vh, 140px);
+    width: 46px;
+    height: 46px;
+    border-radius: 9px;
+    background: var(--vermillion);
+    color: var(--vermillion-ink);
+    display: grid;
+    place-items: center;
+    font-size: 1.05rem;
+    letter-spacing: 0.06em;
+    font-weight: 700;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.08);
+    user-select: none;
+  }
+
+  /* ---------- Control panel ---------- */
+  .panel {
+    position: absolute;
+    right: 14px;
+    bottom: 14px;
+    z-index: 2;
+    width: min(288px, calc(100vw - 28px));
+    font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-size: 12.5px;
+    color: var(--ink);
+    background: var(--panel-bg);
+    border: 1px solid var(--hairline);
+    border-radius: 10px;
+    backdrop-filter: blur(2px);
+    max-height: calc(100dvh - 28px);
+    overflow-y: auto;
+  }
+  .panel summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    user-select: none;
+  }
+  .panel summary::-webkit-details-marker { display: none; }
+  .panel summary:focus-visible {
+    outline: 2px solid var(--vermillion);
+    outline-offset: -2px;
+    border-radius: 10px;
+  }
+  .panel summary .chev {
+    transition: transform 0.2s ease;
+    font-size: 10px;
+    color: var(--ink-soft);
+  }
+  .panel[open] summary .chev { transform: rotate(180deg); }
+  .panel[open] summary { border-bottom: 1px solid var(--hairline-soft); }
+
+  .panel-body { padding: 12px 14px 14px; display: grid; gap: 11px; }
+
+  .ctl { display: grid; gap: 4px; }
+  .ctl-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .ctl label { color: var(--ink); }
+  .ctl output {
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-soft);
+  }
+  .ctl input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 18px;
+    background: transparent;
+    margin: 0;
+    cursor: pointer;
+  }
+  .ctl input[type="range"]::-webkit-slider-runnable-track {
+    height: 2px;
+    background: var(--accent-track);
+    border-radius: 1px;
+  }
+  .ctl input[type="range"]::-moz-range-track {
+    height: 2px;
+    background: var(--accent-track);
+    border-radius: 1px;
+  }
+  .ctl input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: var(--vermillion);
+    border: none;
+    margin-top: -5.5px;
+  }
+  .ctl input[type="range"]::-moz-range-thumb {
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: var(--vermillion);
+    border: none;
+  }
+  .ctl input[type="range"]:focus-visible {
+    outline: 2px solid var(--vermillion);
+    outline-offset: 3px;
+    border-radius: 3px;
+  }
+
+  .toggles { display: grid; gap: 7px; padding-top: 2px; }
+  .tog {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .tog input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+    accent-color: var(--vermillion);
+    cursor: pointer;
+  }
+  .tog input[type="checkbox"]:focus-visible {
+    outline: 2px solid var(--vermillion);
+    outline-offset: 2px;
+  }
+
+  .panel-actions { display: flex; gap: 8px; padding-top: 2px; }
+  .btn {
+    font: inherit;
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--hairline);
+    background: transparent;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .btn:hover { border-color: var(--ink-soft); }
+  .btn:focus-visible { outline: 2px solid var(--vermillion); outline-offset: 2px; }
+
+  .rm-note {
+    display: none;
+    font-size: 11.5px;
+    line-height: 1.45;
+    color: var(--ink-soft);
+    border-top: 1px solid var(--hairline-soft);
+    padding-top: 9px;
+  }
+  #app.reduced-motion .rm-note { display: block; }
+
+  .copied-flash { color: var(--vermillion); }
+</style>
+
+<div id="app" data-theme="xuan">
+  <canvas id="petal-canvas" aria-hidden="true"></canvas>
+
+  <div class="hero">
+    <div class="hero-name">
+      <div class="hero-rule"></div>
+      <h1>Tanel Treuberg</h1>
+      <p>Software that moves like ink on rice paper — deliberate, weightless, precise.</p>
+    </div>
+    <div class="seal" aria-hidden="true">TT</div>
+  </div>
+
+  <details class="panel" id="panel">
+    <summary>Petal Wind <span class="chev">▼</span></summary>
+    <div class="panel-body">
+      <div class="ctl">
+        <div class="ctl-row"><label for="c-density">Density</label><output id="o-density">45</output></div>
+        <input type="range" id="c-density" min="10" max="120" step="1" value="45">
+      </div>
+      <div class="ctl">
+        <div class="ctl-row"><label for="c-fall">Fall speed</label><output id="o-fall">1.00</output></div>
+        <input type="range" id="c-fall" min="0.4" max="2.5" step="0.05" value="1">
+      </div>
+      <div class="ctl">
+        <div class="ctl-row"><label for="c-sway">Sway</label><output id="o-sway">1.00</output></div>
+        <input type="range" id="c-sway" min="0" max="2" step="0.05" value="1">
+      </div>
+      <div class="ctl">
+        <div class="ctl-row"><label for="c-radius">Wind radius</label><output id="o-radius">180 px</output></div>
+        <input type="range" id="c-radius" min="80" max="320" step="5" value="180">
+      </div>
+      <div class="ctl">
+        <div class="ctl-row"><label for="c-wind">Wind strength</label><output id="o-wind">1.10</output></div>
+        <input type="range" id="c-wind" min="0" max="2.5" step="0.05" value="1.1">
+      </div>
+      <div class="ctl">
+        <div class="ctl-row"><label for="c-size">Petal size</label><output id="o-size">×1.00</output></div>
+        <input type="range" id="c-size" min="0.6" max="1.8" step="0.05" value="1">
+      </div>
+
+      <div class="toggles">
+        <label class="tog"><input type="checkbox" id="c-theme"> Lacquer theme (dark)</label>
+        <label class="tog"><input type="checkbox" id="c-debug"> Show wind field</label>
+      </div>
+
+      <div class="panel-actions">
+        <button type="button" class="btn" id="c-copy">Copy settings</button>
+      </div>
+
+      <p class="rm-note">Reduced motion is on — showing a still scatter of petals instead of the animation.</p>
+    </div>
+  </details>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  const app = document.getElementById('app');
+  const canvas = document.getElementById('petal-canvas');
+  const ctx = canvas.getContext('2d');
+  const panel = document.getElementById('panel');
+
+  const TAU = Math.PI * 2;
+  const MAX_PETALS = 120;
+  const BASE_MIN = 8, BASE_MAX = 16; // px, before size scale
+
+  // ---------- Parameters (mirrored by sliders) ----------
+  const params = {
+    density: 45,        // petal count at reference viewport (1280x800)
+    fallSpeed: 1.0,
+    sway: 1.0,
+    windRadius: 180,    // px
+    windStrength: 1.1,
+    petalScale: 1.0,
+    theme: 'xuan',
+    debugWind: false
+  };
+
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+
+  // ---------- Sprites ----------
+  // Petals are pre-rendered once per theme onto small offscreen canvases.
+  // SPRITE_LEN is the nominal petal length in sprite px; petals are drawn
+  // scaled to their world size, so one sprite serves all sizes.
+  const SPRITE_LEN = 44;
+  const SPRITE_PAD = 12;
+  let sprites = [];
+
+  const PALETTES = {
+    xuan: [
+      ['#F3C6C9', '#F9DDDE'],
+      ['#F3C6C9', '#F6D2D3'],
+      ['#E8A0A8', '#F2C3C8'],
+      ['#E8A0A8', '#EFB7BD'],
+      ['#D98A94', '#EAB2B8']
+    ],
+    lacquer: [ // shifted a touch more luminous & rosy for dark ground
+      ['#F7CED2', '#FBE2E3'],
+      ['#F2B4BC', '#F8D3D7'],
+      ['#F2B4BC', '#F6CCD1'],
+      ['#E99AA6', '#F3C0C7'],
+      ['#E495A2', '#F0BAC2']
+    ]
+  };
+
+  function drawSinglePetal(c, w, l, skew) {
+    // One petal: asymmetric teardrop with a notch at the tip (pointing up, base at bottom).
+    c.beginPath();
+    c.moveTo(0, l * 0.5); // base
+    c.bezierCurveTo(-w * 0.58, l * 0.34, -w * 0.52 + skew, -l * 0.22, -w * 0.19, -l * 0.47);
+    c.quadraticCurveTo(-w * 0.02, -l * 0.40, 0, -l * 0.345);      // notch dip
+    c.quadraticCurveTo(w * 0.05, -l * 0.43, w * 0.22, -l * 0.50);  // second lobe (asymmetric)
+    c.bezierCurveTo(w * 0.56 + skew, -l * 0.18, w * 0.52, l * 0.36, 0, l * 0.5);
+    c.closePath();
+  }
+
+  function makeSprite(theme, colorPair, kind, skew) {
+    const px = SPRITE_LEN + SPRITE_PAD * 2;
+    const s = document.createElement('canvas');
+    // sprites are rendered at 2x for crispness when scaled down
+    s.width = px * 2; s.height = px * 2;
+    const c = s.getContext('2d');
+    c.scale(2, 2);
+    c.translate(px / 2, px / 2);
+    const [base, tip] = colorPair;
+
+    if (kind === 'petal') {
+      const l = SPRITE_LEN, w = SPRITE_LEN * 0.62;
+      const g = c.createLinearGradient(0, l * 0.5, skew * 2, -l * 0.5);
+      g.addColorStop(0, base);
+      g.addColorStop(1, tip);
+      c.fillStyle = g;
+      drawSinglePetal(c, w, l, skew);
+      c.fill();
+      // faint crease along one side, no blur/shadow
+      c.strokeStyle = 'rgba(255,255,255,0.28)';
+      c.lineWidth = 0.9;
+      c.beginPath();
+      c.moveTo(-w * 0.05, l * 0.42);
+      c.quadraticCurveTo(-w * 0.16, 0, -w * 0.06, -l * 0.30);
+      c.stroke();
+    } else {
+      // five-petal blossom, slightly irregular
+      const pl = SPRITE_LEN * 0.46, pw = pl * 0.72;
+      for (let i = 0; i < 5; i++) {
+        c.save();
+        c.rotate((i / 5) * TAU + (i % 2 ? 0.09 : -0.06));
+        c.translate(0, -pl * 0.46);
+        const g = c.createLinearGradient(0, pl * 0.5, 0, -pl * 0.5);
+        g.addColorStop(0, base);
+        g.addColorStop(1, tip);
+        c.fillStyle = g;
+        drawSinglePetal(c, pw, pl, i % 2 ? 1.2 : -1.0);
+        c.fill();
+        c.restore();
+      }
+      c.fillStyle = theme === 'lacquer' ? 'rgba(255,236,214,0.9)' : 'rgba(214,160,74,0.85)';
+      c.beginPath();
+      c.arc(0, 0, SPRITE_LEN * 0.055, 0, TAU);
+      c.fill();
+    }
+    return { canvas: s, size: px }; // size in sprite CSS px (drawn 2x)
+  }
+
+  function buildSprites() {
+    const theme = params.theme;
+    const pal = PALETTES[theme];
+    sprites = [];
+    // 70/30 mix of single petals and full blossoms across the color range
+    pal.forEach((pair, i) => {
+      sprites.push(makeSprite(theme, pair, 'petal', i % 2 ? 2.2 : -1.6));
+      sprites.push(makeSprite(theme, pair, 'petal', i % 2 ? -2.4 : 1.8));
+    });
+    sprites.push(makeSprite(theme, pal[1], 'blossom', 0));
+    sprites.push(makeSprite(theme, pal[3], 'blossom', 0));
+    sprites.push(makeSprite(theme, pal[2], 'blossom', 0));
+  }
+
+  function pickSpriteIndex() {
+    // blossoms are the last 3 entries; keep them ~22% of picks
+    if (Math.random() < 0.22) return (sprites.length - 3) + (Math.random() * 3 | 0);
+    return Math.random() * (sprites.length - 3) | 0;
+  }
+
+  // ---------- Canvas sizing (DPR-aware) ----------
+  let W = 0, H = 0, dpr = 1;
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = app.clientWidth;
+    H = app.clientHeight;
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (isStatic) drawStaticScene();
+  }
+
+  // ---------- Petals ----------
+  const petals = [];
+
+  function targetCount() {
+    const areaFactor = (W * H) / (1280 * 800);
+    return Math.max(6, Math.min(MAX_PETALS, Math.round(params.density * areaFactor)));
+  }
+
+  function initPetal(p, fullField) {
+    const depth = Math.random();               // 0 = far, 1 = near
+    const t = Math.pow(depth, 0.85);
+    p.size = (BASE_MIN + (BASE_MAX - BASE_MIN) * t) * params.petalScale;
+    p.depth = depth;
+    p.alpha = 0.75 + 0.20 * t;                 // nearer = more opaque
+    p.sprite = pickSpriteIndex();
+    p.x = Math.random() * (W + 160) - 80;
+    p.y = fullField ? Math.random() * H : -40 - Math.random() * 120;
+    p.vx = 0;                                  // excess velocity (wind), damped to 0
+    p.vy = 0;
+    p.term = (16 + p.size * 2.6) * (0.6 + 0.5 * depth); // px/s terminal fall
+    p.phase = Math.random() * TAU;
+    p.omega = TAU * (0.22 + Math.random() * 0.42);      // sway frequency rad/s
+    p.swayAmp = 9 + p.size * 1.6;
+    p.rot = Math.random() * TAU;
+    p.av = (Math.random() - 0.5) * 0.7;        // rad/s base tumble
+    p.baseAv = p.av;
+    p.tilt = 0.30 + Math.random() * 0.30;      // sway->rotation coupling
+    return p;
+  }
+
+  function syncPetalCount(fullField) {
+    const n = targetCount();
+    while (petals.length < n) petals.push(initPetal({}, fullField));
+    if (petals.length > n) petals.length = n;
+  }
+
+  function recycle(p) {
+    initPetal(p, false);
+  }
+
+  // ---------- Pointer / wind ----------
+  const mouse = { x: -9999, y: -9999, vx: 0, vy: 0, lastX: -9999, lastY: -9999, moved: false, active: false };
+
+  function onPointerMove(x, y) {
+    if (!mouse.active) { mouse.lastX = x; mouse.lastY = y; mouse.active = true; }
+    mouse.x = x; mouse.y = y;
+    mouse.moved = true;
+  }
+  window.addEventListener('pointermove', e => onPointerMove(e.clientX, e.clientY), { passive: true });
+  window.addEventListener('touchmove', e => {
+    if (e.touches.length) onPointerMove(e.touches[0].clientX, e.touches[0].clientY);
+  }, { passive: true });
+  window.addEventListener('pointerleave', () => { mouse.active = false; mouse.vx = mouse.vy = 0; });
+  document.addEventListener('mouseleave', () => { mouse.active = false; mouse.vx = mouse.vy = 0; });
+
+  function updateMouseVelocity(dt) {
+    // instantaneous velocity this frame, then exponential smoothing
+    let ivx = 0, ivy = 0;
+    if (mouse.moved && dt > 0) {
+      ivx = (mouse.x - mouse.lastX) / dt;
+      ivy = (mouse.y - mouse.lastY) / dt;
+    }
+    mouse.lastX = mouse.x; mouse.lastY = mouse.y;
+    mouse.moved = false;
+    const k = 1 - Math.pow(0.0001, dt); // ~fast but frame-rate independent smoothing
+    const smooth = Math.min(1, k * 0.35 * 60 * dt + 0.25);
+    mouse.vx += (ivx - mouse.vx) * smooth;
+    mouse.vy += (ivy - mouse.vy) * smooth;
+    // clamp runaway flick speeds
+    const sp = Math.hypot(mouse.vx, mouse.vy);
+    const cap = 3200;
+    if (sp > cap) { mouse.vx *= cap / sp; mouse.vy *= cap / sp; }
+  }
+
+  // ---------- Breeze (layered sines = perlin-ish meander) ----------
+  function breezeAt(t) {
+    return (Math.sin(t * 0.13) * 0.55 + Math.sin(t * 0.047 + 1.7) * 0.45 + Math.sin(t * 0.021 + 4.1) * 0.35) * 14;
+  }
+
+  const smoothstep = x => x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x);
+
+  // ---------- Simulation step ----------
+  let simTime = 0;
+
+  function step(dt) {
+    simTime += dt;
+    updateMouseVelocity(dt);
+
+    const breeze = breezeAt(simTime) * params.fallSpeed;
+    const R = params.windRadius;
+    const mSpeed = Math.hypot(mouse.vx, mouse.vy);
+    const windOn = mouse.active && params.windStrength > 0;
+    const dampWind = Math.pow(0.955, dt * 60);  // wind velocity decay
+    const dampAv = Math.pow(0.985, dt * 60);
+
+    for (let i = 0; i < petals.length; i++) {
+      const p = petals[i];
+
+      // base fall: relax vertical excess toward 0, terminal handled below
+      const sw = params.sway;
+      const ph = p.phase + simTime * p.omega;
+      const swayV = Math.cos(ph) * p.swayAmp * sw * params.fallSpeed;     // horizontal seesaw
+      const bobV = Math.sin(ph * 2) * p.swayAmp * 0.22 * sw;              // slight vertical bob
+      const fallV = p.term * params.fallSpeed;
+
+      // mouse wind
+      if (windOn) {
+        const dx = p.x - mouse.x, dy = p.y - mouse.y;
+        const d = Math.hypot(dx, dy);
+        if (d < R && mSpeed > 8) {
+          const f = smoothstep(1 - d / R);
+          const s = params.windStrength;
+          // directional drag with the moving air
+          p.vx += mouse.vx * 1.05 * f * s * dt;
+          p.vy += mouse.vy * 1.05 * f * s * dt;
+          // radial displacement: air parts around a fast cursor
+          if (d > 0.5) {
+            const push = mSpeed * 0.38 * f * s * dt;
+            p.vx += (dx / d) * push;
+            p.vy += (dy / d) * push;
+          }
+          // tumble kick, signed by which side of the airstream the petal sits on
+          const side = Math.sign(mouse.vx * dy - mouse.vy * dx) || 1;
+          p.av += side * mSpeed * f * s * 0.004 * dt * 60 * 0.02;
+        }
+      }
+
+      // damp wind velocity back toward calm
+      p.vx *= dampWind;
+      p.vy *= dampWind;
+      p.av = p.baseAv + (p.av - p.baseAv) * dampAv;
+
+      // integrate
+      p.x += (breeze + swayV + p.vx) * dt;
+      p.y += (fallV + bobV + p.vy) * dt;
+      p.rot += p.av * dt;
+
+      // recycle off-screen
+      if (p.y > H + 60 || p.x < -220 || p.x > W + 220) recycle(p);
+    }
+  }
+
+  // ---------- Render ----------
+  function render() {
+    ctx.clearRect(0, 0, W, H);
+    const sw = params.sway;
+    for (let i = 0; i < petals.length; i++) {
+      const p = petals[i];
+      const spr = sprites[p.sprite];
+      const scale = p.size / SPRITE_LEN; // p.size = visible petal length in px (8–16 default)
+      const half = spr.size * 0.5 * scale;
+      const ph = p.phase + simTime * p.omega;
+      ctx.globalAlpha = p.alpha;
+      ctx.setTransform(dpr, 0, 0, dpr, p.x * dpr, p.y * dpr);
+      // tumble + sway-coupled rotation oscillation (seesaw tilt)
+      ctx.rotate(p.rot + Math.sin(ph) * p.tilt * sw);
+      // fold the petal slightly as it seesaws (fake 3D via x-squash)
+      const fold = 0.62 + 0.38 * Math.abs(Math.sin(ph * 0.5));
+      ctx.scale(fold, 1);
+      ctx.drawImage(spr.canvas, -half, -half, spr.size * scale, spr.size * scale);
+    }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.globalAlpha = 1;
+
+    if (params.debugWind && mouse.active) {
+      ctx.strokeStyle = params.theme === 'lacquer' ? 'rgba(240,237,228,0.35)' : 'rgba(26,26,24,0.30)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(mouse.x, mouse.y, params.windRadius, 0, TAU);
+      ctx.stroke();
+      // velocity vector
+      const sp = Math.hypot(mouse.vx, mouse.vy);
+      if (sp > 10) {
+        const len = Math.min(70, sp * 0.04);
+        ctx.strokeStyle = '#C93A2B';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(mouse.x, mouse.y);
+        ctx.lineTo(mouse.x + mouse.vx / sp * len, mouse.y + mouse.vy / sp * len);
+        ctx.stroke();
+      }
+    }
+  }
+
+  // ---------- Static scene (prefers-reduced-motion) ----------
+  let isStatic = false;
+  function drawStaticScene() {
+    syncPetalCount(true);
+    ctx.clearRect(0, 0, W, H);
+    for (let i = 0; i < petals.length; i++) {
+      const p = petals[i];
+      const spr = sprites[p.sprite];
+      const scale = p.size / SPRITE_LEN;
+      const half = spr.size * 0.5 * scale;
+      ctx.globalAlpha = p.alpha * 0.9;
+      ctx.setTransform(dpr, 0, 0, dpr, p.x * dpr, p.y * dpr);
+      ctx.rotate(p.rot);
+      ctx.drawImage(spr.canvas, -half, -half, spr.size * scale, spr.size * scale);
+    }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.globalAlpha = 1;
+  }
+
+  // ---------- Main loop ----------
+  let rafId = 0, lastT = 0, running = false;
+
+  function frame(now) {
+    if (!running) return;
+    const dt = Math.min((now - lastT) / 1000, 1 / 30); // cap dt
+    lastT = now;
+    if (dt > 0) step(dt);
+    syncPetalCount(false);
+    render();
+    rafId = requestAnimationFrame(frame);
+  }
+
+  function start() {
+    if (running || isStatic) return;
+    running = true;
+    lastT = performance.now();
+    rafId = requestAnimationFrame(frame);
+  }
+  function stop() {
+    running = false;
+    cancelAnimationFrame(rafId);
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) stop();
+    else start();
+  });
+
+  function applyMotionMode() {
+    isStatic = reducedMotion.matches;
+    app.classList.toggle('reduced-motion', isStatic);
+    if (isStatic) {
+      stop();
+      petals.length = 0;
+      drawStaticScene();
+    } else {
+      petals.length = 0;
+      syncPetalCount(true);
+      start();
+    }
+  }
+  reducedMotion.addEventListener?.('change', applyMotionMode);
+
+  // ---------- Controls ----------
+  function bindSlider(id, outId, key, fmt, after) {
+    const el = document.getElementById(id);
+    const out = document.getElementById(outId);
+    el.addEventListener('input', () => {
+      params[key] = parseFloat(el.value);
+      out.textContent = fmt(params[key]);
+      if (after) after();
+      if (isStatic) drawStaticScene();
+    });
+  }
+
+  bindSlider('c-density', 'o-density', 'density', v => String(Math.round(v)));
+  bindSlider('c-fall', 'o-fall', 'fallSpeed', v => v.toFixed(2));
+  bindSlider('c-sway', 'o-sway', 'sway', v => v.toFixed(2));
+  bindSlider('c-radius', 'o-radius', 'windRadius', v => Math.round(v) + ' px');
+  bindSlider('c-wind', 'o-wind', 'windStrength', v => v.toFixed(2));
+  bindSlider('c-size', 'o-size', 'petalScale', v => '×' + v.toFixed(2), () => {
+    // re-derive sizes from stored depth so existing petals rescale smoothly
+    for (const p of petals) {
+      const t = Math.pow(p.depth, 0.85);
+      p.size = (BASE_MIN + (BASE_MAX - BASE_MIN) * t) * params.petalScale;
+    }
+  });
+
+  document.getElementById('c-theme').addEventListener('change', e => {
+    params.theme = e.target.checked ? 'lacquer' : 'xuan';
+    app.dataset.theme = params.theme;
+    buildSprites();
+    if (isStatic) drawStaticScene();
+  });
+
+  document.getElementById('c-debug').addEventListener('change', e => {
+    params.debugWind = e.target.checked;
+  });
+
+  const copyBtn = document.getElementById('c-copy');
+  copyBtn.addEventListener('click', async () => {
+    const out = {
+      density: params.density,
+      fallSpeed: params.fallSpeed,
+      sway: params.sway,
+      windRadius: params.windRadius,
+      windStrength: params.windStrength,
+      petalScale: params.petalScale,
+      theme: params.theme
+    };
+    const json = JSON.stringify(out, null, 2);
+    let ok = false;
+    try {
+      await navigator.clipboard.writeText(json);
+      ok = true;
+    } catch (_) {
+      // fallback for clipboard-restricted contexts
+      const ta = document.createElement('textarea');
+      ta.value = json;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { ok = document.execCommand('copy'); } catch (_) {}
+      ta.remove();
+    }
+    const prev = copyBtn.textContent;
+    copyBtn.textContent = ok ? 'Copied ✓' : 'Copy failed';
+    copyBtn.classList.add('copied-flash');
+    setTimeout(() => {
+      copyBtn.textContent = prev;
+      copyBtn.classList.remove('copied-flash');
+    }, 1400);
+  });
+
+  // Panel starts collapsed so the hero reads clean; summary bar invites a click.
+
+  // ---------- Boot ----------
+  buildSprites();
+  resize();
+  window.addEventListener('resize', resize);
+  applyMotionMode();
+})();
+</script>
