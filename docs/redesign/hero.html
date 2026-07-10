@@ -1,0 +1,750 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Petal &amp; Name — collision experiment</title>
+<!-- EXPERIMENT ONLY: candidate faces from Google Fonts CDN for live A/B.
+     The shipped site self-hosts; whichever wins gets vendored like Fraunces. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Brush+Script&family=Zen+Old+Mincho:wght@400;500;700&family=Shippori+Mincho:wght@500;600&family=Klee+One:wght@400;600&family=Ma+Shan+Zheng&family=Zhi+Mang+Xing&family=Alex+Brush&display=swap">
+<style>
+  /* Fraunces from the site's self-hosted files; first path works on the
+     deployed site, second when served from the repo root (localhost). */
+  @font-face {
+    font-family: 'Fraunces';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 100 900;
+    src: url('/fonts/fraunces-latin-full-normal.woff2') format('woff2-variations'),
+         url('/public/fonts/fraunces-latin-full-normal.woff2') format('woff2-variations');
+  }
+
+  :root {
+    --bg: #f5f1e8;
+    --ink: #1a1a18;
+    --ink-dim: #4a473f;
+    --ink-3: #8a8578;
+    --accent: #b33a2b;
+    --rule: rgba(26, 26, 24, 0.12);
+  }
+  html[data-theme="lacquer"] {
+    --bg: #141210;
+    --ink: #f0ede4;
+    --ink-dim: #c9c4b6;
+    --ink-3: #8f8a7c;
+    --accent: #c9a961;
+    --rule: rgba(240, 237, 228, 0.12);
+  }
+  * { margin: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
+    overflow: hidden;
+    transition: background .5s ease;
+  }
+  #stage { position: relative; width: 100vw; height: 100svh; }
+  #scene { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+
+  .thesis {
+    position: absolute;
+    left: 50%;
+    top: calc(50% + clamp(3.2rem, 7vw, 6.2rem));
+    transform: translateX(-50%);
+    color: var(--ink-dim);
+    font-size: clamp(.95rem, 1.25vw, 1.1rem);
+    letter-spacing: .01em;
+    text-align: center;
+    pointer-events: none;
+    user-select: none;
+    z-index: 2;
+  }
+
+  .caption {
+    position: absolute;
+    left: 24px; bottom: 18px;
+    font-size: 11px;
+    letter-spacing: .1em;
+    color: var(--ink-3);
+    user-select: none;
+    z-index: 2;
+  }
+  .caption b { letter-spacing: .16em; color: var(--ink-dim); }
+
+  /* ---- control panel ---- */
+  #panel {
+    position: absolute;
+    right: 18px; bottom: 18px;
+    width: 250px;
+    background: color-mix(in oklab, var(--bg) 88%, var(--ink) 4%);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    font-size: 12px;
+    color: var(--ink-dim);
+    user-select: none;
+    z-index: 3;
+  }
+  #panel summary {
+    padding: 10px 14px;
+    cursor: pointer;
+    list-style: none;
+    display: flex; justify-content: space-between; align-items: center;
+    letter-spacing: .08em;
+  }
+  #panel summary::-webkit-details-marker { display: none; }
+  #panel .body { padding: 4px 14px 14px; display: grid; gap: 10px; }
+  .ctl-row { display: flex; justify-content: space-between; }
+  #panel input[type="range"] { width: 100%; accent-color: var(--accent); }
+  #panel select {
+    width: 100%; font: inherit; background: none; color: var(--ink-dim);
+    border: 1px solid var(--rule); border-radius: 6px; padding: 4px 6px;
+  }
+  #panel .btns { display: flex; gap: 8px; }
+  #panel button {
+    flex: 1;
+    background: none; border: 1px solid var(--rule); border-radius: 6px;
+    color: var(--ink-dim); font: inherit; font-size: 11.5px;
+    padding: 6px 4px; cursor: pointer; letter-spacing: .04em;
+  }
+  #panel button:hover { color: var(--ink); border-color: var(--ink-3); }
+  #panel button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .rm-note { display: none; }
+  .reduced-motion .rm-note { display: block; padding: 0 14px 12px; color: var(--ink-3); }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="scene" aria-hidden="true"></canvas>
+  <h1 class="sr-only">Tanel Treuberg</h1>
+  <p class="thesis">Shaping ideas into reality — deliberate, weightless, precise.</p>
+  <p class="caption"><b>EXPERIMENT</b>&ensp;the name is a surface — petals land, rest, and blow away</p>
+
+  <details id="panel" open>
+    <summary>Petal × Name <span>▾</span></summary>
+    <div class="body">
+      <div>
+        <div class="ctl-row"><label for="c-font">Typeface</label></div>
+        <select id="c-font">
+          <option value='400||"Nanum Brush Script", cursive' selected>Nanum Brush — wet brush</option>
+          <option value='480||Fraunces, Georgia, serif'>Fraunces (site)</option>
+          <option value='500||"Zen Old Mincho", serif'>Zen Old Mincho</option>
+          <option value='600||"Shippori Mincho", serif'>Shippori Mincho</option>
+          <option value='600||"Klee One", cursive'>Klee One — pen manuscript</option>
+          <option value='400||"Ma Shan Zheng", cursive'>Ma Shan Zheng — kaishu</option>
+          <option value='400||"Zhi Mang Xing", cursive'>Zhi Mang Xing — xingshu</option>
+          <option value='400||"Alex Brush", cursive'>Alex Brush — connected brush</option>
+        </select>
+      </div>
+      <div>
+        <div class="ctl-row"><label for="c-density">Density</label><output id="o-density">55</output></div>
+        <input type="range" id="c-density" min="15" max="120" step="1" value="55">
+      </div>
+      <div>
+        <div class="ctl-row"><label for="c-wind">Wind strength</label><output id="o-wind">1.10</output></div>
+        <input type="range" id="c-wind" min="0" max="2.5" step="0.05" value="1.1">
+      </div>
+      <div>
+        <div class="ctl-row"><label for="c-settle">Settle bias</label><output id="o-settle">1.00</output></div>
+        <input type="range" id="c-settle" min="0" max="2" step="0.05" value="1">
+      </div>
+      <div class="btns">
+        <button id="b-shake" type="button">Shake off</button>
+        <button id="b-theme" type="button">Lacquer ◐</button>
+      </div>
+    </div>
+    <p class="rm-note">Reduced motion — showing a still scene with petals at rest on the letters.</p>
+  </details>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+const stage = document.getElementById('stage');
+const canvas = document.getElementById('scene');
+const ctx = canvas.getContext('2d');
+const TAU = Math.PI * 2;
+
+const params = {
+  density: 55,
+  windRadius: 180,
+  windStrength: 1.1,
+  settleBias: 1.0,
+  theme: 'xuan'
+};
+
+/* Settled-petal budget: the type must never bury. */
+const SETTLED_MAX = 22;
+const CELL_W = 14;          // px column cells for the local cap
+const CELL_CAP = 2;
+
+const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+
+/* ---------------- Sprites (ported from petal-wind-playground) ---------------- */
+const SPRITE_LEN = 44, SPRITE_PAD = 12;
+let sprites = [];
+const PALETTES = {
+  xuan: [
+    ['#F3C6C9', '#F9DDDE'], ['#F3C6C9', '#F6D2D3'], ['#E8A0A8', '#F2C3C8'],
+    ['#E8A0A8', '#EFB7BD'], ['#D98A94', '#EAB2B8']
+  ],
+  lacquer: [ // maki-e: antique gold leaf on black lacquer
+    ['#D8BC7E', '#EDDCAE'], ['#C9A961', '#E3CD96'], ['#C9A961', '#DfC488'],
+    ['#B99749', '#D9BE7F'], ['#C2A159', '#E8D49F']
+  ]
+};
+
+function drawSinglePetal(c, w, l, skew) {
+  c.beginPath();
+  c.moveTo(0, l * 0.5);
+  c.bezierCurveTo(-w * 0.58, l * 0.34, -w * 0.52 + skew, -l * 0.22, -w * 0.19, -l * 0.47);
+  c.quadraticCurveTo(-w * 0.02, -l * 0.40, 0, -l * 0.345);
+  c.quadraticCurveTo(w * 0.05, -l * 0.43, w * 0.22, -l * 0.50);
+  c.bezierCurveTo(w * 0.56 + skew, -l * 0.18, w * 0.52, l * 0.36, 0, l * 0.5);
+  c.closePath();
+}
+
+function makeSprite(colorPair, skew) {
+  const px = SPRITE_LEN + SPRITE_PAD * 2;
+  const s = document.createElement('canvas');
+  s.width = px * 2; s.height = px * 2;
+  const c = s.getContext('2d');
+  c.scale(2, 2);
+  c.translate(px / 2, px / 2);
+  const [base, tip] = colorPair;
+  const l = SPRITE_LEN, w = SPRITE_LEN * 0.62;
+  const g = c.createLinearGradient(0, l * 0.5, skew * 2, -l * 0.5);
+  g.addColorStop(0, base);
+  g.addColorStop(1, tip);
+  c.fillStyle = g;
+  drawSinglePetal(c, w, l, skew);
+  c.fill();
+  c.strokeStyle = 'rgba(255,255,255,0.28)';
+  c.lineWidth = 0.9;
+  c.beginPath();
+  c.moveTo(-w * 0.05, l * 0.42);
+  c.quadraticCurveTo(-w * 0.16, 0, -w * 0.06, -l * 0.30);
+  c.stroke();
+  return { canvas: s, size: px };
+}
+
+function buildSprites() {
+  sprites = [];
+  PALETTES[params.theme].forEach((pair, i) => {
+    sprites.push(makeSprite(pair, i % 2 ? 2.2 : -1.6));
+    sprites.push(makeSprite(pair, i % 2 ? -2.4 : 1.8));
+  });
+}
+
+/* ---------------- Sizing ---------------- */
+let W = 0, H = 0, dpr = 1;
+function sizeCanvas() {
+  dpr = Math.min(devicePixelRatio || 1, 2);
+  W = stage.clientWidth;
+  H = stage.clientHeight;
+  canvas.width = Math.round(W * dpr);
+  canvas.height = Math.round(H * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+/* ---------------- The name: one draw function feeds BOTH the visible
+   canvas and the collision mask, so they can never drift. ------- */
+const NAME = 'Tanel Treuberg';
+let fontPx = 0, nameX = 0, nameBaseY = 0;
+let fontWeight = '400', fontFamily = '"Nanum Brush Script", cursive';
+
+function nameFont() { return `${fontWeight} ${fontPx}px ${fontFamily}`; }
+
+function layoutName() {
+  fontPx = Math.max(44, Math.min(W * 0.095, 140));
+  // fit to width: measure at the trial size, scale down if the face runs wide
+  const mc = document.createElement('canvas').getContext('2d');
+  mc.font = `${fontWeight} ${fontPx}px ${fontFamily}`;
+  const w = mc.measureText(NAME).width;
+  const maxW = W * 0.86;
+  if (w > maxW) fontPx = Math.max(36, Math.floor(fontPx * maxW / w));
+  nameX = W / 2;
+  nameBaseY = H / 2 + fontPx * 0.32;   // optical vertical centering
+}
+
+function drawNameInto(c, color) {
+  c.font = nameFont();
+  c.textAlign = 'center';
+  c.textBaseline = 'alphabetic';
+  c.fillStyle = color;
+  c.fillText(NAME, nameX, nameBaseY);
+}
+
+/* ---------------- Collision mask (CSS-px resolution, sampled once) -------- */
+let mask = null;          // Uint8Array W*H, 1 = ink
+let maskTop = 0, maskBottom = 0, maskLeft = 0, maskRight = 0; // ink bbox
+
+function buildMask() {
+  layoutName();
+  const off = document.createElement('canvas');
+  off.width = W; off.height = H;
+  const oc = off.getContext('2d', { willReadFrequently: true });
+  drawNameInto(oc, '#000');
+  const data = oc.getImageData(0, 0, W, H).data;
+  mask = new Uint8Array(W * H);
+  maskTop = H; maskBottom = 0; maskLeft = W; maskRight = 0;
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      if (data[(y * W + x) * 4 + 3] > 128) {
+        mask[y * W + x] = 1;
+        if (y < maskTop) maskTop = y;
+        if (y > maskBottom) maskBottom = y;
+        if (x < maskLeft) maskLeft = x;
+        if (x > maskRight) maskRight = x;
+      }
+    }
+  }
+}
+
+const solid = (x, y) => (x >= 0 && x < W && y >= 0 && y < H) ? mask[y * W + x] : 0;
+
+/* Topmost ink surface in column x within a small window around y (or -1). */
+function surfaceYNear(x, y) {
+  const from = Math.max(maskTop, y - 8);
+  const to = Math.min(maskBottom, y + 10);
+  for (let yy = from; yy <= to; yy++) {
+    if (solid(x, yy) && !solid(x, yy - 1)) return yy;
+  }
+  return -1;
+}
+
+/* ---------------- Petals ---------------- */
+const MAX_PETALS = 150;
+const BASE_MIN = 8, BASE_MAX = 16;
+const petals = [];
+const cellCount = new Map();  // local settled-density cap
+let settledCount = 0;
+
+const cellKey = x => Math.floor(x / CELL_W);
+
+function targetCount() {
+  const areaFactor = (W * H) / (1280 * 800);
+  return Math.max(6, Math.min(MAX_PETALS, Math.round(params.density * areaFactor)));
+}
+
+function initPetal(p, fullField) {
+  const depth = Math.random();
+  const t = Math.pow(depth, 0.85);
+  p.size = BASE_MIN + (BASE_MAX - BASE_MIN) * t;
+  p.depth = depth;
+  p.alpha = 0.75 + 0.20 * t;
+  p.sprite = (Math.random() * sprites.length) | 0;
+  p.x = Math.random() * (W + 160) - 80;
+  p.y = fullField ? Math.random() * H : -40 - Math.random() * 120;
+  p.vx = 0; p.vy = 0;
+  p.term = (16 + p.size * 2.6) * (0.6 + 0.5 * depth);
+  p.phase = Math.random() * TAU;
+  p.omega = TAU * (0.22 + Math.random() * 0.42);
+  p.swayAmp = 9 + p.size * 1.6;
+  p.rot = Math.random() * TAU;
+  p.av = (Math.random() - 0.5) * 0.7;
+  p.baseAv = p.av;
+  p.tilt = 0.30 + Math.random() * 0.30;
+  /* z-band fixed at spawn: back falls behind the letters, mid collides,
+     front falls in front of everything. */
+  const r = Math.random();
+  p.band = r < 0.35 ? 'back' : r < 0.68 ? 'mid' : 'front';
+  p.state = 'falling';       // falling | settling | settled | peeling
+  p.stickiness = 0.4 + Math.random() * 0.6;  // vary mass so not all catch
+  return p;
+}
+
+function syncPetalCount(fullField) {
+  const n = targetCount();
+  while (petals.length < n) petals.push(initPetal({}, fullField));
+  if (petals.length > n) {
+    // trim only airborne petals, keep the settled scene intact
+    for (let i = petals.length - 1; i >= 0 && petals.length > n; i--) {
+      if (petals[i].state === 'falling') petals.splice(i, 1);
+    }
+  }
+}
+
+function recycle(p) {
+  const band = p.band;
+  initPetal(p, false);
+  if (Math.random() < 0.8) p.band = band;
+}
+
+/* ---------------- Settling ---------------- */
+function tryCatch(p, prevY) {
+  if (settledCount >= SETTLED_MAX) return false;
+  const x = Math.round(p.x);
+  let hit = -1;
+  const y0 = Math.max(maskTop, Math.floor(prevY));
+  const y1 = Math.min(maskBottom, Math.ceil(p.y));
+  for (let y = y0; y <= y1; y++) {
+    if (solid(x, y) && !solid(x, y - 1)) { hit = y; break; }
+  }
+  if (hit < 0) return false;
+  if (!solid(x, hit + 2)) return false;   // prune anti-aliasing specks
+
+  const sL = surfaceYNear(x - 3, hit), sR = surfaceYNear(x + 3, hit);
+  if (sL < 0 || sR < 0) {                 // near a glyph edge → slide off it
+    p.vx += (sL < 0 ? -1 : 1) * 30;
+    p.vy *= 0.4;
+    return false;
+  }
+  const slope = (sR - sL) / 6;
+  const concave = (sL + sR) / 2 - hit;    // > 0 → crest; < 0 → bowl
+
+  if (Math.abs(slope) > 1.2) {            // too steep — slide downhill
+    p.vx += Math.sign(slope) * -46;
+    p.vy *= 0.35;
+    return false;
+  }
+
+  // shallow enough to catch: bowls trap, crests shrug
+  let chance = (0.55 - Math.abs(slope) * 0.3 + (concave < -0.5 ? 0.35 : 0) - (concave > 1.5 ? 0.25 : 0));
+  chance *= p.stickiness * params.settleBias;
+  if (Math.random() > chance) {           // brush the surface, keep falling
+    p.vy *= 0.3;
+    p.vx += slope * 18 + (Math.random() - 0.5) * 24;
+    return false;
+  }
+
+  const key = cellKey(x);
+  const inCell = cellCount.get(key) || 0;
+  if (inCell >= CELL_CAP) return false;
+
+  cellCount.set(key, inCell + 1);
+  settledCount++;
+  p.state = 'settling';
+  p.settleT = 0;
+  p.fromX = p.x; p.fromY = prevY;
+  p.restX = x + (Math.random() - 0.5) * 2;
+  p.restY = hit - p.size * 0.12;          // sit ON the surface, not in it
+  // lie LENGTHWISE along the surface, foreshortened almost flat
+  p.lieDir = Math.random() < 0.5 ? -1 : 1;
+  p.restRot = Math.atan(slope) + p.lieDir * Math.PI / 2 + (Math.random() - 0.5) * 0.22;
+  p.flat = 0.52 + Math.random() * 0.20;   // world-vertical squash when at rest
+  p.flatNow = 1;
+  p.alpha = Math.min(1, p.alpha + 0.15);  // resting petals read a touch stronger
+  p.rockAmp = 0.35 + Math.random() * 0.3;
+  p.cell = key;
+  return true;
+}
+
+function releasePetal(p, liftKick) {
+  if (p.state === 'settled' || p.state === 'settling') {
+    const n = (cellCount.get(p.cell) || 1) - 1;
+    if (n <= 0) cellCount.delete(p.cell); else cellCount.set(p.cell, n);
+    settledCount = Math.max(0, settledCount - 1);
+  }
+  p.state = 'peeling';
+  p.peelT = 0;
+  p.vy = -(30 + Math.random() * 60) * liftKick;
+  p.vx += (Math.random() - 0.5) * 90 * liftKick;
+  p.av = (Math.random() - 0.5) * 3;
+}
+
+/* ---------------- Pointer wind (ported tuning) ---------------- */
+const mouse = { x: -9999, y: -9999, vx: 0, vy: 0, lastX: -9999, lastY: -9999, moved: false, active: false };
+function onPointerMove(x, y) {
+  if (!mouse.active) { mouse.lastX = x; mouse.lastY = y; mouse.active = true; }
+  mouse.x = x; mouse.y = y; mouse.moved = true;
+}
+addEventListener('pointermove', e => onPointerMove(e.clientX, e.clientY), { passive: true });
+addEventListener('touchmove', e => { if (e.touches.length) onPointerMove(e.touches[0].clientX, e.touches[0].clientY); }, { passive: true });
+addEventListener('pointerleave', () => { mouse.active = false; mouse.vx = mouse.vy = 0; });
+document.addEventListener('mouseleave', () => { mouse.active = false; mouse.vx = mouse.vy = 0; });
+
+function updateMouseVelocity(dt) {
+  let ivx = 0, ivy = 0;
+  if (mouse.moved && dt > 0) {
+    ivx = (mouse.x - mouse.lastX) / dt;
+    ivy = (mouse.y - mouse.lastY) / dt;
+  }
+  mouse.lastX = mouse.x; mouse.lastY = mouse.y;
+  mouse.moved = false;
+  const k = 1 - Math.pow(0.0001, dt);
+  const smooth = Math.min(1, k * 0.35 * 60 * dt + 0.25);
+  mouse.vx += (ivx - mouse.vx) * smooth;
+  mouse.vy += (ivy - mouse.vy) * smooth;
+  const sp = Math.hypot(mouse.vx, mouse.vy);
+  if (sp > 3200) { mouse.vx *= 3200 / sp; mouse.vy *= 3200 / sp; }
+}
+
+function breezeAt(t) {
+  return (Math.sin(t * 0.13) * 0.55 + Math.sin(t * 0.047 + 1.7) * 0.45 + Math.sin(t * 0.021 + 4.1) * 0.35) * 14;
+}
+const smoothstep = x => x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x);
+
+/* ---------------- Simulation ---------------- */
+let simTime = 0;
+
+function step(dt) {
+  simTime += dt;
+  updateMouseVelocity(dt);
+
+  const breeze = breezeAt(simTime);
+  const R = params.windRadius;
+  const mSpeed = Math.hypot(mouse.vx, mouse.vy);
+  const windOn = mouse.active && params.windStrength > 0;
+  const dampWind = Math.pow(0.955, dt * 60);
+  const dampAv = Math.pow(0.985, dt * 60);
+
+  for (const p of petals) {
+    if (p.state === 'settled') {
+      p.rot = p.restRot + Math.sin(simTime * 0.7 + p.phase) * 0.02;
+      if (windOn) {
+        const d = Math.hypot(p.x - mouse.x, p.y - mouse.y);
+        if (d < R) {
+          const f = smoothstep(1 - d / R);
+          if (mSpeed * f * params.windStrength > 380 / p.stickiness * 0.8) releasePetal(p, 1);
+        }
+      }
+      continue;
+    }
+
+    if (p.state === 'settling') {
+      p.settleT += dt;
+      const t = Math.min(1, p.settleT / 0.55);
+      const e = 1 - Math.pow(1 - t, 3);
+      p.x = p.fromX + (p.restX - p.fromX) * e;
+      p.y = p.fromY + (p.restY - p.fromY) * e;
+      p.flatNow = 1 + (p.flat - 1) * e;   // flatten as it comes to rest
+      p.rot += ((p.restRot + Math.sin(t * Math.PI * 3) * p.rockAmp * (1 - t)) - p.rot) * Math.min(1, dt * 10);
+      if (t >= 1) { p.state = 'settled'; p.rot = p.restRot; p.flatNow = p.flat; }
+      continue;
+    }
+
+    if (p.state === 'peeling') {
+      p.peelT += dt;
+      if (p.peelT > 0.35) p.state = 'falling';
+    }
+
+    // ---- airborne (falling / peeling) ----
+    const ph = p.phase + simTime * p.omega;
+    const swayV = Math.cos(ph) * p.swayAmp;
+    const bobV = Math.sin(ph * 2) * p.swayAmp * 0.22;
+    const fallV = p.term;
+
+    if (windOn) {
+      const dx = p.x - mouse.x, dy = p.y - mouse.y;
+      const d = Math.hypot(dx, dy);
+      if (d < R && mSpeed > 8) {
+        const f = smoothstep(1 - d / R);
+        const s = params.windStrength;
+        p.vx += mouse.vx * 1.05 * f * s * dt;
+        p.vy += mouse.vy * 1.05 * f * s * dt;
+        if (d > 0.5) {
+          const push = mSpeed * 0.38 * f * s * dt;
+          p.vx += (dx / d) * push;
+          p.vy += (dy / d) * push;
+        }
+        const side = Math.sign(mouse.vx * dy - mouse.vy * dx) || 1;
+        p.av += side * mSpeed * f * s * 0.0048 * dt;
+      }
+    }
+
+    p.vx *= dampWind;
+    p.vy *= dampWind;
+    p.av = p.baseAv + (p.av - p.baseAv) * dampAv;
+
+    const prevY = p.y;
+    p.x += (breeze + swayV + p.vx) * dt;
+    p.y += (fallV + bobV + p.vy) * dt;
+    p.rot += p.av * dt;
+
+    if (p.band === 'mid' && p.state === 'falling' && p.y > prevY &&
+        p.y > maskTop - 4 && prevY < maskBottom &&
+        p.x > maskLeft - 2 && p.x < maskRight + 2) {
+      tryCatch(p, prevY);
+    }
+
+    if (p.y > H + 60 || p.x < -220 || p.x > W + 220) recycle(p);
+  }
+}
+
+/* ---------------- Render ---------------- */
+function drawPetal(p) {
+  const spr = sprites[p.sprite];
+  const scale = p.size / SPRITE_LEN;
+  const half = spr.size * 0.5 * scale;
+  const ph = p.phase + simTime * p.omega;
+  ctx.globalAlpha = p.alpha;
+  ctx.setTransform(dpr, 0, 0, dpr, p.x * dpr, p.y * dpr);
+  if (p.state === 'settled' || p.state === 'settling') {
+    // lying on the surface: world-vertical foreshortening, then lie-rotation
+    ctx.scale(1, p.flatNow || p.flat || 1);
+    ctx.rotate(p.rot);
+    ctx.drawImage(spr.canvas, -half, -half, spr.size * scale, spr.size * scale);
+  } else {
+    ctx.rotate(p.rot + Math.sin(ph) * p.tilt);
+    const fold = 0.62 + 0.38 * Math.abs(Math.sin(ph * 0.5));
+    ctx.scale(fold, 1);
+    ctx.drawImage(spr.canvas, -half, -half, spr.size * scale, spr.size * scale);
+  }
+}
+
+function drawContactShadow(p) {
+  // only settled petals cast a shadow, keeps type legible
+  ctx.setTransform(dpr, 0, 0, dpr, p.x * dpr, (p.y + p.size * 0.28) * dpr);
+  ctx.rotate(p.restRot || 0);
+  ctx.globalAlpha = 0.10;
+  ctx.fillStyle = '#000';
+  ctx.beginPath();
+  ctx.ellipse(0, 0, p.size * 0.44, p.size * 0.10, 0, 0, TAU);
+  ctx.fill();
+}
+
+function render() {
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+  const ink = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim();
+
+  for (const p of petals) if (p.band === 'back' && p.state === 'falling') drawPetal(p);
+
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.globalAlpha = 1;
+  drawNameInto(ctx, ink);
+
+  for (const p of petals) if (p.state === 'settled') drawContactShadow(p);
+  for (const p of petals) if (p.state !== 'falling' || p.band === 'mid') drawPetal(p);
+  for (const p of petals) if (p.band === 'front' && p.state === 'falling') drawPetal(p);
+
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.globalAlpha = 1;
+}
+
+/* ---------------- Reduced motion: still scene with petals at rest --------- */
+let isStatic = false;
+function buildStaticScene() {
+  petals.length = 0;
+  cellCount.clear(); settledCount = 0;
+  syncPetalCount(true);
+  let placed = 0;
+  for (let x = maskLeft + 4; x < maskRight - 4 && placed < 12; x += 10 + (Math.random() * 24 | 0)) {
+    let y = -1;
+    for (let yy = maskTop; yy <= maskBottom; yy++) {
+      if (solid(x, yy) && !solid(x, yy - 1) && solid(x, yy + 2)) { y = yy; break; }
+    }
+    if (y < 0) continue;
+    const sL = surfaceYNear(x - 3, y), sR = surfaceYNear(x + 3, y);
+    if (sL < 0 || sR < 0 || Math.abs((sR - sL) / 6) > 0.8) continue;
+    const p = initPetal({}, true);
+    p.state = 'settled';
+    p.x = p.restX = x; p.y = p.restY = y - p.size * 0.12;
+    p.lieDir = Math.random() < 0.5 ? -1 : 1;
+    p.rot = p.restRot = Math.atan((sR - sL) / 6) + p.lieDir * Math.PI / 2 + (Math.random() - 0.5) * 0.22;
+    p.flat = p.flatNow = 0.52 + Math.random() * 0.20;
+    p.alpha = Math.min(1, p.alpha + 0.15);
+    petals.push(p);
+    placed++;
+  }
+  render();
+}
+
+/* ---------------- Loop ---------------- */
+let rafId = 0, lastT = 0, running = false;
+function frame(now) {
+  if (!running) return;
+  const dt = Math.min((now - lastT) / 1000, 1 / 30);
+  lastT = now;
+  if (dt > 0) step(dt);
+  syncPetalCount(false);
+  render();
+  rafId = requestAnimationFrame(frame);
+}
+function start() {
+  if (running || isStatic) return;
+  running = true;
+  lastT = performance.now();
+  rafId = requestAnimationFrame(frame);
+}
+function stop() { running = false; cancelAnimationFrame(rafId); }
+document.addEventListener('visibilitychange', () => { document.hidden ? stop() : start(); });
+
+/* ---------------- Rebuild on resize / font swap ---------------- */
+function releaseAllSettled() {
+  for (const p of petals) if (p.state === 'settled' || p.state === 'settling') releasePetal(p, 0.6);
+}
+let resizeTimer = 0;
+addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    releaseAllSettled();
+    sizeCanvas();
+    buildMask();
+    if (isStatic) buildStaticScene();
+  }, 150);
+});
+if (document.fonts?.ready) {
+  document.fonts.ready.then(() => { buildMask(); if (isStatic) buildStaticScene(); });
+}
+
+/* ---------------- Controls ---------------- */
+function bindSlider(id, outId, key, fmt) {
+  const el = document.getElementById(id);
+  const out = document.getElementById(outId);
+  el.addEventListener('input', () => {
+    params[key] = parseFloat(el.value);
+    out.textContent = fmt(params[key]);
+  });
+}
+bindSlider('c-density', 'o-density', 'density', v => String(Math.round(v)));
+bindSlider('c-wind', 'o-wind', 'windStrength', v => v.toFixed(2));
+bindSlider('c-settle', 'o-settle', 'settleBias', v => v.toFixed(2));
+
+document.getElementById('c-font').addEventListener('change', async (e) => {
+  const [w, fam] = e.target.value.split('||');
+  try { await document.fonts.load(`${w} 100px ${fam}`); } catch {}
+  fontWeight = w; fontFamily = fam;
+  releaseAllSettled();
+  buildMask();
+  if (isStatic) buildStaticScene();
+});
+
+document.getElementById('b-shake').addEventListener('click', () => {
+  for (const p of petals) if (p.state === 'settled' || p.state === 'settling') releasePetal(p, 1.4);
+});
+document.getElementById('b-theme').addEventListener('click', (e) => {
+  params.theme = params.theme === 'xuan' ? 'lacquer' : 'xuan';
+  document.documentElement.dataset.theme = params.theme === 'lacquer' ? 'lacquer' : '';
+  e.target.textContent = params.theme === 'lacquer' ? 'Xuan ◑' : 'Lacquer ◐';
+  buildSprites();
+  for (const p of petals) p.sprite = (Math.random() * sprites.length) | 0;
+  if (isStatic) buildStaticScene();
+});
+
+/* ---------------- Boot ---------------- */
+function applyMotionMode() {
+  isStatic = reducedMotion.matches;
+  stage.classList.toggle('reduced-motion', isStatic);
+  if (isStatic) { stop(); buildStaticScene(); }
+  else { petals.length = 0; cellCount.clear(); settledCount = 0; syncPetalCount(true); start(); }
+}
+reducedMotion.addEventListener?.('change', applyMotionMode);
+
+buildSprites();
+sizeCanvas();
+// wait for the brush font before first mask, else petals land on fallback glyphs
+document.fonts.load(`${fontWeight} 100px ${fontFamily}`).catch(() => {}).finally(() => {
+  buildMask();
+  applyMotionMode();
+});
+
+/* debug/tuning handle for the experiment */
+window.__petal = {
+  params, petals, step, render,
+  get settled() { return settledCount; },
+  get maskBox() { return { maskTop, maskBottom, maskLeft, maskRight }; }
+};
+})();
+</script>
+</body>
+</html>
