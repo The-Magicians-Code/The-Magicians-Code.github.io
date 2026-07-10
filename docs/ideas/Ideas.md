@@ -85,6 +85,7 @@
 
 ### Performance
 - WebGPU or WebGL
+- WebGL petal sim (PixiJS/three.js) — considered for the sakura hero (2026-07); passed over in favour of Canvas 2D to stay dependency-free. Revisit if the effect ever needs thousands of petals with depth-of-field/DoF blur or 3D petal tumble.
 - Web Animaions API
 - Lottie animations
 - [GSAP](https://gsap.com)

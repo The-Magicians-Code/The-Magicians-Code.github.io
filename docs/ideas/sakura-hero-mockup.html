@@ -1,0 +1,399 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sakura Hero — Xuan & Seal</title>
+<style>
+  :root {
+    --bg: #f5f1e8;
+    --paper: #faf8f2;
+    --ink: #1a1a18;
+    --ink-dim: #4a473f;
+    --ink-3: #7a766b;
+    --accent: #b33a2b;
+    --blossom: #e7b8b2;
+    --blossom-deep: #d99a94;
+    --rule: rgba(26, 26, 24, 0.12);
+  }
+  html[data-theme="dark"] {
+    --bg: #141210;
+    --paper: #1e1a17;
+    --ink: #f0ede4;
+    --ink-dim: #c9c4b6;
+    --ink-3: #8f8a7c;
+    --accent: #c9a961;
+    --blossom: #d8bc7e;
+    --blossom-deep: #c9a961;
+    --rule: rgba(240, 237, 228, 0.12);
+  }
+  * { margin: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
+    overflow-x: hidden;
+    transition: background 0.6s ease, color 0.6s ease;
+  }
+  .hero {
+    position: relative;
+    height: 100svh;
+    min-height: 540px;
+    overflow: hidden;
+  }
+
+  /* ---- branch ---- */
+  .branch {
+    position: absolute;
+    top: -2%;
+    right: -4%;
+    width: min(62vw, 780px);
+    height: auto;
+    pointer-events: none;
+  }
+  .branch .stroke {
+    fill: none;
+    stroke: var(--ink);
+    stroke-linecap: round;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: drawin 1.3s cubic-bezier(0.22, 0.9, 0.28, 1) forwards;
+  }
+  .branch .s2 { animation-delay: 0.25s; }
+  .branch .s3 { animation-delay: 0.45s; }
+  .branch .s4 { animation-delay: 0.6s; }
+  @keyframes drawin { to { stroke-dashoffset: 0; } }
+  .branch .bloom {
+    opacity: 0;
+    transform-origin: center;
+    animation: bloomin 0.9s cubic-bezier(0.22, 0.9, 0.28, 1) forwards;
+  }
+  @keyframes bloomin { from { opacity: 0; } to { opacity: 1; } }
+
+  /* ---- petal canvas ---- */
+  #petals {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+
+  /* ---- type ---- */
+  .hero-type {
+    position: absolute;
+    left: clamp(24px, 7vw, 96px);
+    bottom: clamp(72px, 16vh, 160px);
+    max-width: 30ch;
+  }
+  .name {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    font-weight: 400;
+    font-size: clamp(2.6rem, 6.2vw, 4.6rem);
+    line-height: 1.04;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+  .name em { font-style: italic; }
+  .thesis {
+    margin-top: 18px;
+    color: var(--ink-dim);
+    font-size: clamp(0.98rem, 1.3vw, 1.15rem);
+    line-height: 1.55;
+    max-width: 26ch;
+  }
+  .seal-row {
+    margin-top: 28px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .seal {
+    width: 44px;
+    height: 44px;
+    background: var(--accent);
+    border-radius: 6px;
+    display: grid;
+    place-items: center;
+    transform: rotate(-3deg);
+    box-shadow: 0 1px 0 rgba(0,0,0,0.08);
+  }
+  .seal span {
+    color: var(--bg);
+    font-family: "Songti SC", "Noto Serif SC", "SimSun", serif;
+    font-size: 22px;
+    line-height: 1;
+    user-select: none;
+  }
+  .seal-caption {
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  /* ---- theme toggle ---- */
+  .theme-toggle {
+    position: absolute;
+    top: 28px;
+    left: clamp(24px, 7vw, 96px);
+    background: none;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    color: var(--ink-dim);
+    font: inherit;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: color 0.3s, border-color 0.3s;
+  }
+  .theme-toggle:hover, .theme-toggle:focus-visible { color: var(--ink); border-color: var(--ink-3); }
+  .theme-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ---- caption strip ---- */
+  .caption {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+    padding: 14px clamp(24px, 7vw, 96px);
+    border-top: 1px solid var(--rule);
+    font-size: 11.5px;
+    letter-spacing: 0.08em;
+    color: var(--ink-3);
+  }
+  .caption b { font-weight: 600; color: var(--ink-dim); letter-spacing: 0.14em; }
+  @media (max-width: 640px) {
+    .branch { width: 110vw; right: -30%; top: -4%; }
+    .caption span:last-child { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .branch .stroke { animation: none; stroke-dashoffset: 0; }
+    .branch .bloom { animation: none; opacity: 1; }
+  }
+</style>
+
+<div class="hero" id="hero">
+  <svg class="branch" viewBox="0 0 900 620" aria-hidden="true">
+    <!-- main bough, entering from off-frame right -->
+    <path class="stroke s1" pathLength="1" stroke-width="13"
+      d="M 905 60 C 790 75, 700 96, 622 138 C 556 174, 512 206, 468 262" />
+    <path class="stroke s2" pathLength="1" stroke-width="7"
+      d="M 468 262 C 432 312, 418 366, 424 430" />
+    <!-- upper twig -->
+    <path class="stroke s3" pathLength="1" stroke-width="5"
+      d="M 622 138 C 566 128, 512 132, 462 156 C 428 172, 404 190, 386 214" />
+    <!-- lower twig -->
+    <path class="stroke s4" pathLength="1" stroke-width="4"
+      d="M 512 216 C 470 238, 442 268, 430 300 C 420 326, 418 348, 424 372" />
+    <!-- fine tips -->
+    <path class="stroke s4" pathLength="1" stroke-width="2.5"
+      d="M 386 214 C 362 238, 350 262, 348 292" />
+    <path class="stroke s4" pathLength="1" stroke-width="2.5"
+      d="M 424 430 C 420 466, 428 496, 448 522" />
+    <g id="blooms"></g>
+  </svg>
+
+  <canvas id="petals"></canvas>
+
+  <button class="theme-toggle" id="toggle" aria-pressed="false">LACQUER ◐</button>
+
+  <div class="hero-type">
+    <h1 class="name">Tanel <em>Treuberg</em></h1>
+    <p class="thesis">Software engineer building thoughtful, reliable products.</p>
+    <div class="seal-row">
+      <div class="seal" aria-hidden="true"><span>印</span></div>
+      <div class="seal-caption">The one red mark</div>
+    </div>
+  </div>
+
+  <div class="caption">
+    <span><b>MOCKUP</b>&ensp;Xuan &amp; Seal · §1 Hero</span>
+    <span>move the cursor through the petals — the wind answers</span>
+  </div>
+</div>
+
+<script>
+(() => {
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const svg = document.querySelector('.branch');
+  const bloomsG = document.getElementById('blooms');
+  const canvas = document.getElementById('petals');
+  const ctx = canvas.getContext('2d');
+  const hero = document.getElementById('hero');
+
+  /* ---- blossoms on the branch (SVG coords) ---- */
+  const BLOOMS = [
+    [630,132,1.0],[596,150,0.8],[540,178,1.1],[498,206,0.9],[470,250,1.0],
+    [452,160,0.9],[416,186,1.0],[388,212,0.8],[356,248,0.9],[350,288,0.7],
+    [448,282,0.8],[430,320,1.0],[422,368,0.9],[426,420,0.8],[440,478,0.9],
+    [452,516,0.7],[688,116,0.8],[742,96,0.7]
+  ];
+  const PETAL_SHAPE = 'M0,-6 C3,-4 4,0 0,6 C-4,0 -3,-4 0,-6 Z';
+  BLOOMS.forEach(([x, y, s], i) => {
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.setAttribute('class', 'bloom');
+    g.setAttribute('style', `animation-delay:${1.1 + i * 0.05}s`);
+    g.setAttribute('transform', `translate(${x},${y}) scale(${s})`);
+    let inner = '';
+    for (let p = 0; p < 5; p++) {
+      inner += `<path d="${PETAL_SHAPE}" fill="var(--blossom)" transform="rotate(${p * 72}) translate(0,-5)"/>`;
+    }
+    inner += `<circle r="2" fill="var(--blossom-deep)"/>`;
+    g.innerHTML = inner;
+    bloomsG.appendChild(g);
+  });
+
+  /* ---- canvas sizing ---- */
+  let W = 0, H = 0, dpr = 1;
+  function resize() {
+    dpr = Math.min(devicePixelRatio || 1, 2);
+    W = hero.clientWidth; H = hero.clientHeight;
+    canvas.width = W * dpr; canvas.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  resize();
+  addEventListener('resize', resize);
+
+  /* spawn points = blossom positions in screen space */
+  function spawnPoints() {
+    const r = svg.getBoundingClientRect();
+    const hr = hero.getBoundingClientRect();
+    const sx = r.width / 900, sy = r.height / 620;
+    return BLOOMS.map(([x, y]) => [r.left - hr.left + x * sx, r.top - hr.top + y * sy]);
+  }
+
+  /* ---- petal physics ---- */
+  const COUNT = matchMedia('(max-width: 640px)').matches ? 30 : 60;
+  const petals = [];
+  const gusts = [];       // pointer-driven wind impulses
+  let scrollGust = 0;     // uniform gust from scroll velocity
+
+  function colors() {
+    const cs = getComputedStyle(document.documentElement);
+    return [cs.getPropertyValue('--blossom').trim(), cs.getPropertyValue('--blossom-deep').trim()];
+  }
+  let [c1, c2] = colors();
+
+  class Petal {
+    constructor() { this.reset(true); }
+    reset(scatter) {
+      // 40% detach from the branch blossoms, 60% drift in from an unseen
+      // canopy above the frame, so the fall covers the whole screen width.
+      if (Math.random() < 0.4) {
+        const pts = spawnPoints();
+        const [x, y] = pts[(Math.random() * pts.length) | 0];
+        this.x = x + (Math.random() - 0.5) * 10;
+        this.y = scatter ? Math.random() * H : y;
+      } else {
+        this.x = Math.random() * W;
+        this.y = scatter ? Math.random() * H : -20 - Math.random() * 60;
+      }
+      this.vx = (Math.random() - 0.5) * 8;
+      this.vy = 10 + Math.random() * 20;
+      this.size = 4 + Math.random() * 4;
+      this.rot = Math.random() * Math.PI * 2;
+      this.rotV = (Math.random() - 0.5) * 2;
+      this.phase = Math.random() * Math.PI * 2;
+      this.freq = 0.8 + Math.random() * 1.4;
+      this.color = Math.random() < 0.75 ? c1 : c2;
+      this.alpha = 0.65 + Math.random() * 0.35;
+    }
+    step(dt, t) {
+      this.vy += 26 * dt;                                  // gravity
+      this.vx += Math.sin(t * this.freq + this.phase) * 14 * dt;  // flutter
+      for (const g of gusts) {                             // pointer wind
+        const dx = this.x - g.x, dy = this.y - g.y;
+        const d2 = dx * dx + dy * dy;
+        const f = g.life * Math.exp(-d2 / 22000);
+        this.vx += g.vx * f * dt;
+        this.vy += g.vy * f * dt;
+        this.rotV += f * 0.4 * dt * (dx > 0 ? 1 : -1);
+      }
+      this.vy += scrollGust * dt;                          // scroll gust
+      this.vx *= (1 - 0.9 * dt);                           // drag
+      this.vy *= (1 - 0.55 * dt);
+      this.vy = Math.max(this.vy, -160);
+      this.x += this.vx * dt;
+      this.y += this.vy * dt;
+      this.rot += (this.rotV + Math.sin(t + this.phase) * 0.4) * dt;
+      this.rotV *= (1 - 1.2 * dt);
+      if (this.y > H + 20 || this.x < -40 || this.x > W + 40) this.reset(false);
+    }
+    draw() {
+      ctx.save();
+      ctx.translate(this.x, this.y);
+      ctx.rotate(this.rot);
+      ctx.globalAlpha = this.alpha;
+      ctx.fillStyle = this.color;
+      const s = this.size;
+      ctx.beginPath();                                     // teardrop petal
+      ctx.moveTo(0, -s);
+      ctx.quadraticCurveTo(s * 0.8, -s * 0.3, 0, s);
+      ctx.quadraticCurveTo(-s * 0.8, -s * 0.3, 0, -s);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  /* ---- wind inputs ---- */
+  let px = null, py = null, pt = 0;
+  addEventListener('pointermove', (e) => {
+    const hr = hero.getBoundingClientRect();
+    const x = e.clientX - hr.left, y = e.clientY - hr.top;
+    const now = performance.now();
+    if (px !== null) {
+      const dt = Math.max(now - pt, 8) / 1000;
+      const vx = (x - px) / dt, vy = (y - py) / dt;
+      const sp = Math.hypot(vx, vy);
+      if (sp > 60) gusts.push({ x, y, vx: vx * 0.9, vy: vy * 0.9, life: 1 });
+      if (gusts.length > 12) gusts.shift();
+    }
+    px = x; py = y; pt = now;
+  }, { passive: true });
+  addEventListener('wheel', (e) => { scrollGust += e.deltaY * 0.6; }, { passive: true });
+
+  /* ---- loop ---- */
+  for (let i = 0; i < COUNT; i++) petals.push(new Petal());
+
+  if (reduced) {
+    // paused scene: a dozen petals resting mid-air
+    ctx.clearRect(0, 0, W, H);
+    petals.slice(0, 14).forEach(p => p.draw());
+  } else {
+    let last = performance.now(), running = true;
+    const START = 1600;                                    // after branch draw-in
+    function frame(now) {
+      if (!running) return;
+      const dt = Math.min((now - last) / 1000, 0.05);
+      last = now;
+      const t = now / 1000;
+      ctx.clearRect(0, 0, W, H);
+      if (now > START) {
+        for (const g of gusts) g.life *= (1 - 3 * dt);
+        for (let i = gusts.length - 1; i >= 0; i--) if (gusts[i].life < 0.02) gusts.splice(i, 1);
+        scrollGust *= (1 - 4 * dt);
+        for (const p of petals) { p.step(dt, t); p.draw(); }
+      }
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+    document.addEventListener('visibilitychange', () => {
+      running = !document.hidden;
+      if (running) { last = performance.now(); requestAnimationFrame(frame); }
+    });
+  }
+
+  /* ---- theme toggle ---- */
+  const toggle = document.getElementById('toggle');
+  toggle.addEventListener('click', () => {
+    const dark = document.documentElement.dataset.theme === 'dark';
+    document.documentElement.dataset.theme = dark ? '' : 'dark';
+    toggle.textContent = dark ? 'LACQUER ◐' : 'XUAN ◑';
+    toggle.setAttribute('aria-pressed', String(!dark));
+    [c1, c2] = colors();
+    for (const p of petals) p.color = Math.random() < 0.75 ? c1 : c2;
+  });
+})();
+</script>
