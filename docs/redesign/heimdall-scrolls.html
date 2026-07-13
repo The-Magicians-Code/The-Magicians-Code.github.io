@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Heimdall — junk-ships world (watercolor)</title>
+<!-- EXPERIMENT ONLY: brush face from Google Fonts CDN, matching hero.html's
+     A/B setup. The shipped site self-hosts; a winner gets vendored like Fraunces. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Brush+Script&display=swap">
+<style>
+  :root {
+    /* design-system tokens (shared with the redesign set) */
+    --porcelain:      #F5F1E7;
+    --porcelain-soft: rgba(245, 241, 231, 0.80);
+    --gold:           #E6C77E;
+    --vermillion:     #B33A2B;
+    --ease-out:       cubic-bezier(0.22, 1, 0.36, 1);
+    --brush:  'Nanum Brush Script', 'Songti SC', 'Iowan Old Style', Georgia, serif;
+    --serif:  'Iowan Old Style', Georgia, 'Times New Roman', 'Songti SC', serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: #b9a986;                 /* paper tone behind the image while it loads */
+    color: var(--porcelain);
+    font-family: var(--serif);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100svh;
+    overflow: hidden;
+  }
+
+  /* ============ Stage + painting ============ */
+  .world { position: relative; width: 100vw; height: 100svh; overflow: hidden; }
+
+  .painting {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    object-position: 34% 50%;
+    /* very slow ambient breathing so the still watercolor feels alive */
+    animation: drift 46s var(--ease-out) infinite alternate;
+    will-change: transform;
+  }
+  @keyframes drift {
+    from { transform: scale(1.06) translate3d(-1.2%, 0.6%, 0); }
+    to   { transform: scale(1.10) translate3d(1.2%, -0.9%, 0); }
+  }
+
+  /* Focal scrim — a soft radial pool of shade under the centered mark so the
+     porcelain ink reads over the busy middle, feathering out to the painting.
+     Second layer just seats the very edges. */
+  .world::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background:
+      radial-gradient(58vmax 46vmax at 50% 48%, rgba(18,12,7,0.44) 0%, rgba(18,12,7,0.22) 38%, rgba(18,12,7,0) 68%),
+      linear-gradient(180deg, rgba(18,12,7,0.16) 0%, rgba(18,12,7,0) 26%, rgba(18,12,7,0) 74%, rgba(18,12,7,0.20) 100%);
+  }
+
+  /* ============ Content — one centered column ============ */
+  .plate {
+    position: absolute; inset: 0; z-index: 2;
+    display: grid; place-items: center;
+    text-align: center;
+    padding: clamp(1.6rem, 5vh, 3.4rem) clamp(1.4rem, 6vw, 4rem);
+  }
+  .stack { display: flex; flex-direction: column; align-items: center; }
+
+  /* --- the seeing-mark: a painted ink glyph, the focal emblem --- */
+  .mark {
+    font-family: var(--brush);
+    font-weight: 400; line-height: 1;
+    font-size: clamp(4.6rem, 13vw, 10.5rem);
+    color: var(--porcelain);
+    text-shadow: 0 2px 30px rgba(12,8,4,0.5);
+    opacity: 0;
+    animation: resolve 1.5s var(--ease-out) 0.3s forwards;
+  }
+
+  /* --- project title, right below the mark --- */
+  .codename {
+    margin: clamp(-0.2rem, -0.4vw, 0) 0 0;
+    font-family: var(--brush);
+    font-weight: 400; font-style: normal;
+    font-size: clamp(3.4rem, 10vw, 8rem);
+    line-height: 0.9; letter-spacing: 0.01em;
+    color: var(--porcelain);
+    text-shadow: 0 2px 26px rgba(12,8,4,0.5);
+    opacity: 0;
+    animation: resolve 1.45s var(--ease-out) 0.72s forwards;
+  }
+
+  /* --- supporting text, continuing the stack --- */
+  .subtitle {
+    margin: clamp(0.9rem, 2.4vh, 1.5rem) 0 0;
+    font-size: 0.72rem; font-weight: 600;
+    letter-spacing: 0.34em; text-transform: uppercase; color: var(--gold);
+    text-shadow: 0 1px 12px rgba(12,8,4,0.6);
+    opacity: 0;
+    animation: resolve-soft 1.3s var(--ease-out) 1.12s forwards;
+  }
+  .line {
+    margin: clamp(0.6rem, 1.6vh, 1rem) auto 0; max-width: 34ch;
+    font-style: italic; font-size: clamp(1.05rem, 2vw, 1.4rem); line-height: 1.5;
+    color: var(--porcelain);
+    text-shadow: 0 1px 18px rgba(12,8,4,0.65);
+    opacity: 0;
+    animation: resolve-soft 1.35s var(--ease-out) 1.32s forwards;
+  }
+  .more {
+    display: inline-flex; align-items: center; gap: 0.5em;
+    margin-top: clamp(1.2rem, 3vh, 2rem);
+    font-family: var(--serif);
+    font-size: 0.82rem; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--porcelain); text-decoration: none; position: relative;
+    text-shadow: 0 1px 14px rgba(12,8,4,0.65);
+    opacity: 0;
+    animation: resolve-soft 1.35s var(--ease-out) 1.52s forwards;
+  }
+  .more .arr { transition: transform 0.35s var(--ease-out); }
+  .more::after {
+    content: ''; position: absolute; left: 0; bottom: -4px;
+    width: 100%; height: 1px; background: var(--gold);
+    transform: scaleX(0); transform-origin: center; transition: transform 0.35s var(--ease-out);
+  }
+  .more:hover::after, .more:focus-visible::after { transform: scaleX(1); }
+  .more:hover .arr, .more:focus-visible .arr { transform: translateX(4px); }
+  .more:focus-visible { outline: 2px solid var(--gold); outline-offset: 4px; border-radius: 2px; }
+
+  /* The xuan-seal blur-resolve, ported to an on-load reveal:
+     blur 18px→0 + fade + a small rise & settle. Softer variant for the meta. */
+  @keyframes resolve {
+    from { opacity: 0; filter: blur(18px); transform: translateY(3.2vh) scale(0.985); }
+    to   { opacity: 1; filter: blur(0);    transform: translateY(0)    scale(1); }
+  }
+  @keyframes resolve-soft {
+    from { opacity: 0; filter: blur(12px); transform: translateY(2.2vh); }
+    to   { opacity: 1; filter: blur(0);    transform: translateY(0); }
+  }
+
+  /* ============ Handscroll (v8 mechanics, full-viewport height) ============ */
+  :root { --paper-h: calc(100svh - 26px); --paper-w-open: min(94vw, calc(100vw - 26px)); }
+
+  .stack { transition: opacity 0.7s var(--ease-out), filter 0.7s var(--ease-out), transform 0.7s var(--ease-out); }
+  .world.is-open .stack { opacity: 0.14; filter: blur(3px); transform: scale(0.98); pointer-events: none; }
+
+  .backdrop {
+    position: absolute; inset: 0; z-index: 3; pointer-events: none;
+    background: radial-gradient(90vmax 90vmax at 50% 50%, rgba(14,9,5,0.30) 0%, rgba(14,9,5,0.52) 100%);
+    opacity: 0; visibility: hidden;
+    transition: opacity 0.6s var(--ease-out), visibility 0.6s;
+  }
+  .world.is-open .backdrop { opacity: 1; visibility: visible; }
+
+  .scrollwrap {
+    position: absolute; inset: 0; z-index: 4;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; visibility: hidden; transform: scale(0.985);
+    transition: opacity 0.4s var(--ease-out), transform 0.4s var(--ease-out), visibility 0.4s;
+  }
+  .world.is-open .scrollwrap { opacity: 1; visibility: visible; transform: scale(1); }
+
+  #stage { display: flex; align-items: center; cursor: pointer; user-select: none; -webkit-user-select: none; }
+  #stage:focus-visible { outline: 2px solid var(--gold); outline-offset: -3px; }
+
+  .rollcol {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    height: 100svh; flex: none; position: relative; z-index: 5;
+  }
+  .rollcol--l { margin-right: -13px; }
+  .rollcol--r { margin-left: -13px; }
+  .knob { width: 14px; height: 22px; flex: none; border-radius: 7px;
+    background: linear-gradient(90deg,#3d2b1a,#8a5a2e 45%,#c89b62 55%,#5a3c22); }
+  .jade { width: 18px; height: 12px; flex: none; border-radius: 50%/60%;
+    background: radial-gradient(ellipse at 35% 35%,#9fd6b8,#4a8f6a 60%,#2c5c44); }
+  .roller { width: 26px; height: 100svh; flex: none; border-radius: 13px; background-color: #8a5a2e;
+    background-image: linear-gradient(90deg,rgba(20,10,4,.85),rgba(107,68,35,.2) 30%,rgba(255,220,170,.38) 48%,rgba(255,232,195,.46) 52%,rgba(80,48,22,.5) 72%,rgba(22,12,5,.9)),
+      repeating-linear-gradient(90deg,rgba(38,20,7,.55) 0 3px,rgba(0,0,0,0) 3px 9px,rgba(58,33,13,.4) 9px 12px,rgba(0,0,0,0) 12px 22px);
+    background-size: 100% 100%, 44px 100%; background-position: 0 0, 0 0;
+    box-shadow: inset 0 6px 10px rgba(255,255,255,.15), inset 0 -8px 12px rgba(0,0,0,.35), 0 4px 10px rgba(0,0,0,.35);
+    transition: background-position 2.1s cubic-bezier(.3,1.18,.35,1); }
+
+  #wrap { width: 26px; height: var(--paper-h); overflow: hidden; position: relative; z-index: 1;
+    transition: width 2.1s cubic-bezier(.3,1.18,.35,1); }
+  #scroller { overflow-x: auto; overflow-y: hidden; direction: rtl; width: 100%; height: 100%;
+    scrollbar-width: none; cursor: grab; }
+  #scroller::-webkit-scrollbar { display: none; }
+  #paper { width: max-content; height: 100%; display: flex; background: #efe3c6; box-shadow: 0 6px 18px rgba(0,0,0,.28); }
+  .brocade { width: 30px; height: 100%; flex: none;
+    background: #1c2947 repeating-linear-gradient(45deg,rgba(201,166,90,.28) 0 2px,transparent 2px 9px),
+                repeating-linear-gradient(-45deg,rgba(201,166,90,.28) 0 2px,transparent 2px 9px); }
+  .trim { width: 3px; height: 100%; flex: none; background: linear-gradient(#c9a65a,#a3833f); }
+  .artwork { height: 100%; width: calc(var(--paper-h) * (1200 / 314)); flex: none; position: relative; background: #f1e6cb;
+    background-image: repeating-linear-gradient(0deg,rgba(120,100,60,.05) 0 1px,transparent 1px 7px),
+      radial-gradient(ellipse at 20% 80%,rgba(140,115,70,.10),transparent 55%),
+      radial-gradient(ellipse at 85% 15%,rgba(140,115,70,.08),transparent 50%); }
+  .artwork svg { display: block; width: 100%; height: 100%; }
+  .edgeshadow { position: absolute; top: 0; bottom: 0; width: 34px; pointer-events: none; z-index: 3; }
+  .edgeshadow--l { left: 0; background: linear-gradient(90deg,rgba(30,20,10,.5),rgba(30,20,10,.14) 40%,rgba(255,250,235,.14) 68%,rgba(255,250,235,0)); }
+  .edgeshadow--r { right: 0; background: linear-gradient(-90deg,rgba(30,20,10,.5),rgba(30,20,10,.14) 40%,rgba(255,250,235,.14) 68%,rgba(255,250,235,0)); }
+
+  /* calligraphy + seals, offsets = v8 px × (100svh / 314) — decorative, eye-tune if needed */
+  .vtext { position: absolute; writing-mode: vertical-rl; font-family: 'Kaiti SC','STKaiti','KaiTi',serif; }
+  .cal-title { top: 6.4svh; right: 8.3svh; font-size: 8.3svh; letter-spacing: 1.9svh; color: #2c2620; }
+  .cal-date  { top: 7.6svh; right: 20.4svh; font-size: 3.8svh; letter-spacing: 0.95svh; color: #4d453a; }
+  .cal-left  { top: 7.6svh; left: 17.8svh; font-size: 4.1svh; letter-spacing: 1.3svh; color: #4d453a; }
+  .seal { position: absolute; background: #b3372a; border-radius: 3px;
+    display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 2px rgba(0,0,0,.25); }
+  .seal .vtext { position: static; color: #f4e8d2; }
+  .seal--artist { top: 44.6svh; right: 8.9svh; width: 8.3svh; height: 8.3svh; }
+  .seal--artist .vtext { font-size: 4.1svh; letter-spacing: 0.3svh; }
+  .seal--coll { top: 47.8svh; left: 8.3svh; width: 7svh; height: 7svh; }
+  .seal--coll .vtext { font-size: 3.5svh; }
+
+  @media (max-aspect-ratio: 1/1) {
+    .painting { object-position: 44% 42%; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .painting { animation: none; transform: scale(1.04); }
+    .mark, .codename, .subtitle, .line, .more {
+      animation: none; opacity: 1; filter: none; transform: none;
+    }
+    .stack, .backdrop, .scrollwrap, #wrap, .roller { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+  <main class="world">
+    <picture>
+      <source media="(max-aspect-ratio: 1/1)" srcset="junkships-portrait.png" />
+      <img class="painting" src="junkships.png"
+           alt="Watercolor of red-sailed junk ships gliding past misty mountains and a pagoda village at sunset" />
+    </picture>
+
+    <div class="plate">
+      <div class="stack">
+        <span class="mark" aria-hidden="true">見</span>
+        <h1 class="codename">Heimdall</h1>
+        <p class="subtitle">Vision pipeline for edge inference</p>
+        <p class="line">A vessel learning to see the sea it sails.</p>
+        <a class="more" id="read-trial" href="#" aria-expanded="false" aria-controls="stage">Read the trial <span class="arr">&rarr;</span></a>
+      </div>
+    </div>
+
+    <div class="backdrop"></div>
+    <div class="scrollwrap">
+      <div id="stage" role="button" tabindex="0" aria-expanded="false"
+           aria-label="Heimdall handscroll: click to roll away, drag to pan">
+        <div class="rollcol rollcol--l">
+          <div class="jade"></div><div class="knob"></div>
+          <div id="rollerL" class="roller"></div>
+          <div class="knob"></div><div class="jade"></div>
+        </div>
+        <div id="wrap">
+          <div id="scroller">
+            <div id="paper">
+              <div class="brocade"></div><div class="trim"></div>
+              <div class="artwork">
+                <svg viewBox="0 0 1200 314" aria-hidden="true">
+                  <ellipse cx="1010" cy="105" rx="130" ry="55" fill="#cfc6ac" opacity="0.35"/>
+                  <ellipse cx="760" cy="80" rx="120" ry="45" fill="#cfc6ac" opacity="0.3"/>
+                  <ellipse cx="420" cy="95" rx="140" ry="50" fill="#cfc6ac" opacity="0.32"/>
+                  <ellipse cx="150" cy="120" rx="120" ry="55" fill="#cfc6ac" opacity="0.3"/>
+                  <path d="M880 190 Q950 82 1008 138 Q1040 55 1095 130 Q1130 88 1175 158 L1175 314 L880 314 Z" fill="#a89d82" opacity="0.55"/>
+                  <path d="M560 200 Q620 95 675 150 Q715 70 770 145 Q810 100 860 170 L860 314 L560 314 Z" fill="#a89d82" opacity="0.5"/>
+                  <path d="M120 195 Q180 90 240 148 Q280 65 335 142 Q375 98 420 165 L420 314 L120 314 Z" fill="#a89d82" opacity="0.5"/>
+                  <path d="M980 214 Q1060 65 1120 148 Q1155 92 1210 162 L1210 314 L980 314 Z" fill="#7d7259" opacity="0.7"/>
+                  <path d="M330 220 Q410 78 470 158 Q505 105 555 172 Q595 132 645 195 L645 314 L330 314 Z" fill="#7d7259" opacity="0.65"/>
+                  <path d="M-10 246 Q45 162 95 213 Q135 153 190 232 Q225 190 265 250 L265 314 L-10 314 Z" fill="#4d4536"/>
+                  <path d="M700 250 Q760 175 815 225 Q855 180 905 240 Q940 205 980 252 L980 314 L700 314 Z" fill="#4d4536"/>
+                  <path d="M96 214 q-6 -22 4 -40 M118 218 q2 -26 14 -44 M188 232 q-8 -20 -2 -42 M816 227 q-6 -20 2 -38 M906 240 q-4 -22 6 -40" fill="none" stroke="#332d22" stroke-width="1.6" opacity="0.7"/>
+                  <path d="M0 278 H1200 M30 290 H420 M520 290 H900 M980 290 H1200 M120 300 H350 M600 302 H1080" stroke="#8b8168" stroke-width="1" opacity="0.45" fill="none"/>
+                  <path d="M470 278 q45 -34 90 0" fill="none" stroke="#5a5142" stroke-width="4"/>
+                  <path d="M478 278 q37 -26 74 0" fill="none" stroke="#5a5142" stroke-width="2" opacity="0.7"/>
+                  <path d="M472 278 v10 M508 258 v30 M544 278 v10" stroke="#5a5142" stroke-width="2" fill="none"/>
+                  <path d="M340 280 q14 -8 30 0 l-4 6 h-22 Z" fill="#3a342a"/>
+                  <path d="M355 274 l0 -10 q10 -2 8 6" fill="none" stroke="#3a342a" stroke-width="1.4"/>
+                  <path d="M905 284 q12 -7 26 0 l-3 5 h-19 Z" fill="#3a342a"/>
+                  <path d="M916 279 l0 -9 q9 -2 7 5" fill="none" stroke="#3a342a" stroke-width="1.3"/>
+                  <path d="M245 235 h34 l-6 -12 h-22 Z M251 223 h22 l-5 -11 h-12 Z M256 212 h12 l-6 -12 Z" fill="#4a4234"/>
+                  <rect x="258" y="235" width="8" height="14" fill="#4a4234"/>
+                  <path d="M1105 248 q-3 -30 6 -52 M1105 220 q-16 -4 -26 -16 M1106 212 q14 -8 22 -20 M1104 234 q-12 -2 -20 -10" fill="none" stroke="#3f382b" stroke-width="2.4"/>
+                  <path d="M1068 194 q22 -16 46 -8 M1082 180 q18 -12 38 -6 M1096 206 q20 -10 36 -2" fill="none" stroke="#565040" stroke-width="4" stroke-linecap="round" opacity="0.85"/>
+                  <path d="M690 120 l7 5 l7 -5 M706 128 l7 5 l7 -5 M676 132 l6 4 l6 -4" fill="none" stroke="#4d4536" stroke-width="1.5"/>
+                </svg>
+                <div class="vtext cal-title">千里江山</div>
+                <div class="vtext cal-date">丙午年夏月寫</div>
+                <div class="seal seal--artist"><span class="vtext">墨仙</span></div>
+                <div class="vtext cal-left">行到水窮處　坐看雲起時</div>
+                <div class="seal seal--coll"><span class="vtext">藏</span></div>
+              </div>
+              <div class="trim"></div><div class="brocade"></div>
+            </div>
+          </div>
+          <div class="edgeshadow edgeshadow--l"></div>
+          <div class="edgeshadow edgeshadow--r"></div>
+        </div>
+        <div class="rollcol rollcol--r">
+          <div class="jade"></div><div class="knob"></div>
+          <div id="rollerR" class="roller"></div>
+          <div class="knob"></div><div class="jade"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</body>
+</html>
