@@ -86,6 +86,11 @@ pointer-capture drag with the `moved` flag guarding click-vs-drag.
 - `prefers-reduced-motion: reduce`: no spring/spin/fade transitions — states
   switch instantly; ambient painting drift already disabled by the existing rule.
 - No native scrollbars (`scrollbar-width: none` + WebKit rule, from v8).
+- No elastic overscroll (added 2026-07-13 after user feedback): a macOS rubber-band
+  past the scroll bounds pulls the paper away from the rollers and exposes a void.
+  `#scroller` sets `overscroll-behavior-x: none`, with a paper-toned
+  `background: #efe3c6` as the fallback for engines that still bounce subscrollers —
+  any residual bounce reveals cream that reads as paper, never a gap.
 
 ## Out of scope
 
