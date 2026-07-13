@@ -306,5 +306,111 @@
       </div>
     </div>
   </main>
+  <script>
+  (function(){
+    var world=document.querySelector('.world');
+    var plate=document.querySelector('.plate');
+    var link=document.getElementById('read-trial');
+    var stage=document.getElementById('stage');
+    var wrap=document.getElementById('wrap');
+    var rL=document.getElementById('rollerL'),rR=document.getElementById('rollerR');
+    var sc=document.getElementById('scroller');
+    var open=false,openTimer=0,closeTimer=0,endH=null,K=0.6;
+    var EASE_OPEN='cubic-bezier(.3,1.18,.35,1)',EASE_CLOSE='cubic-bezier(.55,0,.3,1)';
+    /* live MediaQueryList — read .matches at each use so a mid-session
+       reduced-motion flip can't strand the overlay waiting on transitionend */
+    var mq=window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    function pan(){return Math.abs(sc.scrollLeft)*K;}
+    function grainL(){return (open?-132:0)+pan();}
+    function grainR(){return pan();}
+    function setGrain(animate){
+      var d=(animate&&!mq.matches)?'2.1s':'0s';
+      rL.style.transitionDuration=d;rR.style.transitionDuration=d;
+      rL.style.backgroundPosition='0 0, '+grainL()+'px 0';
+      rR.style.backgroundPosition='0 0, '+grainR()+'px 0';
+    }
+    function setEase(e){[wrap,rL,rR].forEach(function(el){el.style.transitionTimingFunction=e;});}
+
+    function openScroll(){
+      if(open)return;
+      open=true;
+      clearTimeout(closeTimer);
+      if(endH){wrap.removeEventListener('transitionend',endH);endH=null;}  /* reopen mid-close */
+      sc.scrollLeft=0;
+      world.classList.add('is-open');
+      plate.inert=true;                       /* dimmed hero leaves tab order + a11y tree */
+      stage.setAttribute('aria-expanded','true');
+      link.setAttribute('aria-expanded','true');
+      stage.focus();
+      openTimer=setTimeout(function(){
+        /* commit the closed grain baseline at 0s before animating — the
+           programmatic scrollLeft reset above may have fired the scroll
+           handler and pre-snapped the grain to its open target */
+        rL.style.transitionDuration='0s';rR.style.transitionDuration='0s';
+        rL.style.backgroundPosition='0 0, 0px 0';
+        rR.style.backgroundPosition='0 0, 0px 0';
+        void rL.offsetWidth;
+        setEase(EASE_OPEN);
+        wrap.style.width='var(--paper-w-open)';
+        setGrain(true);
+      },mq.matches?0:420);
+    }
+    function teardown(){
+      if(endH){wrap.removeEventListener('transitionend',endH);endH=null;}
+      clearTimeout(closeTimer);
+      world.classList.remove('is-open');
+      plate.inert=false;
+      link.focus();
+    }
+    function closeScroll(){
+      if(!open)return;
+      open=false;
+      clearTimeout(openTimer);                /* close during materialization: kill pending expansion */
+      stage.setAttribute('aria-expanded','false');
+      link.setAttribute('aria-expanded','false');
+      var w=parseFloat(getComputedStyle(wrap).width);
+      setEase(EASE_CLOSE);
+      wrap.style.width='26px';
+      setGrain(true);
+      if(mq.matches||w<=26){teardown();return;}  /* no width transition will run → no transitionend */
+      endH=function(e){
+        if(e.propertyName!=='width')return;
+        wrap.removeEventListener('transitionend',endH);endH=null;
+        if(!open)teardown();
+      };
+      wrap.addEventListener('transitionend',endH);
+      closeTimer=setTimeout(function(){if(!open)teardown();},2400);  /* bounded fallback */
+    }
+    /* instant recovery if reduced-motion flips on while a close is pending */
+    mq.addEventListener('change',function(){
+      if(mq.matches&&!open&&world.classList.contains('is-open'))teardown();
+    });
+
+    link.addEventListener('click',function(e){e.preventDefault();openScroll();});
+
+    var dragging=false,moved=false,startX=0,startScroll=0;
+    sc.addEventListener('pointerdown',function(e){
+      dragging=true;moved=false;startX=e.clientX;startScroll=sc.scrollLeft;
+      sc.setPointerCapture(e.pointerId);sc.style.cursor='grabbing';
+    });
+    sc.addEventListener('pointermove',function(e){
+      if(!dragging)return;
+      var dx=e.clientX-startX;
+      if(Math.abs(dx)>5)moved=true;
+      sc.scrollLeft=startScroll-dx;
+    });
+    function endDrag(){dragging=false;sc.style.cursor='grab';}
+    sc.addEventListener('pointerup',endDrag);
+    sc.addEventListener('pointercancel',function(){endDrag();moved=false;});
+    sc.addEventListener('scroll',function(){setGrain(false);});
+
+    stage.addEventListener('click',function(){if(moved){moved=false;return;}closeScroll();});
+    stage.addEventListener('keydown',function(e){
+      if(e.key==='Enter'||e.key===' '){e.preventDefault();closeScroll();}
+    });
+    document.addEventListener('keydown',function(e){if(e.key==='Escape')closeScroll();});
+  })();
+  </script>
 </body>
 </html>
