@@ -48,8 +48,11 @@ pointer-capture drag with the `moved` flag guarding click-vs-drag.
   precedent accepted in `heimdall-scroll.html`.
 - **Paper/wrap height = `calc(100svh - 26px)`** — paper tucks 13px under each roller
   end, preserving v8's overlap via the `margin: -13px` roll-columns.
-- **Closed width = 26px** (one roller width); **open width = 94vw** via a CSS token
-  (`--paper-w-open: 94vw`) so JS reads `var(--paper-w-open)` instead of a px literal.
+- **Closed width = 26px** (one roller width); **open width = 94vw, clamped** via a CSS
+  token — `--paper-w-open: min(94vw, calc(100vw - 26px))` — so JS reads
+  `var(--paper-w-open)` instead of a px literal. (The `min()` clamp, added in Codex
+  review, keeps both rollers on-screen below ~434px viewports where
+  94vw + roller overhang would exceed 100vw.)
 - **Paper width:** the v8 SVG (viewBox `1200×314`) scales to paper height
   preserving aspect → paper ≈ 3.82 × paper-height wide, plus the brocade (30px) +
   trim (3px) ends. Compute with `aspect-ratio` / `height: 100%; width: auto` on the
