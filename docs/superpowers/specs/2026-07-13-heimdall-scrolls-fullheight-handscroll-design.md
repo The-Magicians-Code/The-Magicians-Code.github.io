@@ -83,6 +83,11 @@ pointer-capture drag with the `moved` flag guarding click-vs-drag.
 
 - Scroll stage: `role="button"`, `tabindex="0"`, `aria-expanded`, Enter/Space
   toggles (port from v8).
+- Focus restoration on close is modality-aware (added 2026-07-13 after user
+  feedback): click and Enter/Space closes refocus the "Read the trial" trigger;
+  **Esc closes skip the refocus** — Esc's keyboard modality lights the trigger's
+  `:focus-visible` ring (gold outline + underline), which reads as a stuck
+  hover/selection after a mouse-driven Esc close.
 - `prefers-reduced-motion: reduce`: no spring/spin/fade transitions — states
   switch instantly; ambient painting drift already disabled by the existing rule.
 - No native scrollbars (`scrollbar-width: none` + WebKit rule, from v8).

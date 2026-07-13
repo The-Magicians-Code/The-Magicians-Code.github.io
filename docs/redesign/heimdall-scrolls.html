@@ -324,7 +324,7 @@
     var wrap=document.getElementById('wrap');
     var rL=document.getElementById('rollerL'),rR=document.getElementById('rollerR');
     var sc=document.getElementById('scroller');
-    var open=false,openTimer=0,closeTimer=0,endH=null,K=0.6;
+    var open=false,openTimer=0,closeTimer=0,endH=null,restoreFocus=true,K=0.6;
     var EASE_OPEN='cubic-bezier(.3,1.18,.35,1)',EASE_CLOSE='cubic-bezier(.55,0,.3,1)';
     /* live MediaQueryList — read .matches at each use so a mid-session
        reduced-motion flip can't strand the overlay waiting on transitionend */
@@ -370,11 +370,16 @@
       clearTimeout(closeTimer);
       world.classList.remove('is-open');
       plate.inert=false;
-      link.focus();
+      if(restoreFocus)link.focus();
+      restoreFocus=true;
     }
-    function closeScroll(){
+    /* refocus===false (Esc): skip restoring focus to the trigger — the
+       keyboard modality would light its :focus-visible ring, which reads
+       as a stuck hover. Click/Enter/Space closes still restore focus. */
+    function closeScroll(refocus){
       if(!open)return;
       open=false;
+      restoreFocus=refocus!==false;
       clearTimeout(openTimer);                /* close during materialization: kill pending expansion */
       stage.setAttribute('aria-expanded','false');
       link.setAttribute('aria-expanded','false');
@@ -418,7 +423,7 @@
     stage.addEventListener('keydown',function(e){
       if(e.key==='Enter'||e.key===' '){e.preventDefault();closeScroll();}
     });
-    document.addEventListener('keydown',function(e){if(e.key==='Escape')closeScroll();});
+    document.addEventListener('keydown',function(e){if(e.key==='Escape')closeScroll(false);});
   })();
   </script>
 </body>
