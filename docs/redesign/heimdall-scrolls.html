@@ -190,8 +190,11 @@
 
   #wrap { width: 26px; height: var(--paper-h); overflow: hidden; position: relative; z-index: 1;
     transition: width 2.1s cubic-bezier(.3,1.18,.35,1); }
+  /* no elastic overscroll — a rubber-band past the bounds pulls the paper away
+     from the rollers and shows a void; the paper-toned background is the
+     fallback for engines that still bounce subscrollers (older WebKit) */
   #scroller { overflow-x: auto; overflow-y: hidden; direction: rtl; width: 100%; height: 100%;
-    scrollbar-width: none; cursor: grab; }
+    scrollbar-width: none; cursor: grab; overscroll-behavior-x: none; background: #efe3c6; }
   #scroller::-webkit-scrollbar { display: none; }
   #paper { width: max-content; height: 100%; display: flex; background: #efe3c6; box-shadow: 0 6px 18px rgba(0,0,0,.28); }
   .brocade { width: 30px; height: 100%; flex: none;
