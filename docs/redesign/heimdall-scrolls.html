@@ -141,7 +141,9 @@
   }
 
   /* ============ Handscroll (v8 mechanics, full-viewport height) ============ */
-  :root { --paper-h: calc(100svh - 26px); --paper-w-open: min(94vw, calc(100vw - 26px)); }
+  /* roller shaft leaves room for its end caps (jade 12px + knob 22px per end = 68px)
+     so the full assembly spans the viewport; paper stays 13px tucked under each shaft end */
+  :root { --roller-h: calc(100svh - 68px); --paper-h: calc(var(--roller-h) - 26px); --paper-w-open: min(94vw, calc(100vw - 26px)); }
 
   .stack { transition: opacity 0.7s var(--ease-out), filter 0.7s var(--ease-out), transform 0.7s var(--ease-out); }
   .world.is-open .stack { opacity: 0.14; filter: blur(3px); transform: scale(0.98); pointer-events: none; }
@@ -179,7 +181,7 @@
     background: linear-gradient(90deg,#3d2b1a,#8a5a2e 45%,#c89b62 55%,#5a3c22); }
   .jade { width: 18px; height: 12px; flex: none; border-radius: 50%/60%;
     background: radial-gradient(ellipse at 35% 35%,#9fd6b8,#4a8f6a 60%,#2c5c44); }
-  .roller { width: 26px; height: 100svh; flex: none; border-radius: 13px; background-color: #8a5a2e;
+  .roller { width: 26px; height: var(--roller-h); flex: none; border-radius: 13px; background-color: #8a5a2e;
     background-image: linear-gradient(90deg,rgba(20,10,4,.85),rgba(107,68,35,.2) 30%,rgba(255,220,170,.38) 48%,rgba(255,232,195,.46) 52%,rgba(80,48,22,.5) 72%,rgba(22,12,5,.9)),
       repeating-linear-gradient(90deg,rgba(38,20,7,.55) 0 3px,rgba(0,0,0,0) 3px 9px,rgba(58,33,13,.4) 9px 12px,rgba(0,0,0,0) 12px 22px);
     background-size: 100% 100%, 44px 100%; background-position: 0 0, 0 0;

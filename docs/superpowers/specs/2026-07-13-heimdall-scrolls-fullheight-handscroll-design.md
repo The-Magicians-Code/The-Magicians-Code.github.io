@@ -43,11 +43,15 @@ pointer-capture drag with the `moved` flag guarding click-vs-drag.
 
 ## Geometry
 
-- **Roller height = `100svh`** (the requirement). Jade + knob end-caps stay in the
-  DOM but clip off-screen top/bottom (`body { overflow: hidden }` already clips) —
-  precedent accepted in `heimdall-scroll.html`.
-- **Paper/wrap height = `calc(100svh - 26px)`** — paper tucks 13px under each roller
-  end, preserving v8's overlap via the `margin: -13px` roll-columns.
+- **Roller assembly spans `100svh`, end-caps visible** (revised 2026-07-13 after the
+  first build: the original "shaft = 100svh, caps clip off-screen" reading left the
+  jade finials and knobs invisible, and the owner wants them seen, matching the v8
+  reference). Shaft height token `--roller-h: calc(100svh - 68px)` — 68px = jade
+  (12px) + knob (22px) per end — so jade + knob + shaft + knob + jade fills the
+  viewport exactly inside the centered `100svh` roll-column.
+- **Paper/wrap height = `calc(var(--roller-h) - 26px)`** — paper tucks 13px under
+  each shaft end, preserving v8's overlap via the `margin: -13px` roll-columns
+  (same shaft−26 relationship as v8's 340/314).
 - **Closed width = 26px** (one roller width); **open width = 94vw, clamped** via a CSS
   token — `--paper-w-open: min(94vw, calc(100vw - 26px))` — so JS reads
   `var(--paper-w-open)` instead of a px literal. (The `min()` clamp, added in Codex
