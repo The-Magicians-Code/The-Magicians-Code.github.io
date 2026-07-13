@@ -236,7 +236,7 @@ Insert immediately **before** `</body>`:
     var wrap=document.getElementById('wrap');
     var rL=document.getElementById('rollerL'),rR=document.getElementById('rollerR');
     var sc=document.getElementById('scroller');
-    var open=false,openTimer=0,closeTimer=0,K=0.6;
+    var open=false,openTimer=0,closeTimer=0,endH=null,K=0.6;
     var EASE_OPEN='cubic-bezier(.3,1.18,.35,1)',EASE_CLOSE='cubic-bezier(.55,0,.3,1)';
     /* live MediaQueryList — read .matches at each use so a mid-session
        reduced-motion flip can't strand the overlay waiting on transitionend */
@@ -257,6 +257,7 @@ Insert immediately **before** `</body>`:
       if(open)return;
       open=true;
       clearTimeout(closeTimer);
+      if(endH){wrap.removeEventListener('transitionend',endH);endH=null;}  /* reopen mid-close */
       sc.scrollLeft=0;
       world.classList.add('is-open');
       plate.inert=true;                       /* dimmed hero leaves tab order + a11y tree */
@@ -277,6 +278,8 @@ Insert immediately **before** `</body>`:
       },mq.matches?0:420);
     }
     function teardown(){
+      if(endH){wrap.removeEventListener('transitionend',endH);endH=null;}
+      clearTimeout(closeTimer);
       world.classList.remove('is-open');
       plate.inert=false;
       link.focus();
@@ -292,14 +295,18 @@ Insert immediately **before** `</body>`:
       wrap.style.width='26px';
       setGrain(true);
       if(mq.matches||w<=26){teardown();return;}  /* no width transition will run → no transitionend */
-      wrap.addEventListener('transitionend',function h(e){
+      endH=function(e){
         if(e.propertyName!=='width')return;
-        wrap.removeEventListener('transitionend',h);
-        clearTimeout(closeTimer);
+        wrap.removeEventListener('transitionend',endH);endH=null;
         if(!open)teardown();
-      });
+      };
+      wrap.addEventListener('transitionend',endH);
       closeTimer=setTimeout(function(){if(!open)teardown();},2400);  /* bounded fallback */
     }
+    /* instant recovery if reduced-motion flips on while a close is pending */
+    mq.addEventListener('change',function(){
+      if(mq.matches&&!open&&world.classList.contains('is-open'))teardown();
+    });
 
     link.addEventListener('click',function(e){e.preventDefault();openScroll();});
 
