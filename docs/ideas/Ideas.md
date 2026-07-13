@@ -57,7 +57,7 @@
 - https://appstacks.club/mobile-apps
 - https://www.landing.love/categories/portfolio/
 - https://www.stainless.com
-- https://www.interfacecraft.dev
+- https://www.interfacecraft.dev 
 - https://interfaces.dev
 - https://cofounder.co
 - https://www.hover.dev

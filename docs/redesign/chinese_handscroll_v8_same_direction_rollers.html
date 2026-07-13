@@ -1,0 +1,123 @@
+<h2 class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">An interactive Chinese handscroll with a long scrollable ink-wash panorama. Click to open or close; drag or scroll horizontally to pan, and both wooden rollers rotate in the same direction as the paper feeds past them.</h2>
+<style>
+.knob{width:14px;height:22px;margin:0 auto;border-radius:7px;background:linear-gradient(90deg,#3d2b1a,#8a5a2e 45%,#c89b62 55%,#5a3c22);}
+.jade{width:18px;height:12px;margin:0 auto;border-radius:50%/60%;background:radial-gradient(ellipse at 35% 35%,#9fd6b8,#4a8f6a 60%,#2c5c44);}
+.roller{width:26px;height:340px;border-radius:13px;background-color:#8a5a2e;position:relative;z-index:5;
+  background-image:linear-gradient(90deg,rgba(20,10,4,.85),rgba(107,68,35,.2) 30%,rgba(255,220,170,.38) 48%,rgba(255,232,195,.46) 52%,rgba(80,48,22,.5) 72%,rgba(22,12,5,.9)),repeating-linear-gradient(90deg,rgba(38,20,7,.55) 0 3px,rgba(0,0,0,0) 3px 9px,rgba(58,33,13,.4) 9px 12px,rgba(0,0,0,0) 12px 22px);
+  background-size:100% 100%,44px 100%;background-position:0 0,0 0;
+  box-shadow:inset 0 6px 10px rgba(255,255,255,.15),inset 0 -8px 12px rgba(0,0,0,.35),0 4px 10px rgba(0,0,0,.35);
+  transition:background-position 2.1s cubic-bezier(.3,1.18,.35,1);}
+.rollcol{text-align:center;position:relative;z-index:5;}
+.brocade{width:30px;height:100%;flex:none;background:#1c2947 repeating-linear-gradient(45deg,rgba(201,166,90,.28) 0 2px,transparent 2px 9px),repeating-linear-gradient(-45deg,rgba(201,166,90,.28) 0 2px,transparent 2px 9px);}
+.trim{width:3px;height:100%;flex:none;background:linear-gradient(#c9a65a,#a3833f);}
+.edgeshadow{position:absolute;top:0;bottom:0;width:34px;pointer-events:none;z-index:3;}
+#scroller{overflow-x:auto;overflow-y:hidden;direction:rtl;width:100%;height:100%;scrollbar-width:none;cursor:grab;}
+#scroller::-webkit-scrollbar{display:none;}
+.vtext{position:absolute;writing-mode:vertical-rl;font-family:'Kaiti SC','STKaiti','KaiTi',serif;}
+</style>
+<div style="display:flex;flex-direction:column;align-items:center;padding:1rem 0;">
+  <div id="stage" role="button" tabindex="0" aria-label="Chinese handscroll, click to open or close, drag to pan" aria-expanded="false" style="cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:center;min-height:420px;">
+    <div style="display:flex;align-items:center;">
+      <div class="rollcol" style="margin-right:-13px;">
+        <div class="jade"></div><div class="knob"></div>
+        <div id="rollerL" class="roller"></div>
+        <div class="knob"></div><div class="jade"></div>
+      </div>
+      <div id="wrap" style="width:26px;height:314px;overflow:hidden;position:relative;z-index:1;transition:width 2.1s cubic-bezier(.3,1.18,.35,1);">
+        <div id="scroller">
+          <div id="paper" style="width:1266px;height:100%;display:flex;background:#efe3c6;box-shadow:0 6px 18px rgba(0,0,0,.28);">
+            <div class="brocade"></div><div class="trim"></div>
+            <div style="width:1200px;flex:none;position:relative;background:#f1e6cb;background-image:repeating-linear-gradient(0deg,rgba(120,100,60,.05) 0 1px,transparent 1px 7px),radial-gradient(ellipse at 20% 80%,rgba(140,115,70,.10),transparent 55%),radial-gradient(ellipse at 85% 15%,rgba(140,115,70,.08),transparent 50%);">
+              <svg viewBox="0 0 1200 314" width="1200" height="314" aria-hidden="true">
+                <ellipse cx="1010" cy="105" rx="130" ry="55" fill="#cfc6ac" opacity="0.35"/>
+                <ellipse cx="760" cy="80" rx="120" ry="45" fill="#cfc6ac" opacity="0.3"/>
+                <ellipse cx="420" cy="95" rx="140" ry="50" fill="#cfc6ac" opacity="0.32"/>
+                <ellipse cx="150" cy="120" rx="120" ry="55" fill="#cfc6ac" opacity="0.3"/>
+                <path d="M880 190 Q950 82 1008 138 Q1040 55 1095 130 Q1130 88 1175 158 L1175 314 L880 314 Z" fill="#a89d82" opacity="0.55"/>
+                <path d="M560 200 Q620 95 675 150 Q715 70 770 145 Q810 100 860 170 L860 314 L560 314 Z" fill="#a89d82" opacity="0.5"/>
+                <path d="M120 195 Q180 90 240 148 Q280 65 335 142 Q375 98 420 165 L420 314 L120 314 Z" fill="#a89d82" opacity="0.5"/>
+                <path d="M980 214 Q1060 65 1120 148 Q1155 92 1210 162 L1210 314 L980 314 Z" fill="#7d7259" opacity="0.7"/>
+                <path d="M330 220 Q410 78 470 158 Q505 105 555 172 Q595 132 645 195 L645 314 L330 314 Z" fill="#7d7259" opacity="0.65"/>
+                <path d="M-10 246 Q45 162 95 213 Q135 153 190 232 Q225 190 265 250 L265 314 L-10 314 Z" fill="#4d4536"/>
+                <path d="M700 250 Q760 175 815 225 Q855 180 905 240 Q940 205 980 252 L980 314 L700 314 Z" fill="#4d4536"/>
+                <path d="M96 214 q-6 -22 4 -40 M118 218 q2 -26 14 -44 M188 232 q-8 -20 -2 -42 M816 227 q-6 -20 2 -38 M906 240 q-4 -22 6 -40" fill="none" stroke="#332d22" stroke-width="1.6" opacity="0.7"/>
+                <path d="M0 278 H1200 M30 290 H420 M520 290 H900 M980 290 H1200 M120 300 H350 M600 302 H1080" stroke="#8b8168" stroke-width="1" opacity="0.45" fill="none"/>
+                <path d="M470 278 q45 -34 90 0" fill="none" stroke="#5a5142" stroke-width="4"/>
+                <path d="M478 278 q37 -26 74 0" fill="none" stroke="#5a5142" stroke-width="2" opacity="0.7"/>
+                <path d="M472 278 v10 M508 258 v30 M544 278 v10" stroke="#5a5142" stroke-width="2" fill="none"/>
+                <path d="M340 280 q14 -8 30 0 l-4 6 h-22 Z" fill="#3a342a"/>
+                <path d="M355 274 l0 -10 q10 -2 8 6" fill="none" stroke="#3a342a" stroke-width="1.4"/>
+                <path d="M905 284 q12 -7 26 0 l-3 5 h-19 Z" fill="#3a342a"/>
+                <path d="M916 279 l0 -9 q9 -2 7 5" fill="none" stroke="#3a342a" stroke-width="1.3"/>
+                <path d="M245 235 h34 l-6 -12 h-22 Z M251 223 h22 l-5 -11 h-12 Z M256 212 h12 l-6 -12 Z" fill="#4a4234"/>
+                <rect x="258" y="235" width="8" height="14" fill="#4a4234"/>
+                <path d="M1105 248 q-3 -30 6 -52 M1105 220 q-16 -4 -26 -16 M1106 212 q14 -8 22 -20 M1104 234 q-12 -2 -20 -10" fill="none" stroke="#3f382b" stroke-width="2.4"/>
+                <path d="M1068 194 q22 -16 46 -8 M1082 180 q18 -12 38 -6 M1096 206 q20 -10 36 -2" fill="none" stroke="#565040" stroke-width="4" stroke-linecap="round" opacity="0.85"/>
+                <path d="M690 120 l7 5 l7 -5 M706 128 l7 5 l7 -5 M676 132 l6 4 l6 -4" fill="none" stroke="#4d4536" stroke-width="1.5"/>
+              </svg>
+              <div class="vtext" style="top:20px;right:26px;font-size:26px;color:#2c2620;letter-spacing:6px;">千里江山</div>
+              <div class="vtext" style="top:24px;right:64px;font-size:12px;color:#4d453a;letter-spacing:3px;">丙午年夏月寫</div>
+              <div style="position:absolute;top:140px;right:28px;width:26px;height:26px;background:#b3372a;border-radius:3px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 2px rgba(0,0,0,.25);"><span class="vtext" style="position:static;font-size:13px;color:#f4e8d2;letter-spacing:1px;">墨仙</span></div>
+              <div class="vtext" style="top:24px;left:56px;font-size:13px;color:#4d453a;letter-spacing:4px;">行到水窮處　坐看雲起時</div>
+              <div style="position:absolute;top:150px;left:26px;width:22px;height:22px;background:#b3372a;border-radius:3px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 2px rgba(0,0,0,.25);"><span class="vtext" style="position:static;font-size:11px;color:#f4e8d2;">藏</span></div>
+            </div>
+            <div class="trim"></div><div class="brocade"></div>
+          </div>
+        </div>
+        <div class="edgeshadow" style="left:0;background:linear-gradient(90deg,rgba(30,20,10,.5),rgba(30,20,10,.14) 40%,rgba(255,250,235,.14) 68%,rgba(255,250,235,0));"></div>
+        <div class="edgeshadow" style="right:0;background:linear-gradient(-90deg,rgba(30,20,10,.5),rgba(30,20,10,.14) 40%,rgba(255,250,235,.14) 68%,rgba(255,250,235,0));"></div>
+      </div>
+      <div class="rollcol" style="margin-left:-13px;">
+        <div class="jade"></div><div class="knob"></div>
+        <div id="rollerR" class="roller"></div>
+        <div class="knob"></div><div class="jade"></div>
+      </div>
+    </div>
+  </div>
+  <button id="btn" style="margin-top:0.5rem;">Open scroll</button>
+</div>
+<script>
+(function(){
+  var open=false,K=0.6;
+  var wrap=document.getElementById('wrap'),btn=document.getElementById('btn'),stage=document.getElementById('stage');
+  var rL=document.getElementById('rollerL'),rR=document.getElementById('rollerR'),sc=document.getElementById('scroller');
+  var EASE_OPEN='cubic-bezier(.3,1.18,.35,1)';
+  var EASE_CLOSE='cubic-bezier(.55,0,.3,1)';
+  function pan(){return Math.abs(sc.scrollLeft)*K;}
+  function grainL(){return (open?-132:0)+pan();}
+  function grainR(){return pan();}
+  function setGrain(animate){
+    var d=animate?'2.1s':'0s';
+    rL.style.transitionDuration=d;rR.style.transitionDuration=d;
+    rL.style.backgroundPosition='0 0, '+grainL()+'px 0';
+    rR.style.backgroundPosition='0 0, '+grainR()+'px 0';
+  }
+  function toggle(){
+    open=!open;
+    var ease=open?EASE_OPEN:EASE_CLOSE;
+    [wrap,rL,rR].forEach(function(el){el.style.transitionTimingFunction=ease;});
+    wrap.style.width=open?'586px':'26px';
+    setGrain(true);
+    btn.textContent=open?'Close scroll':'Open scroll';
+    stage.setAttribute('aria-expanded',String(open));
+  }
+  sc.addEventListener('scroll',function(){setGrain(false);});
+  var dragging=false,moved=false,startX=0,startScroll=0;
+  sc.addEventListener('pointerdown',function(e){
+    dragging=true;moved=false;startX=e.clientX;startScroll=sc.scrollLeft;
+    sc.setPointerCapture(e.pointerId);sc.style.cursor='grabbing';
+  });
+  sc.addEventListener('pointermove',function(e){
+    if(!dragging)return;
+    var dx=e.clientX-startX;
+    if(Math.abs(dx)>5)moved=true;
+    sc.scrollLeft=startScroll-dx;
+  });
+  function endDrag(){dragging=false;sc.style.cursor='grab';}
+  sc.addEventListener('pointerup',endDrag);
+  sc.addEventListener('pointercancel',endDrag);
+  stage.addEventListener('click',function(){if(moved){moved=false;return;}toggle();});
+  stage.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle();}});
+  btn.addEventListener('click',function(e){e.stopPropagation();if(!moved)toggle();});
+})();
+</script>

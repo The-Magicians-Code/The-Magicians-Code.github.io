@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Heimdall — handscroll world (watercolor)</title>
+<!-- EXPERIMENT ONLY: brush face from Google Fonts CDN, matching hero.html's
+     A/B setup. The shipped site self-hosts; a winner gets vendored like Fraunces. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Brush+Script&display=swap">
+<style>
+  :root {
+    --porcelain:      #F5F1E7;
+    --gold:           #E6C77E;
+    --vermillion:     #B33A2B;
+    --paper:          #F1E4C7;
+    --paper-edge:     #E4D1AA;
+    --ink:            #35291a;
+    --ink-soft:       rgba(53, 41, 26, 0.68);
+    --wood:           #6b4a2b;
+    --wood-hi:        #9a7143;
+    --wood-lo:        #422c17;
+    --ease-out:       cubic-bezier(0.22, 1, 0.36, 1);
+    --brush:  'Nanum Brush Script', 'Songti SC', 'Iowan Old Style', Georgia, serif;
+    --serif:  'Iowan Old Style', Georgia, 'Times New Roman', 'Songti SC', serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: #b9a986;
+    color: var(--porcelain);
+    font-family: var(--serif);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100svh;
+    overflow: hidden;
+  }
+
+  /* ============ Stage + painting ============ */
+  .world { position: relative; width: 100vw; height: 100svh; overflow: hidden; }
+  .painting {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover; object-position: 34% 50%;
+    animation: drift 46s var(--ease-out) infinite alternate;
+    will-change: transform;
+  }
+  @keyframes drift {
+    from { transform: scale(1.06) translate3d(-1.2%, 0.6%, 0); }
+    to   { transform: scale(1.10) translate3d(1.2%, -0.9%, 0); }
+  }
+  .world::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1;
+    background:
+      radial-gradient(58vmax 46vmax at 50% 48%, rgba(18,12,7,0.44) 0%, rgba(18,12,7,0.22) 38%, rgba(18,12,7,0) 68%),
+      linear-gradient(180deg, rgba(18,12,7,0.16) 0%, rgba(18,12,7,0) 26%, rgba(18,12,7,0) 74%, rgba(18,12,7,0.20) 100%);
+  }
+
+  /* ============ Centered hero stack ============ */
+  .plate {
+    position: absolute; inset: 0; z-index: 2;
+    display: grid; place-items: center;
+    text-align: center;
+    padding: clamp(1.6rem, 5vh, 3.4rem) clamp(1.4rem, 6vw, 4rem);
+  }
+  .stack {
+    display: flex; flex-direction: column; align-items: center;
+    transition: opacity 0.7s var(--ease-out), filter 0.7s var(--ease-out), transform 0.7s var(--ease-out);
+  }
+  .world.is-open .stack {
+    opacity: 0.14; filter: blur(3px); transform: scale(0.98); pointer-events: none;
+  }
+  .mark {
+    font-family: var(--brush); font-weight: 400; line-height: 1;
+    font-size: clamp(4.6rem, 13vw, 10.5rem);
+    color: var(--porcelain); text-shadow: 0 2px 30px rgba(12,8,4,0.5);
+    opacity: 0; animation: resolve 1.5s var(--ease-out) 0.3s forwards;
+  }
+  .codename {
+    margin: clamp(-0.2rem, -0.4vw, 0) 0 0;
+    font-family: var(--brush); font-weight: 400;
+    font-size: clamp(3.4rem, 10vw, 8rem); line-height: 0.9; letter-spacing: 0.01em;
+    color: var(--porcelain); text-shadow: 0 2px 26px rgba(12,8,4,0.5);
+    opacity: 0; animation: resolve 1.45s var(--ease-out) 0.72s forwards;
+  }
+  .line {
+    margin: clamp(0.7rem, 1.9vh, 1.15rem) auto 0; max-width: 34ch;
+    font-style: italic; font-size: clamp(1.05rem, 2vw, 1.4rem); line-height: 1.5;
+    color: var(--porcelain); text-shadow: 0 1px 18px rgba(12,8,4,0.65);
+    opacity: 0; animation: resolve-soft 1.35s var(--ease-out) 1.12s forwards;
+  }
+  @keyframes resolve {
+    from { opacity: 0; filter: blur(18px); transform: translateY(3.2vh) scale(0.985); }
+    to   { opacity: 1; filter: blur(0);    transform: translateY(0)    scale(1); }
+  }
+  @keyframes resolve-soft {
+    from { opacity: 0; filter: blur(12px); transform: translateY(2.2vh); }
+    to   { opacity: 1; filter: blur(0);    transform: translateY(0); }
+  }
+
+  /* ============ Dim backdrop (only while open) ============ */
+  .backdrop {
+    position: absolute; inset: 0; z-index: 2; pointer-events: none;
+    background: radial-gradient(90vmax 90vmax at 50% 50%, rgba(14,9,5,0.30) 0%, rgba(14,9,5,0.52) 100%);
+    opacity: 0; visibility: hidden;
+    transition: opacity 0.6s var(--ease-out), visibility 0.6s;
+  }
+  .world.is-open .backdrop { opacity: 1; visibility: visible; pointer-events: auto; }
+
+  /* ============ The morphing scroll ============ */
+  /* One element: rolled + lying horizontal in the hero, then it stands upright
+     (rotate) and unrolls (sheet width) into the wide handscroll — reversed on close.
+     .anchor handles position (hero ↔ centre); .handscroll handles rotate+scale. */
+  .anchor {
+    position: absolute; left: 50%; top: 50%; z-index: 3;
+    transform: translate(-50%, -50%) translateY(clamp(9.5rem, 28vh, 16rem));   /* closed: sits below the hero, clear of the tagline */
+    transition: transform 0.7s var(--ease-out);
+  }
+  .world.is-open .anchor { transform: translate(-50%, -50%) translateY(0); }
+
+  .handscroll {
+    position: relative; display: flex; align-items: stretch;
+    height: min(58vh, 420px);
+    transform-origin: center center;
+    transform: rotate(90deg) scale(0.30);                 /* closed: lying down, small */
+    transition: transform 0.5s var(--ease-out) 0.55s;     /* CLOSE: turn AFTER rolling up */
+    filter: drop-shadow(0 18px 44px rgba(10,6,3,0.5));
+  }
+  .world.is-open .handscroll {
+    transform: rotate(0deg) scale(1);                     /* open: upright, full size */
+    transition: transform 0.55s var(--ease-out) 0s;       /* OPEN: turn FIRST, immediately */
+  }
+
+  .rod {
+    position: relative; flex: none; width: 26px; border-radius: 13px; z-index: 2;
+    background: linear-gradient(90deg, var(--wood-lo) 0%, var(--wood) 26%, var(--wood-hi) 50%, var(--wood) 74%, var(--wood-lo) 100%);
+    box-shadow: inset 0 0 3px rgba(0,0,0,0.4);
+  }
+  .rod::before, .rod::after {
+    content: ''; position: absolute; left: 50%; transform: translateX(-50%);
+    width: 38px; height: 15px; border-radius: 5px;
+    background: linear-gradient(180deg, var(--wood-hi), var(--wood-lo));
+    box-shadow: 0 2px 5px rgba(0,0,0,0.45), inset 0 1px 1px rgba(255,225,170,0.5);
+  }
+  .rod::before { top: -9px; }
+  .rod::after  { bottom: -9px; }
+
+  .sheet {
+    position: relative; width: 9px; overflow: hidden; align-self: stretch;
+    background:
+      radial-gradient(120% 80% at 15% 0%, rgba(255,250,235,0.5) 0%, rgba(255,250,235,0) 42%),
+      linear-gradient(180deg, var(--paper) 0%, var(--paper-edge) 100%);
+    box-shadow: inset 0 0 40px rgba(150,110,50,0.18), inset 0 0 3px rgba(90,60,20,0.3);
+    transition: width 0.6s var(--ease-out) 0s;            /* CLOSE: roll up immediately */
+  }
+  .world.is-open .sheet {
+    width: min(760px, 74vw);
+    transition: width 0.95s var(--ease-out) 0.5s;         /* OPEN: unroll AFTER the turn */
+  }
+  .sheet::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(90deg, rgba(90,60,20,0.22) 0%, rgba(90,60,20,0) 5%,
+                                       rgba(90,60,20,0) 95%, rgba(90,60,20,0.22) 100%);
+  }
+  .sheet-inner {
+    position: absolute; top: 0; left: 0; height: 100%;
+    width: min(760px, 74vw);
+    padding: clamp(1.5rem, 3.4vw, 2.8rem) clamp(1.8rem, 4vw, 3.4rem);
+    display: flex; flex-direction: column; justify-content: center;
+    color: var(--ink);
+    opacity: 0; transition: opacity 0.5s ease 0.55s;
+  }
+  .world.is-open .sheet-inner { opacity: 1; }
+
+  .rec-kicker {
+    font-size: 0.7rem; letter-spacing: 0.26em; text-transform: uppercase;
+    color: var(--vermillion); margin: 0 0 0.9rem;
+  }
+  .rec-title { margin: 0 0 0.2rem; font-size: clamp(1.5rem, 3vw, 2.2rem); font-weight: 400; line-height: 1.1; color: var(--ink); }
+  .rec-meta { margin: 0 0 1rem; font-style: italic; font-size: 0.9rem; color: var(--ink-soft); }
+  .rec-body { margin: 0 0 1.1rem; font-size: clamp(0.95rem, 1.4vw, 1.06rem); line-height: 1.62; color: rgba(53,41,26,0.86); max-width: 52ch; }
+  .rec-stats { display: flex; flex-wrap: wrap; gap: 0.5rem 1.4rem; margin: 0 0 1.3rem; list-style: none; padding: 0; }
+  .rec-stats li { font-size: 0.9rem; color: var(--ink); }
+  .rec-stats b { font-family: var(--serif); font-weight: 700; color: var(--vermillion); font-size: 1.05rem; }
+  .rec-links { display: flex; gap: 1.6rem; flex-wrap: wrap; }
+  .rec-links a { position: relative; color: var(--ink); text-decoration: none; font-size: 0.8rem; letter-spacing: 0.14em; text-transform: uppercase; }
+  .rec-links a::after {
+    content: ''; position: absolute; left: 0; bottom: -3px; width: 100%; height: 1px;
+    background: var(--vermillion); transform: scaleX(0); transform-origin: left; transition: transform 0.35s var(--ease-out);
+  }
+  .rec-links a:hover::after, .rec-links a:focus-visible::after { transform: scaleX(1); }
+  .rec-links a:focus-visible { outline: 2px solid var(--vermillion); outline-offset: 3px; }
+
+  /* the intuitive close: a "roll up" tab on the trailing edge of the paper —
+     grab the loose end and roll it back */
+  .roll-up {
+    position: absolute; top: clamp(1.2rem, 3vw, 2rem); right: clamp(1.4rem, 3.4vw, 2.6rem);
+    display: inline-flex; align-items: center; gap: 0.45em;
+    background: none; border: 0; cursor: pointer; padding: 0.3rem 0.1rem;
+    font-family: var(--serif); color: var(--ink-soft);
+    font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase;
+    transition: color 0.25s ease;
+  }
+  .roll-up .ic {
+    display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%;
+    border: 1px solid rgba(53,41,26,0.4); font-size: 0.85rem; line-height: 1;
+    transition: transform 0.4s var(--ease-out), border-color 0.25s ease;
+  }
+  .roll-up:hover { color: var(--vermillion); }
+  .roll-up:hover .ic { transform: rotate(-150deg); border-color: var(--vermillion); }
+  .roll-up:focus-visible { outline: 2px solid var(--vermillion); outline-offset: 3px; border-radius: 4px; }
+
+  /* closed-state click target + hint (hidden once open) */
+  .open-btn {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 0.7rem;
+    width: 210px; height: 128px; padding-bottom: 4px;
+    background: none; border: 0; cursor: pointer; z-index: 4;
+    transition: opacity 0.4s var(--ease-out);
+  }
+  .open-btn:hover { transform: translate(-50%, calc(-50% - 3px)); }
+  .open-btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 6px; border-radius: 10px; }
+  .world.is-open .open-btn { opacity: 0; pointer-events: none; }
+  .scroll-hint {
+    font-size: 0.7rem; letter-spacing: 0.28em; text-transform: uppercase;
+    color: var(--gold); text-shadow: 0 1px 10px rgba(12,8,4,0.7);
+    animation: hint-pulse 3.4s ease-in-out infinite;
+  }
+  @keyframes hint-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+  @media (max-aspect-ratio: 1/1) {
+    .painting { object-position: 44% 42%; }
+    .handscroll { height: min(64vh, 540px); }
+    .sheet-inner { justify-content: flex-start; padding-top: clamp(2.6rem, 8vw, 3.6rem); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .painting { animation: none; transform: scale(1.04); }
+    .mark, .codename, .line { animation: none; opacity: 1; filter: none; transform: none; }
+    .scroll-hint { animation: none; }
+    /* snap between states, no turn/unroll choreography */
+    .stack, .backdrop, .anchor, .handscroll, .sheet, .sheet-inner { transition: none; }
+    .handscroll { transform: rotate(0deg) scale(0.42); }
+    .world.is-open .handscroll { transform: rotate(0deg) scale(1); }
+  }
+</style>
+</head>
+<body>
+  <main class="world" id="world">
+    <picture>
+      <source media="(max-aspect-ratio: 1/1)" srcset="junkships-portrait.png" />
+      <img class="painting" src="junkships.png"
+           alt="Watercolor of red-sailed junk ships gliding past misty mountains and a pagoda village at sunset" />
+    </picture>
+
+    <div class="plate">
+      <div class="stack">
+        <span class="mark" aria-hidden="true">見</span>
+        <h1 class="codename">Heimdall</h1>
+        <p class="line">A vessel learning to see the sea it sails.</p>
+      </div>
+    </div>
+
+    <div class="backdrop" id="backdrop" aria-hidden="true"></div>
+
+    <div class="anchor">
+      <div class="handscroll" role="dialog" aria-modal="true" aria-label="Heimdall — project record">
+        <div class="rod" aria-hidden="true"></div>
+        <div class="sheet" id="scroll-sheet">
+          <div class="sheet-inner" inert>
+            <p class="rec-kicker">Heimdall · Vision pipeline for edge inference</p>
+            <h2 class="rec-title">Sight for an autonomous vessel</h2>
+            <p class="rec-meta">Bachelor&rsquo;s thesis · TalTech, 2023</p>
+            <p class="rec-body">
+              A real-time computer-vision system giving an autonomous Baltic Workboats
+              Navy&nbsp;18&nbsp;WP patrol vessel the situational awareness to run its own sea
+              trials. YOLOv5 re-architected through ONNX&nbsp;&rarr;&nbsp;TensorRT&nbsp;FP16 on a
+              Jetson AGX&nbsp;Xavier &mdash; so the boat sees the sea from its own mast, without
+              waiting on a signal from shore.
+            </p>
+            <ul class="rec-stats">
+              <li><b>3.5&times;</b> faster inference</li>
+              <li><b>&minus;26.8%</b> energy</li>
+              <li><b>99.8%</b> GPU utilisation</li>
+            </ul>
+            <nav class="rec-links" aria-label="Heimdall links">
+              <a href="https://github.com/The-Magicians-Code/Yolo-dualdev/" target="_blank" rel="noopener">Repository &#8599;</a>
+              <a href="https://themagicianscode.dev/seafarer/en/" target="_blank" rel="noopener">Seafarer write-up &#8599;</a>
+            </nav>
+            <button class="roll-up" id="roll-up" type="button">
+              <span class="ic" aria-hidden="true">&#8631;</span> Roll up
+            </button>
+          </div>
+        </div>
+        <div class="rod" aria-hidden="true"></div>
+      </div>
+
+      <button class="open-btn" id="open-record" aria-expanded="false" aria-controls="scroll-sheet"
+              aria-label="Unroll the Heimdall record">
+        <span class="scroll-hint">unroll the record</span>
+      </button>
+    </div>
+  </main>
+
+  <script>
+    (() => {
+      'use strict';
+      const world = document.getElementById('world');
+      const openBtn = document.getElementById('open-record');
+      const rollUp = document.getElementById('roll-up');
+      const backdrop = document.getElementById('backdrop');
+      const sheetInner = document.querySelector('.sheet-inner');
+
+      function open() {
+        // Always start the reveal fully hidden, immune to an interrupted close.
+        sheetInner.style.transition = 'none';
+        sheetInner.style.opacity = '0';
+        void sheetInner.offsetWidth;
+        sheetInner.style.transition = '';
+        sheetInner.style.opacity = '';
+        world.classList.add('is-open');
+        openBtn.setAttribute('aria-expanded', 'true');
+        sheetInner.removeAttribute('inert');
+        // focus the in-scroll control once the unroll has settled
+        setTimeout(() => rollUp.focus(), 1450);
+      }
+      function close() {
+        world.classList.remove('is-open');
+        openBtn.setAttribute('aria-expanded', 'false');
+        sheetInner.setAttribute('inert', '');
+        openBtn.focus();
+      }
+      openBtn.addEventListener('click', open);
+      rollUp.addEventListener('click', close);
+      backdrop.addEventListener('click', close);
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && world.classList.contains('is-open')) close();
+      });
+    })();
+  </script>
+</body>
+</html>
