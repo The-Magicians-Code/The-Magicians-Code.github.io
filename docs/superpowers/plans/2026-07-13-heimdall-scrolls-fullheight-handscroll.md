@@ -54,7 +54,13 @@ In `docs/redesign/heimdall-scrolls.html`, insert the following immediately **bef
     opacity: 0; visibility: hidden; transform: scale(0.985);
     transition: opacity 0.4s var(--ease-out), transform 0.4s var(--ease-out), visibility 0.4s;
   }
-  .world.is-open .scrollwrap { opacity: 1; visibility: visible; transform: scale(1); }
+  /* visibility flips synchronously on open (no transition) so stage.focus() in
+     openScroll() isn't a no-op on a still-hidden ancestor; the base rule keeps
+     the 0.4s visibility transition for the delayed hide on close. (Bug found
+     in browser verification: a destination-state `visibility 0.4s` keeps the
+     element computed-hidden in the same tick, silently swallowing focus().) */
+  .world.is-open .scrollwrap { opacity: 1; visibility: visible; transform: scale(1);
+    transition: opacity 0.4s var(--ease-out), transform 0.4s var(--ease-out); }
 
   #stage { display: flex; align-items: center; cursor: pointer; user-select: none; -webkit-user-select: none; }
   #stage:focus-visible { outline: 2px solid var(--gold); outline-offset: -3px; }
