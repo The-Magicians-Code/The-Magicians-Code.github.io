@@ -380,6 +380,10 @@
       if(!open)return;
       open=false;
       restoreFocus=refocus!==false;
+      /* Esc: drop focus from the stage too — the real keypress flips the
+         modality heuristic to keyboard and #stage:focus-visible would ring
+         the whole scroll during roll-up */
+      if(refocus===false&&document.activeElement===stage)stage.blur();
       clearTimeout(openTimer);                /* close during materialization: kill pending expansion */
       stage.setAttribute('aria-expanded','false');
       link.setAttribute('aria-expanded','false');
