@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Scroll Hero Playground</title>
+<style>
+  :root {
+    --bg: #09090b;        /* zinc-950 */
+    --panel: #111113;
+    --panel-2: #18181b;   /* zinc-900 */
+    --line: #27272a;      /* zinc-800 */
+    --text: #fafafa;      /* zinc-50 */
+    --muted: #a1a1aa;     /* zinc-400 */
+    --dim: #71717a;       /* zinc-500 */
+    --accent: #7c9cff;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    grid-template-rows: 100vh;
+    height: 100vh;
+    overflow: hidden;
+  }
+  code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+  /* ---------- Controls ---------- */
+  .controls {
+    border-right: 1px solid var(--line);
+    overflow-y: auto;
+    padding: 18px 16px 40px;
+    background: var(--panel);
+  }
+  .title { font-size: 13px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); margin: 0 0 4px; }
+  .sub { color: var(--dim); font-size: 12px; margin: 0 0 18px; }
+
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; }
+  .preset {
+    background: var(--panel-2); border: 1px solid var(--line); color: var(--muted);
+    border-radius: 999px; padding: 5px 11px; font-size: 12px; cursor: pointer;
+  }
+  .preset:hover { color: var(--text); border-color: #3f3f46; }
+  .preset.active { background: var(--accent); color: #0b0b12; border-color: var(--accent); font-weight: 600; }
+
+  .group { margin-bottom: 18px; }
+  .group > h3 {
+    font-size: 11px; text-transform: uppercase; letter-spacing: .06em;
+    color: var(--dim); margin: 0 0 10px; font-weight: 600;
+  }
+  .ctl { margin-bottom: 13px; }
+  .ctl label { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+  .ctl label .val { color: var(--text); font-family: ui-monospace, monospace; font-size: 11px; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  .toggle { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); cursor: pointer; user-select: none; }
+  .toggle input { accent-color: var(--accent); width: 15px; height: 15px; }
+  .hint { color: var(--dim); font-size: 11px; margin-top: 4px; }
+
+  /* ---------- Stage ---------- */
+  .stage { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+  .stage-top {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 14px; border-bottom: 1px solid var(--line); background: var(--panel);
+    font-size: 12px; color: var(--dim);
+  }
+  .stage-top .scrollback { background: var(--panel-2); border: 1px solid var(--line); color: var(--muted); border-radius: 6px; padding: 4px 9px; cursor: pointer; font-size: 12px; }
+  .stage-top .scrollback:hover { color: var(--text); }
+
+  .scroll-root { flex: 1; min-height: 0; overflow-y: auto; position: relative; scrollbar-width: thin; }
+  .scroll-root::-webkit-scrollbar { width: 9px; }
+  .scroll-root::-webkit-scrollbar-thumb { background: #2a2a30; border-radius: 9px; }
+
+  /* nav */
+  .vnav {
+    position: sticky; top: 0; z-index: 50; display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 22px; color: #fff; pointer-events: none;
+  }
+  .vnav .logo { width: 26px; height: 26px; border-radius: 7px; background: linear-gradient(135deg,#fff,#bbb); mix-blend-mode: difference; }
+  .vnav .cta { font-size: 11px; letter-spacing: .08em; color: var(--muted); text-transform: uppercase; display: flex; gap: 6px; align-items: center; }
+
+  /* hero */
+  .hero { position: relative; width: 100%; }
+  .center-img {
+    position: sticky; top: 0; height: 100%; width: 100%;
+    background-position: center; background-repeat: no-repeat; will-change: clip-path, background-size, opacity;
+  }
+  .parallax {
+    position: relative; max-width: 760px; margin: 0 auto; padding: 180px 16px 0; z-index: 2;
+  }
+  .pimg {
+    display: block; border-radius: 14px; margin-bottom: 10px; will-change: transform, opacity;
+    box-shadow: 0 20px 60px rgba(0,0,0,.5); aspect-ratio: 16/10;
+  }
+  .bottom-fade {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 40%;
+    background: linear-gradient(to bottom, rgba(9,9,11,0), var(--bg)); z-index: 3; pointer-events: none;
+  }
+
+  /* schedule */
+  .schedule { max-width: 760px; margin: 0 auto; padding: 130px 16px 200px; }
+  .schedule h2 { font-size: 30px; font-weight: 900; text-transform: uppercase; letter-spacing: .02em; margin: 0 0 40px; }
+  .row {
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--line); padding: 0 6px 24px; margin-bottom: 24px;
+    opacity: 0; transform: translateY(40px); transition: opacity .6s ease, transform .6s ease;
+  }
+  .row.in { opacity: 1; transform: none; }
+  .row .name { font-size: 18px; }
+  .row .meta { font-size: 12px; text-transform: uppercase; color: var(--dim); }
+
+  /* ---------- Prompt ---------- */
+  .prompt-wrap { border-top: 1px solid var(--line); background: var(--panel); padding: 12px 14px; }
+  .prompt-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .prompt-head span { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--dim); }
+  .copy { background: var(--accent); color: #0b0b12; border: none; border-radius: 7px; padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .copy:active { transform: translateY(1px); }
+  #prompt {
+    margin: 0; white-space: pre-wrap; font-family: ui-monospace, monospace; font-size: 12px;
+    color: var(--muted); max-height: 130px; overflow-y: auto; background: var(--bg);
+    border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;
+  }
+</style>
+</head>
+<body>
+  <aside class="controls">
+    <p class="title">Scroll Hero</p>
+    <p class="sub">Tune the SpaceX-style clip-reveal + parallax. Scroll the preview to drive it.</p>
+
+    <div class="presets" id="presets"></div>
+
+    <div class="group">
+      <h3>Smooth scroll</h3>
+      <div class="ctl">
+        <label>Easing (Lenis lerp) <span class="val" id="v-lerp"></span></label>
+        <input type="range" id="lerp" min="0.02" max="0.2" step="0.005">
+        <div class="hint">Lower = floatier / heavier. 0.05 is the reference default.</div>
+      </div>
+    </div>
+
+    <div class="group">
+      <h3>Center image · clip reveal</h3>
+      <div class="ctl">
+        <label>Scroll length <span class="val" id="v-section"></span></label>
+        <input type="range" id="section" min="600" max="2600" step="50">
+        <div class="hint">How far you scroll before it's full-bleed.</div>
+      </div>
+      <div class="ctl">
+        <label>Start inset <span class="val" id="v-clip"></span></label>
+        <input type="range" id="clip" min="0" max="45" step="1">
+        <div class="hint">Window starts as a centered rectangle, opens to full frame.</div>
+      </div>
+      <div class="ctl">
+        <label>Zoom start <span class="val" id="v-zoom"></span></label>
+        <input type="range" id="zoom" min="100" max="220" step="5">
+        <div class="hint">background-size eases down to 100%.</div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="fade"> Fade out at end</label>
+    </div>
+
+    <div class="group">
+      <h3>Parallax tiles</h3>
+      <div class="ctl">
+        <label>Drift intensity <span class="val" id="v-drift"></span></label>
+        <input type="range" id="drift" min="0" max="2" step="0.05">
+        <div class="hint">Scales each tile's translateY range.</div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="scaleout"> Scale + fade as they exit</label>
+    </div>
+  </aside>
+
+  <main class="stage">
+    <div class="stage-top">
+      <span class="mono" id="scrollReadout">scrollY 0</span>
+      <button class="scrollback" id="toTop">↑ Reset scroll</button>
+    </div>
+
+    <div class="scroll-root" id="scrollRoot">
+      <div class="vnav">
+        <div class="logo"></div>
+        <div class="cta">View work →</div>
+      </div>
+
+      <div class="hero" id="hero">
+        <div class="center-img" id="centerImg"></div>
+        <div class="parallax" id="parallax"></div>
+        <div class="bottom-fade"></div>
+      </div>
+
+      <section class="schedule" id="schedule">
+        <h2>Selected Work</h2>
+      </section>
+    </div>
+
+    <div class="prompt-wrap">
+      <div class="prompt-head">
+        <span>Prompt — paste back to Claude</span>
+        <button class="copy" id="copyBtn">Copy prompt</button>
+      </div>
+      <pre id="prompt"></pre>
+    </div>
+  </main>
+
+<script>
+  const DEFAULTS = { lerp: 0.05, section: 1500, clip: 25, zoom: 170, fade: true, drift: 1, scaleout: true };
+  const state = { ...DEFAULTS };
+
+  const PRESETS = {
+    "Reference": { lerp: 0.05, section: 1500, clip: 25, zoom: 170, fade: true, drift: 1, scaleout: true },
+    "Subtle":    { lerp: 0.08, section: 1100, clip: 12, zoom: 125, fade: true, drift: 0.5, scaleout: false },
+    "Dramatic":  { lerp: 0.04, section: 2200, clip: 40, zoom: 200, fade: true, drift: 1.6, scaleout: true },
+    "Snappy":    { lerp: 0.14, section: 900,  clip: 20, zoom: 145, fade: false, drift: 0.8, scaleout: true },
+  };
+
+  // gradient stand-ins for images
+  const TILES = [
+    "linear-gradient(135deg,#1e3a8a,#0ea5e9)",
+    "linear-gradient(135deg,#7c3aed,#db2777)",
+    "linear-gradient(135deg,#0f766e,#84cc16)",
+    "linear-gradient(135deg,#b45309,#f59e0b)",
+    "linear-gradient(135deg,#334155,#0f172a)",
+  ];
+  const CENTER_BG = "radial-gradient(120% 120% at 50% 30%, #1e293b 0%, #0b1220 55%, #050810 100%)";
+
+  // parallax tile config: start/end px (mirrors the reference offsets) + width + align
+  const PCONF = [
+    { start: -180, end: 180,  w: 34, align: "flex-start" },
+    { start: 180,  end: -220, w: 66, align: "center" },
+    { start: -180, end: 180,  w: 34, align: "flex-end" },
+    { start: 0,    end: -440, w: 42, align: "flex-start", indent: 90 },
+  ];
+
+  // ---- build DOM ----
+  const parallax = document.getElementById('parallax');
+  const tileEls = PCONF.map((c, i) => {
+    const wrap = document.createElement('div');
+    wrap.style.display = 'flex'; wrap.style.justifyContent = c.align;
+    const el = document.createElement('div');
+    el.className = 'pimg';
+    el.style.width = c.w + '%';
+    el.style.background = TILES[i % TILES.length];
+    if (c.indent) el.style.marginLeft = c.indent + 'px';
+    wrap.appendChild(el); parallax.appendChild(wrap);
+    return el;
+  });
+
+  const ROWS = [
+    ["Liquid Glass Nav", "CSS · SVG · Canvas"],
+    ["Parallax Bento", "Astro · Motion"],
+    ["Content Collections", "Markdown · TS"],
+    ["Deploy Pipeline", "GitHub Actions"],
+    ["Tech Stack Pills", "theSVG · brand logos"],
+  ];
+  const schedule = document.getElementById('schedule');
+  const rowEls = ROWS.map(([n, m]) => {
+    const r = document.createElement('div'); r.className = 'row';
+    r.innerHTML = `<div class="name">${n}</div><div class="meta">${m}</div>`;
+    schedule.appendChild(r); return r;
+  });
+
+  const centerImg = document.getElementById('centerImg');
+  centerImg.style.backgroundImage = CENTER_BG;
+
+  const scrollRoot = document.getElementById('scrollRoot');
+  const hero = document.getElementById('hero');
+  const readout = document.getElementById('scrollReadout');
+
+  function clamp(v, a, b) { return Math.min(b, Math.max(a, v)); }
+  function lerpRange(x, ix0, ix1, oy0, oy1) {
+    const t = clamp((x - ix0) / (ix1 - ix0), 0, 1);
+    return oy0 + (oy1 - oy0) * t;
+  }
+
+  // ---- sizing: 100vh == scroll container height ----
+  function sizeHero() {
+    const vh = scrollRoot.clientHeight;
+    hero.style.height = (state.section + vh) + 'px';
+    centerImg.style.height = vh + 'px';
+  }
+
+  // ---- smooth (eased) scroll value drives transforms ----
+  let target = 0, current = 0;
+  scrollRoot.addEventListener('scroll', () => { target = scrollRoot.scrollTop; });
+
+  function frame() {
+    current += (target - current) * state.lerp;
+    if (Math.abs(target - current) < 0.1) current = target;
+    render(current);
+    requestAnimationFrame(frame);
+  }
+
+  function render(y) {
+    const S = state.section;
+    // clip reveal
+    const c1 = lerpRange(y, 0, S, state.clip, 0);
+    const c2 = lerpRange(y, 0, S, 100 - state.clip, 100);
+    centerImg.style.clipPath =
+      `polygon(${c1}% ${c1}%, ${c2}% ${c1}%, ${c2}% ${c2}%, ${c1}% ${c2}%)`;
+    centerImg.style.backgroundSize = lerpRange(y, 0, S + 500, state.zoom, 100) + '%';
+    centerImg.style.opacity = state.fade ? lerpRange(y, S, S + 500, 1, 0) : 1;
+
+    // parallax tiles
+    const vh = scrollRoot.clientHeight;
+    tileEls.forEach((el, i) => {
+      const c = PCONF[i];
+      const top = el.getBoundingClientRect().top - scrollRoot.getBoundingClientRect().top;
+      // progress of element through the viewport, 0 (entering) -> 1 (leaving)
+      const prog = clamp((vh - top) / (vh + el.offsetHeight), 0, 1);
+      const ty = (c.start + (c.end - c.start) * prog) * state.drift;
+      let sc = 1, op = 1;
+      if (state.scaleout) {
+        sc = lerpRange(prog, 0.75, 1, 1, 0.85);
+        op = lerpRange(prog, 0.75, 1, 1, 0);
+      }
+      el.style.transform = `translateY(${ty}px) scale(${sc})`;
+      el.style.opacity = op;
+    });
+
+    readout.textContent = `scrollY ${Math.round(y)} / section ${S}`;
+  }
+
+  // reveal schedule rows on enter
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+  }, { root: scrollRoot, threshold: 0.4 });
+  rowEls.forEach(r => io.observe(r));
+
+  // ---- controls wiring ----
+  const fmt = {
+    lerp: v => v.toFixed(3),
+    section: v => v + "px",
+    clip: v => v + "%",
+    zoom: v => v + "%",
+    drift: v => v.toFixed(2) + "×",
+  };
+  function syncInputs() {
+    for (const k of ['lerp','section','clip','zoom','drift']) {
+      document.getElementById(k).value = state[k];
+      document.getElementById('v-' + k).textContent = fmt[k](state[k]);
+    }
+    document.getElementById('fade').checked = state.fade;
+    document.getElementById('scaleout').checked = state.scaleout;
+  }
+  function bindRange(id, parse) {
+    const el = document.getElementById(id);
+    el.addEventListener('input', () => {
+      state[id] = parse(el.value);
+      document.getElementById('v-' + id).textContent = fmt[id](state[id]);
+      if (id === 'section') sizeHero();
+      updatePrompt(); setActivePreset();
+    });
+  }
+  bindRange('lerp', parseFloat);
+  bindRange('section', v => parseInt(v, 10));
+  bindRange('clip', v => parseInt(v, 10));
+  bindRange('zoom', v => parseInt(v, 10));
+  bindRange('drift', parseFloat);
+  ['fade','scaleout'].forEach(id => {
+    document.getElementById(id).addEventListener('change', e => {
+      state[id] = e.target.checked; updatePrompt(); setActivePreset();
+    });
+  });
+
+  // presets
+  const presetBar = document.getElementById('presets');
+  Object.keys(PRESETS).forEach(name => {
+    const b = document.createElement('button');
+    b.className = 'preset'; b.textContent = name; b.dataset.name = name;
+    b.addEventListener('click', () => {
+      Object.assign(state, PRESETS[name]);
+      syncInputs(); sizeHero(); updatePrompt(); setActivePreset();
+    });
+    presetBar.appendChild(b);
+  });
+  function setActivePreset() {
+    let match = null;
+    for (const [name, p] of Object.entries(PRESETS)) {
+      if (Object.keys(p).every(k => state[k] === p[k])) { match = name; break; }
+    }
+    document.querySelectorAll('.preset').forEach(b =>
+      b.classList.toggle('active', b.dataset.name === match));
+  }
+
+  document.getElementById('toTop').addEventListener('click', () => {
+    scrollRoot.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  // ---- prompt ----
+  function updatePrompt() {
+    const d = DEFAULTS, s = state;
+    const parts = [];
+    parts.push(`a full-bleed center image that starts as a centered window (clip-path inset ${s.clip}%) and opens to the full frame over the first ${s.section}px of scroll`);
+    parts.push(`the image zooms from ${s.zoom}% background-size down to 100% across the reveal`);
+    if (s.fade) parts.push(`then fades out as the next section arrives`);
+    if (s.drift > 0) {
+      const feel = s.drift >= 1.4 ? "strong" : s.drift >= 0.7 ? "moderate" : "gentle";
+      parts.push(`a column of cards drifting past at ${feel} parallax speeds (translateY ranges scaled ${s.drift.toFixed(2)}×)`);
+    }
+    if (s.scaleout) parts.push(`each card scales to 0.85 and fades as it exits the viewport`);
+    const ease = s.lerp <= 0.05 ? "heavy, floaty" : s.lerp >= 0.12 ? "tight, near-native" : "smooth";
+    parts.push(`${ease} momentum scrolling (Lenis lerp ${s.lerp.toFixed(3)})`);
+
+    const code =
+`Build a scroll-driven hero in our Astro stack (vanilla TS, Lenis for smooth scroll, optional Motion for value mapping). It should have:
+- ${parts.join('\n- ')}
+
+Implementation notes:
+- Use Lenis ({ lerp: ${s.lerp.toFixed(3)} }) for momentum scroll; drive all transforms off the eased scroll value, not the raw scrollTop.
+- Sticky center image, section height = ${s.section}px + 100vh. Reveal via clip-path polygon driven by scroll [0 → ${s.section}], background-size ${s.zoom}% → 100%${s.fade ? `, opacity 1 → 0 over [${s.section} → ${s.section + 500}]` : ''}.
+- Parallax cards: per-card translateY interpolated over the card's own viewport progress${s.scaleout ? `, with scale 1→0.85 and opacity 1→0 in the last 25%` : ''}; intensity multiplier ${s.drift.toFixed(2)}.
+- Respect prefers-reduced-motion: fall back to a static full-bleed hero with no parallax.
+- Verify Safari/WebKit parity (clip-path + background-size interpolation) before declaring done.`;
+
+    document.getElementById('prompt').textContent = code;
+  }
+
+  document.getElementById('copyBtn').addEventListener('click', () => {
+    navigator.clipboard.writeText(document.getElementById('prompt').textContent).then(() => {
+      const b = document.getElementById('copyBtn');
+      const t = b.textContent; b.textContent = 'Copied!';
+      setTimeout(() => b.textContent = t, 1200);
+    });
+  });
+
+  // ---- init ----
+  syncInputs(); sizeHero(); updatePrompt(); setActivePreset();
+  window.addEventListener('resize', () => { sizeHero(); });
+  requestAnimationFrame(frame);
+</script>
+</body>
+</html>

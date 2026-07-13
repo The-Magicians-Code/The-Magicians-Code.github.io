@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gold Dragon — flight study</title>
+<style>
+  :root {
+    --bg: #141210;
+    --gold: #c9a961;
+    --gold-bright: #e8d49f;
+    --gold-dim: #8f7a45;
+  }
+  * { margin: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body { background: var(--bg); overflow: hidden; }
+  svg { display: block; width: 100vw; height: 100svh; }
+  .caption {
+    position: fixed; left: 24px; bottom: 18px;
+    font: 11px/-apple-system system-ui, sans-serif;
+    font-size: 11px;
+    letter-spacing: .12em;
+    color: var(--gold-dim);
+    user-select: none;
+  }
+  #dragon { filter: drop-shadow(0 0 6px rgba(201, 169, 97, 0.35)); }
+  .stroke { fill: none; stroke: var(--gold); stroke-linecap: round; stroke-linejoin: round; }
+  .fine   { fill: none; stroke: var(--gold-bright); stroke-linecap: round; stroke-linejoin: round; }
+</style>
+</head>
+<body>
+<svg id="sky" aria-label="A gold Chinese dragon outline flying in loops">
+  <path id="clouds" class="fine" stroke-width="1.1" opacity="0.5"/>
+  <g id="dragon">
+    <g id="pearl">
+      <circle id="pearl-c" class="fine" stroke-width="1.8" r="11"/>
+      <circle class="fine" stroke-width="1.1" r="4.5" opacity="0.8"/>
+      <path id="pearl-f" class="fine" stroke-width="1.5"/>
+    </g>
+    <path id="body"   class="stroke" stroke-width="2.6"/>
+    <path id="scales" class="fine"   stroke-width="1"/>
+    <path id="belly"  class="fine"   stroke-width="1"/>
+    <path id="spineline" class="fine" stroke-width="1" opacity="0.7"/>
+    <path id="spikes" class="stroke" stroke-width="1.6"/>
+    <path id="streamers" class="fine" stroke-width="1.2"/>
+    <path id="legs"   class="stroke" stroke-width="1.8"/>
+    <path id="tuft"   class="fine"   stroke-width="1.4"/>
+    <g id="head">
+      <path id="mane"     class="stroke" stroke-width="1.5"/>
+      <path id="skull"    class="stroke" stroke-width="2.2"/>
+      <path id="horns"    class="stroke" stroke-width="1.8"/>
+      <path id="cheekfin" class="stroke" stroke-width="1.4"/>
+      <path id="ears"     class="stroke" stroke-width="1.4"/>
+      <path id="snout"    class="fine"  stroke-width="1.2"/>
+      <path id="fangs"    class="stroke" stroke-width="1.3"/>
+      <path id="tongue"   class="fine"  stroke-width="1.2"/>
+      <path id="beard"    class="fine"  stroke-width="1.2"/>
+      <path id="whiskers" class="fine"  stroke-width="1.1"/>
+      <path id="eyeline"  class="fine"  stroke-width="1.1"/>
+      <circle id="eye" r="1.6" fill="var(--gold-bright)"/>
+      <path id="brow" class="fine" stroke-width="1.3"/>
+    </g>
+  </g>
+</svg>
+<p class="caption">STUDY — gold dragon, procedural sumi outline</p>
+
+<script>
+(() => {
+'use strict';
+
+const svg = document.getElementById('sky');
+const el = {};
+for (const id of ['body','spikes','legs','head','skull','horns','whiskers','eye',
+                  'scales','belly','mane','tuft','ears','beard','brow',
+                  'pearl','pearl-f','clouds','spineline','streamers','cheekfin','snout',
+                  'fangs','tongue','eyeline']) {
+  el[id.replace('-', '_')] = document.getElementById(id);
+}
+
+const TAU3 = Math.PI * 2;
+let W = innerWidth, H = innerHeight;
+let cloudBases = [];
+function seedClouds() {
+  cloudBases = Array.from({ length: 6 }, (_, i) => ({
+    x: (0.1 + 0.8 * ((i * 0.618) % 1)) * W,
+    y: (0.12 + 0.72 * ((i * 0.382 + 0.23) % 1)) * H,
+    s: 0.7 + ((i * 0.71) % 1) * 1.1,
+    ph: i * 1.9
+  }));
+}
+seedClouds();
+svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+addEventListener('resize', () => {
+  W = innerWidth; H = innerHeight;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  seedClouds();
+});
+
+/* ---------- head geometry (authored once, local coords, nose at +x) ------ */
+/* Modeled on the stencil reference: bumped brow ridge, long bridged snout
+   with an upturned nose curl, OPEN jaw with fangs and a curling tongue,
+   flame cheek ruff, spiky mane crest sweeping back off the crown. */
+el.skull.setAttribute('d',
+  // crown → double brow bump → snout bridge → nose
+  'M -16 -8 C -10 -12, -3 -13, 3 -12 C 7 -11.5, 9 -13, 13 -12 ' +
+  'C 17 -11, 19 -12.5, 24 -11 C 30 -9.5, 35 -9, 39 -7 ' +
+  // upturned nose curl (spiral tip)
+  'C 43 -5.5, 44 -2.5, 41 -1.5 C 39 -1, 38.5 -3, 40 -3.8 ' +
+  // upper lip back to the mouth corner
+  'M 41 -1.5 C 37 1, 32 2, 27 2.5 C 22 3, 18 3.5, 15 4 ' +
+  // open lower jaw: forward-down, chin barb, jawline back to the neck
+  'M 15 4 C 21 9, 28 12, 35 13 C 30 16, 24 17, 19 16 ' +
+  'C 11 15, 3 12, -3 10 C -9 8, -14 4, -16 0'
+);
+el.fangs.setAttribute('d',
+  'M 33 1 L 31 6.5 L 28 2.2 M 22 3 L 20.5 8 L 17.5 3.8 ' +   // upper fangs
+  'M 30 12.6 L 30.5 8.5 M 24 12 L 25 8.6'                     // lower teeth
+);
+el.tongue.setAttribute('d',
+  'M 19 8 C 25 10, 30 9.5, 34 7.5 C 37.5 5.6, 39.5 7, 38 9.8 C 37 11.6, 35 11.4, 35.5 9.6');
+el.eyeline.setAttribute('d',
+  'M 5 -8 C 8 -10, 12 -10, 14.5 -8 C 12 -6.2, 8 -6.2, 5 -8 Z'); // almond eye
+/* spiky mane crest sweeping back off the crown (five flame tongues) */
+el.mane.setAttribute('d', (() => {
+  // crest starts BEHIND the antlers and sweeps back-up, clear of the skull
+  let d = '';
+  const bases = [[-8, -10], [-11, -8], [-13.5, -5.5], [-15, -2.5]];
+  bases.forEach(([bx, by], k) => {
+    const len = 24 - k * 3.5;
+    const rise = 8 + k * 3;
+    d += `M ${bx} ${by} C ${bx - len * 0.4} ${by - rise}, ${bx - len * 0.85} ${by - rise * 0.7}, ${bx - len} ${by - rise * 0.1} ` +
+         `C ${bx - len * 0.72} ${by - rise * 0.35}, ${bx - len * 0.38} ${by - rise * 0.55}, ${bx - 1.5} ${by + 1.5} `;
+  });
+  return d;
+})());
+/* forked stag antlers (two-pronged, imperial-robe style) */
+el.horns.setAttribute('d',
+  'M 2 -11 C 0 -18, -5 -24, -14 -28 ' +      // main beam, rear-swept
+  'M -6 -22 C -11 -25, -17 -26, -23 -23 ' +  // fork tine
+  'M -14 -28 C -18 -30, -23 -30, -27 -28 ' + // beam tip flick
+  'M 10 -10 C 9 -16, 5 -21, -2 -25 ' +       // second antler
+  'M 2 -21 C -2 -24, -7 -25, -12 -24'        // its fork
+);
+/* flame cheek ruff sweeping back from the jaw hinge */
+el.cheekfin.setAttribute('d',
+  'M -7 6 C -15 6, -21 4, -26 -1 C -20 2, -15 4, -9 4 ' +
+  'M -6 9 C -12 12, -18 12, -24 10 C -18 10, -13 10, -7 8'
+);
+/* nostril flare + snout wrinkle */
+el.snout.setAttribute('d',
+  'M 35 -5 C 37 -6.5, 39 -5.5, 38 -4 ' +
+  'M 25 -1 C 27 0, 27 1.5, 25.5 2.5 M 30 -0.5 C 31.5 0.5, 31.5 2, 30 3'
+);
+/* long forward-curling whiskers (reference: thin S-curves off the snout) */
+el.whiskers.setAttribute('d',
+  'M 36 -3 C 46 -6, 54 -13, 55 -23 C 55.5 -29, 51 -31, 49 -27 C 48 -24, 50 -23, 51.5 -24.5 ' +
+  'M 34 5 C 45 8, 53 16, 53 26 C 53 32, 48 34, 46.5 30 C 45.6 27, 48 26, 49.5 27.5'
+);
+el.eye.setAttribute('cx', 10);
+el.eye.setAttribute('cy', -8);
+/* demon-eye flame brow, ox ears (nine resemblances), beard under the jaw */
+el.brow.setAttribute('d', 'M 3 -10.5 C 8 -13.5, 14 -13.5, 18 -10.5 M 16 -12 C 12 -14.5, 7 -14.5, 3 -12.5');
+el.ears.setAttribute('d',
+  'M -4 -10 C -7 -15, -12 -17, -17 -15 C -13 -12, -10 -9, -8 -7 ' +
+  'M 0 -11 C -1 -15, -4 -18, -9 -19');
+el.beard.setAttribute('d',
+  'M -2 12 C -3 17, -6 21, -10 23 ' +
+  'M 5 13 C 5 18, 3 22, 0 25');
+
+/* ---------- flight path: meandering lissajous loops ---------------------- */
+function headPos(t) {
+  const cx = W / 2, cy = H / 2;
+  const ax = W * 0.36, ay = H * 0.32;
+  return [
+    cx + ax * Math.sin(t * 0.52) + W * 0.06 * Math.sin(t * 1.31 + 2),
+    cy + ay * Math.sin(t * 0.83 + 1.2) + H * 0.05 * Math.sin(t * 1.7)
+  ];
+}
+
+/* ---------- spine: resampled trail of head positions ---------------------- */
+const SEGS = 64;          // spine points
+const SPACING = 13;       // px between spine points
+const trail = [];         // raw head history (front = newest)
+
+function spineFromTrail() {
+  const pts = [trail[0]];
+  let need = SPACING, i = 1;
+  while (pts.length < SEGS && i < trail.length) {
+    const a = trail[i - 1], b = trail[i];
+    const d = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    if (d >= need) {
+      const f = need / d;
+      const p = [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f];
+      pts.push(p);
+      trail[i - 1] = p;    // consume partial segment
+      need = SPACING;
+    } else {
+      need -= d;
+      i++;
+    }
+  }
+  trail.length = Math.min(trail.length, i + 4);   // trim history we've passed
+  while (pts.length < SEGS) pts.push(pts[pts.length - 1]);
+  return pts;
+}
+
+/* width profile: slim neck, full torso, long tapering tail */
+function widthAt(i) {
+  const t = i / (SEGS - 1);
+  const torso = Math.exp(-Math.pow((t - 0.26) / 0.30, 2)) * 21;
+  const taper = (1 - t) * 5;
+  return 3.6 + torso + taper;
+}
+
+function buildPaths(spine, time) {
+  const n = spine.length;
+  const nx = [], ny = [];
+  for (let i = 0; i < n; i++) {
+    const a = spine[Math.max(0, i - 1)], b = spine[Math.min(n - 1, i + 1)];
+    const dx = b[0] - a[0], dy = b[1] - a[1];
+    const d = Math.hypot(dx, dy) || 1;
+    nx.push(-dy / d); ny.push(dx / d);
+  }
+  // swimming ripple on top of the trail-following
+  const rip = i => Math.sin(time * 5 - i * 0.42) * 2.6 * Math.min(1, i / 6);
+
+  const L = [], R = [];
+  for (let i = 0; i < n; i++) {
+    const w = widthAt(i);
+    const r = rip(i);
+    L.push([spine[i][0] + nx[i] * (w + r * 0.4), spine[i][1] + ny[i] * (w + r * 0.4)]);
+    R.push([spine[i][0] - nx[i] * (w - r * 0.4), spine[i][1] - ny[i] * (w - r * 0.4)]);
+  }
+  const line = pts => pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join('');
+  // one closed silhouette: down the left flank, around the tail tip, back up the right
+  el.body.setAttribute('d', line(L) + 'L' + R[n-1][0].toFixed(1) + ' ' + R[n-1][1].toFixed(1) +
+    R.slice(0, n - 1).reverse().map(p => 'L' + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join('') + 'Z');
+
+  // flame-tuft fins (reference style): clusters of swept flame tongues along
+  // the back, with smaller single tufts along the belly line between them
+  let sd = '';
+  const flame = (j, side, len) => {
+    if (j >= n - 1) return '';
+    const w = widthAt(j) + 0.5;
+    const bx = spine[j][0] + nx[j] * w * side, by = spine[j][1] + ny[j] * w * side;
+    const b2x = spine[j+1][0] + nx[j+1] * (widthAt(j+1)+0.5) * side;
+    const b2y = spine[j+1][1] + ny[j+1] * (widthAt(j+1)+0.5) * side;
+    const tx = ny[j], ty = -nx[j];                     // toward head
+    const flick = Math.sin(time * 3 + j) * 0.12;
+    // S-swept pointed tongue: out and backward, returning to the next base
+    const tipx = bx + (nx[j]*side) * len - tx * len * (0.9 + flick);
+    const tipy = by + (ny[j]*side) * len - ty * len * (0.9 + flick);
+    const c1x = bx + (nx[j]*side) * len * 0.9 - tx * len * 0.15;
+    const c1y = by + (ny[j]*side) * len * 0.9 - ty * len * 0.15;
+    const c2x = b2x + (nx[j]*side) * len * 0.45 - tx * len * 0.5;
+    const c2y = b2y + (ny[j]*side) * len * 0.45 - ty * len * 0.5;
+    return `M${bx.toFixed(1)} ${by.toFixed(1)}Q${c1x.toFixed(1)} ${c1y.toFixed(1)} ${tipx.toFixed(1)} ${tipy.toFixed(1)}` +
+           `Q${c2x.toFixed(1)} ${c2y.toFixed(1)} ${b2x.toFixed(1)} ${b2y.toFixed(1)}`;
+  };
+  for (let i = 5; i < n - 10; i += 7) {
+    const base = 0.7 + widthAt(i) / 16;
+    sd += flame(i, 1, 17 * base) + flame(i + 1, 1, 12 * base) + flame(i + 2, 1, 8 * base);
+    if (i + 4 < n - 10) sd += flame(i + 4, -1, 8 * base);   // ventral tuft between clusters
+  }
+  el.spikes.setAttribute('d', sd);
+
+  // inner ridge line following the back (two-tone spine)
+  let rl = '';
+  for (let i = 3; i < n - 5; i += 2) {
+    const w = widthAt(i);
+    rl += (rl ? 'L' : 'M') + (spine[i][0] + nx[i] * w * 0.82).toFixed(1) + ' ' +
+          (spine[i][1] + ny[i] * w * 0.82).toFixed(1);
+  }
+  el.spineline.setAttribute('d', rl);
+
+  // two PAIRS of muscular legs, bamboo-jointed toes, long curved talons
+  // (reference: S-bent limbs, segmented digits, hooked claws, elbow flames)
+  let ld = '', st = '';
+  for (const [i, side] of [[10, 1], [15, -1], [32, 1], [37, -1]]) {
+    if (i >= n - 2) continue;
+    const w = widthAt(i);
+    const ox = -nx[i] * side, oy = -ny[i] * side;      // outward from the belly edge
+    const tx = ny[i], ty = -nx[i];                     // toward the head
+    const kick = Math.sin(time * 5 - i * 0.42 + 1) * 0.18;
+    // hip → knee (thigh sweeps back) → ankle (shin kicks forward)
+    const hx2 = spine[i][0] + ox * w, hy2 = spine[i][1] + oy * w;
+    const kx2 = hx2 + ox * 9 - tx * (6 + kick * 14), ky2 = hy2 + oy * 9 - ty * (6 + kick * 14);
+    const ax2 = kx2 + ox * 7 + tx * (5 - kick * 10), ay2 = ky2 + oy * 7 + ty * (5 - kick * 10);
+    ld += `M${hx2.toFixed(1)} ${hy2.toFixed(1)}Q${(hx2 + ox*8 - tx*8).toFixed(1)} ${(hy2 + oy*8 - ty*8).toFixed(1)} ${kx2.toFixed(1)} ${ky2.toFixed(1)}` +
+          `Q${(kx2 + ox*5 + tx*1).toFixed(1)} ${(ky2 + oy*5 + ty*1).toFixed(1)} ${ax2.toFixed(1)} ${ay2.toFixed(1)}`;
+    // four bamboo-jointed toes fanning forward, each ending in a hooked talon
+    for (let c = -1.5; c <= 1.5; c++) {
+      const fa = c * 0.42 + kick;                      // fan angle
+      const dxp = tx * Math.cos(fa) + ox * Math.sin(fa);
+      const dyp = ty * Math.cos(fa) + oy * Math.sin(fa);
+      const px = -dyp, py = dxp;
+      const jx = ax2 + dxp * 5, jy = ay2 + dyp * 5;    // toe joint
+      ld += `M${ax2.toFixed(1)} ${ay2.toFixed(1)}L${jx.toFixed(1)} ${jy.toFixed(1)}` +
+            `M${(jx - px*1.6).toFixed(1)} ${(jy - py*1.6).toFixed(1)}L${(jx + px*1.6).toFixed(1)} ${(jy + py*1.6).toFixed(1)}` +  // bamboo joint tick
+            `M${jx.toFixed(1)} ${jy.toFixed(1)}Q${(jx + dxp*6).toFixed(1)} ${(jy + dyp*6).toFixed(1)} ${(jx + dxp*6.5 + px*3.2).toFixed(1)} ${(jy + dyp*6.5 + py*3.2).toFixed(1)}`; // curved talon
+    }
+    // elbow flame tufts trailing from the knee
+    for (let k = 0; k < 2; k++) {
+      const wob = Math.sin(time * 4 + i + k * 2.4) * 5;
+      const len = 20 + k * 8;
+      st += `M${kx2.toFixed(1)} ${ky2.toFixed(1)}` +
+            `Q${(kx2 - tx*len*0.5 + ox*(7+wob)).toFixed(1)} ${(ky2 - ty*len*0.5 + oy*(7+wob)).toFixed(1)} ` +
+            `${(kx2 - tx*len + ox*(2+wob*0.6)).toFixed(1)} ${(ky2 - ty*len + oy*(2+wob*0.6)).toFixed(1)}`;
+    }
+  }
+  el.legs.setAttribute('d', ld);
+  el.streamers.setAttribute('d', st);
+
+  // carp scales: dense staggered brick lattice of crescents across the body
+  // (reference: overlapping U-scales cover the flank; belly keeps its plates)
+  let scd = '';
+  for (let i = 6; i < n - 11; i += 1) {
+    const w = widthAt(i);
+    if (w < 7) continue;                // no lattice on slim sections
+    const tx = ny[i], ty = -nx[i];      // tangent, roughly toward the head
+    const cols = Math.max(2, Math.round(w / 3.6));
+    const r = Math.min(5, Math.max(2.2, (w * 1.06) / cols * 0.62));
+    for (let c = 0; c < cols; c++) {
+      // scallop rows across ~the full flank, staggered half a cell per row
+      const f = (c + 0.5 + ((i % 2) ? 0.5 : 0)) / cols;
+      const off = -0.55 + f * 1.35;
+      if (off > 0.82 || off < -0.5) continue;
+      const cxp = spine[i][0] + nx[i] * w * off, cyp = spine[i][1] + ny[i] * w * off;
+      // deep "C" bowing toward the tail — overlapping roof-tile scallops
+      scd += `M${(cxp + nx[i]*r).toFixed(1)} ${(cyp + ny[i]*r).toFixed(1)}` +
+             `Q${(cxp - tx*r*2.1).toFixed(1)} ${(cyp - ty*r*2.1).toFixed(1)} ` +
+             `${(cxp - nx[i]*r).toFixed(1)} ${(cyp - ny[i]*r).toFixed(1)}`;
+    }
+  }
+  el.scales.setAttribute('d', scd);
+
+  // clam-belly scutes: short curved plates hugging the underside edge only
+  let bd = '';
+  for (let i = 9; i < n - 12; i += 3) {
+    const w = widthAt(i);
+    if (w < 9) continue;
+    const tx = ny[i], ty = -nx[i];
+    const ax = spine[i][0] - nx[i] * w * 0.52, ay = spine[i][1] - ny[i] * w * 0.52;
+    const bx2 = spine[i][0] - nx[i] * w * 0.86, by2 = spine[i][1] - ny[i] * w * 0.86;
+    bd += `M${ax.toFixed(1)} ${ay.toFixed(1)}Q${((ax+bx2)/2 - tx*3).toFixed(1)} ${((ay+by2)/2 - ty*3).toFixed(1)} ${bx2.toFixed(1)} ${by2.toFixed(1)}`;
+  }
+  el.belly.setAttribute('d', bd);
+  el.belly.setAttribute('opacity', '0.6');
+
+  // tail tuft: a flame fan at the tip
+  let td = '';
+  {
+    const p0 = spine[n-1], p1 = spine[n-4] || spine[n-2];
+    let dxr = p0[0] - p1[0], dyr = p0[1] - p1[1];
+    const dl = Math.hypot(dxr, dyr) || 1;
+    dxr /= dl; dyr /= dl;                        // pointing off the tail
+    const pxr = -dyr, pyr = dxr;
+    for (let k = -3; k <= 3; k++) {
+      const flick = Math.sin(time * 6 + k * 2) * 4;
+      const len = 20 + (3 - Math.abs(k)) * 7;
+      td += `M${p0[0].toFixed(1)} ${p0[1].toFixed(1)}` +
+            `Q${(p0[0] + dxr*len*0.5 + pxr*(k*7+flick)).toFixed(1)} ${(p0[1] + dyr*len*0.5 + pyr*(k*7+flick)).toFixed(1)} ` +
+            `${(p0[0] + dxr*len + pxr*(k*10+flick)).toFixed(1)} ${(p0[1] + dyr*len + pyr*(k*10+flick)).toFixed(1)}`;
+    }
+  }
+  el.tuft.setAttribute('d', td);
+
+  // lingzhi cloud scrolls drifting in the sky (Nine Dragons / robe motif)
+  let cd = '';
+  for (const c of cloudBases) {
+    const dx2 = Math.sin(time * 0.07 + c.ph) * 12;
+    const P = (px2, py2) => `${(c.x + dx2 + px2 * c.s).toFixed(1)} ${(c.y + py2 * c.s).toFixed(1)}`;
+    cd += `M${P(-26, 8)}Q${P(-36, 0)} ${P(-24, -6)}Q${P(-8, -14)} ${P(4, -8)}` +
+          `Q${P(14, -3)} ${P(11, 5)}Q${P(8, 12)} ${P(0, 11)}Q${P(-7, 10)} ${P(-6, 4)}Q${P(-5, 0)} ${P(0, 1)}` +
+          `M${P(11, 2)}Q${P(26, 7)} ${P(44, 3)}M${P(6, 9)}Q${P(20, 15)} ${P(36, 13)}`;
+  }
+  el.clouds.setAttribute('d', cd);
+
+  // the flaming pearl the dragon chases, slightly ahead on the flight path
+  {
+    const [px2, py2] = headPos(time + 0.55);
+    el.pearl.setAttribute('transform', `translate(${px2.toFixed(1)} ${py2.toFixed(1)})`);
+    let fd = '';
+    for (let k = 0; k < 3; k++) {
+      const a = time * 1.6 + k * (TAU3 / 3);
+      const sx = Math.cos(a) * 11, sy = Math.sin(a) * 11;
+      const m1 = 18 + Math.sin(time * 7 + k) * 3;
+      const m2 = 26 + Math.sin(time * 5 + k * 2) * 4;
+      fd += `M${sx.toFixed(1)} ${sy.toFixed(1)}` +
+            `Q${(Math.cos(a + 0.5) * m1).toFixed(1)} ${(Math.sin(a + 0.5) * m1).toFixed(1)} ` +
+            `${(Math.cos(a + 0.15) * m2).toFixed(1)} ${(Math.sin(a + 0.15) * m2).toFixed(1)}`;
+    }
+    el.pearl_f.setAttribute('d', fd);
+  }
+
+  // head placed at the front, rotated to the direction of travel
+  const hx = spine[0][0], hy = spine[0][1];
+  const ang = Math.atan2(spine[0][1] - spine[2][1], spine[0][0] - spine[2][0]) * 180 / Math.PI;
+  el.head.setAttribute('transform',
+    `translate(${hx.toFixed(1)} ${hy.toFixed(1)}) rotate(${ang.toFixed(1)}) scale(2)`);
+}
+
+/* ---------- loop ---------- */
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let t = 0;
+
+function prime() {
+  // prefill the trail so the dragon starts whole, not growing from a point
+  trail.length = 0;
+  for (let k = 0; k < 400; k++) {
+    trail.unshift(headPos(t - k * 0.016));
+  }
+}
+
+if (reduced) {
+  t = 4.2;                       // a pose with a nice S-curve
+  prime();
+  buildPaths(spineFromTrail(), t);
+} else {
+  prime();
+  let last = performance.now(), running = true;
+  function frame(now) {
+    if (!running) return;
+    const dt = Math.min((now - last) / 1000, 1 / 30);
+    last = now;
+    t += dt;
+    trail.unshift(headPos(t));
+    if (trail.length > 900) trail.length = 900;
+    buildPaths(spineFromTrail(), t);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+  document.addEventListener('visibilitychange', () => {
+    running = !document.hidden;
+    if (running) { last = performance.now(); requestAnimationFrame(frame); }
+  });
+}
+})();
+</script>
+</body>
+</html>

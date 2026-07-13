@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Morphing Circle Clock</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0d0f10;
+      --panel: #171b1d;
+      --ink: #f5f1e8;
+      --muted: #8c948f;
+      --line: #303638;
+      --accent: #74d3ae;
+      --accent-2: #e87979;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at 15% 15%, rgba(116, 211, 174, 0.12), transparent 28rem),
+        linear-gradient(135deg, #0d0f10 0%, #17140f 48%, #111516 100%);
+      color: var(--ink);
+      display: grid;
+      place-items: center;
+      padding: 28px;
+    }
+
+    main {
+      width: min(1120px, 100%);
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      border: 1px solid rgba(245, 241, 232, 0.14);
+      background: rgba(13, 15, 16, 0.72);
+      backdrop-filter: blur(18px);
+      min-height: 620px;
+    }
+
+    .stage {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: clamp(22px, 4vw, 56px);
+    }
+
+    .kicker {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      max-width: 780px;
+      margin: 14px 0 0;
+      font-size: clamp(34px, 6vw, 84px);
+      line-height: 0.92;
+      font-weight: 520;
+      letter-spacing: 0;
+    }
+
+    .clock-wrap {
+      padding: clamp(28px, 5vw, 70px) 0 clamp(18px, 3vw, 42px);
+    }
+
+    .clock {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      transform: translateX(-2.2%);
+    }
+
+    morph-digit {
+      display: block;
+      flex: 0 0 16.2%;
+      margin-left: -5.9%;
+      aspect-ratio: 1;
+    }
+
+    morph-digit:first-child,
+    morph-digit:nth-child(4),
+    morph-digit:nth-child(7) {
+      margin-left: 0;
+    }
+
+    .colon {
+      flex: 0 0 4.2%;
+      height: clamp(46px, 9vw, 118px);
+      position: relative;
+      margin: 0 0.8%;
+    }
+
+    .colon::before,
+    .colon::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      width: clamp(8px, 1.5vw, 18px);
+      height: clamp(8px, 1.5vw, 18px);
+      border-radius: 999px;
+      background: var(--ink);
+      transform: translateX(-50%);
+      box-shadow: 0 0 24px rgba(245, 241, 232, 0.18);
+    }
+
+    .colon::before {
+      top: 28%;
+    }
+
+    .colon::after {
+      bottom: 28%;
+    }
+
+    .paused .colon::before,
+    .paused .colon::after {
+      background: var(--muted);
+    }
+
+    .readout {
+      margin: 0;
+      color: var(--muted);
+      font-size: clamp(14px, 1.5vw, 18px);
+      line-height: 1.5;
+      max-width: 680px;
+    }
+
+    .readout strong {
+      color: var(--ink);
+      font-weight: 500;
+    }
+
+    .panel {
+      border-left: 1px solid rgba(245, 241, 232, 0.14);
+      background: rgba(23, 27, 29, 0.72);
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+
+    .group {
+      display: grid;
+      gap: 12px;
+    }
+
+    .group h2 {
+      margin: 0;
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .buttons,
+    .swatches {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    button {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: #101315;
+      color: var(--ink);
+      min-height: 38px;
+      padding: 0 13px;
+      font: inherit;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      border-color: rgba(245, 241, 232, 0.44);
+    }
+
+    button[aria-pressed="true"],
+    button.primary {
+      border-color: var(--accent);
+      color: #06100c;
+      background: var(--accent);
+    }
+
+    .swatch {
+      width: 36px;
+      padding: 0;
+      border-radius: 999px;
+      border-color: rgba(245, 241, 232, 0.24);
+    }
+
+    .swatch[data-theme="cream"] {
+      background: #f5f1e8;
+    }
+
+    .swatch[data-theme="green"] {
+      background: #74d3ae;
+    }
+
+    .swatch[data-theme="red"] {
+      background: #e87979;
+    }
+
+    .swatch[data-theme="blue"] {
+      background: #8bb8ff;
+    }
+
+    label {
+      display: grid;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    .digit-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .digit-grid button {
+      min-height: 42px;
+      font-size: 17px;
+    }
+
+    .note {
+      margin-top: auto;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 860px) {
+      body {
+        padding: 16px;
+        place-items: start center;
+      }
+
+      .shell {
+        grid-template-columns: 1fr;
+      }
+
+      .panel {
+        border-left: 0;
+        border-top: 1px solid rgba(245, 241, 232, 0.14);
+      }
+
+      morph-digit {
+        flex-basis: 18.6%;
+        margin-left: -7%;
+      }
+
+      .colon {
+        flex-basis: 4.8%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="shell" aria-label="Interactive morphing clock demo">
+      <div class="stage">
+        <div>
+          <p class="kicker">SVG path sampling + gooey circles</p>
+          <h1>Morphing digital clock</h1>
+        </div>
+
+        <div class="clock-wrap">
+          <div class="clock" id="clock" aria-hidden="true"></div>
+          <span class="sr-only" id="accessibleTime"></span>
+        </div>
+
+        <p class="readout">
+          The digits are not text. Each one is <strong>29 SVG circles</strong> animated onto sampled points along hidden numeral paths.
+        </p>
+      </div>
+
+      <aside class="panel">
+        <div class="group">
+          <h2>Mode</h2>
+          <div class="buttons" role="group" aria-label="Clock mode">
+            <button type="button" id="liveButton" class="primary" aria-pressed="true">Live</button>
+            <button type="button" id="manualButton" aria-pressed="false">Manual</button>
+          </div>
+          <div class="buttons" role="group" aria-label="Time format">
+            <button type="button" id="format24" aria-pressed="true">24h</button>
+            <button type="button" id="format12" aria-pressed="false">12h</button>
+          </div>
+        </div>
+
+        <div class="group">
+          <h2>Animation</h2>
+          <label>
+            Duration <span id="durationValue">640ms</span>
+            <input id="duration" type="range" min="220" max="1200" step="20" value="640">
+          </label>
+          <label>
+            Circle stagger <span id="staggerValue">12ms</span>
+            <input id="stagger" type="range" min="0" max="32" step="1" value="12">
+          </label>
+        </div>
+
+        <div class="group">
+          <h2>Manual digit</h2>
+          <div class="digit-grid" id="digitGrid"></div>
+        </div>
+
+        <div class="group">
+          <h2>Ink</h2>
+          <div class="swatches" role="group" aria-label="Digit color">
+            <button type="button" class="swatch" data-theme="cream" aria-label="Cream"></button>
+            <button type="button" class="swatch" data-theme="green" aria-label="Green"></button>
+            <button type="button" class="swatch" data-theme="red" aria-label="Red"></button>
+            <button type="button" class="swatch" data-theme="blue" aria-label="Blue"></button>
+          </div>
+        </div>
+
+        <button type="button" id="shuffle">Shuffle digits</button>
+
+        <p class="note">
+          Manual mode repeats the chosen number across all six positions so the morph is easy to inspect.
+        </p>
+      </aside>
+    </section>
+  </main>
+
+  <template id="digitTemplate">
+    <svg viewBox="0 0 256 256" role="presentation">
+      <defs>
+        <filter class="goo" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur"></feGaussianBlur>
+          <feColorMatrix
+            in="blur"
+            mode="matrix"
+            values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 38 -21"
+            result="goo">
+          </feColorMatrix>
+          <feComposite in="SourceGraphic" in2="goo" operator="atop"></feComposite>
+        </filter>
+      </defs>
+      <g class="paths" hidden>
+        <path id="path_0" d="M185,131.2c0,25.5-5.1,45.6-15.4,60.3c-10.3,14.7-24.1,22-41.7,22c-17.5,0-31.4-7.3-41.5-22 c-10.1-14.7-15.2-34.8-15.2-60.3v-6.6c0-25.5,5.1-45.7,15.2-60.4C96.6,49.4,110.4,42,128,42c17.5,0,31.4,7.4,41.7,22.1 c10.3,14.8,15.4,34.9,15.4,60.4V131.2z"></path>
+        <path id="path_1" d="M87.9,79.2c1.1-0.4,53.7-39.2,54.9-39.1v180.5"></path>
+        <path id="path_2" d="M81.7,85.7c-1.4-67,112.3-55.1,90.2,11.6c-12.6,32-70.6,83.7-88.8,113.7h105.8"></path>
+        <path id="path_3" d="M74.8,178.5c3,39.4,63.9,46.7,88.6,23.7c34.3-35.1,5.4-75.8-41.7-77c29.9,5.5,68.7-43.1,36.5-73.7 c-23.4-21.5-76.5-11.1-78.6,25"></path>
+        <path id="path_4" d="M161.9,220.8 161.9,41 72.6,180.9 210.2,180.9"></path>
+        <path id="path_5" d="M183.2,43.7H92.1l-10,88.3c0,0,18.3-21.9,51-21.9s49.4,32.6,49.4,48.2c0,22.2-9.5,57-52.5,57 s-51.4-36.7-51.4-36.7"></path>
+        <path id="path_6" d="M177.4,71.6c0,0-4.3-30.3-44.9-30.3s-57.9,45.6-57.9,88.8s9,86.5,56.2,86.5 c38.9,0,50.9-22.3,50.9-60.9c0-17.6-21-44.9-48.2-44.9c-36.2,0-55.2,29.6-55.2,58.2"></path>
+        <path id="path_7" d="M73.3,43.7 177.7,43.7 97.9,220.6"></path>
+        <path id="path_8" d="M126.8,122.8c0,0,48.2-1.3,48.2-42.2s-48.2-39.9-48.2-39.9s-45.9,0-45.9,40.9 c0,20.5,18.8,41.2,46.9,41.2c29.6,0,54.9,18,54.9,47.2c0,0,2,44.9-54.2,44.9c-55.5,0-54.2-43.9-54.2-43.9s-0.3-47.9,53.6-47.9"></path>
+        <path id="path_9" d="M78.9,186.3c0,0,4.3,30.3,44.9,30.3s57.9-45.6,57.9-88.8s-9-86.5-56.2-86.5 c-38.9,0-50.9,22.3-50.9,60.9c0,17.6,21,44.9,48.2,44.9c36.2,0,55.2-29.6,55.2-58.2"></path>
+      </g>
+      <g class="circles"></g>
+    </svg>
+  </template>
+
+  <script>
+    const circleCount = 29;
+    const svgNS = "http://www.w3.org/2000/svg";
+    const clock = document.querySelector("#clock");
+    const template = document.querySelector("#digitTemplate");
+    const accessibleTime = document.querySelector("#accessibleTime");
+    const durationInput = document.querySelector("#duration");
+    const staggerInput = document.querySelector("#stagger");
+    const durationValue = document.querySelector("#durationValue");
+    const staggerValue = document.querySelector("#staggerValue");
+    const liveButton = document.querySelector("#liveButton");
+    const manualButton = document.querySelector("#manualButton");
+    const format24 = document.querySelector("#format24");
+    const format12 = document.querySelector("#format12");
+    const digitGrid = document.querySelector("#digitGrid");
+    const shuffleButton = document.querySelector("#shuffle");
+
+    const state = {
+      live: true,
+      format: 24,
+      manualDigit: "8",
+      duration: Number(durationInput.value),
+      stagger: Number(staggerInput.value),
+      value: ""
+    };
+
+    function expoOut(t) {
+      return t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
+    }
+
+    class MorphDigit extends HTMLElement {
+      constructor() {
+        super();
+        this.attachShadow({ mode: "open" });
+        this.shadowRoot.append(template.content.cloneNode(true));
+        this.svg = this.shadowRoot.querySelector("svg");
+        this.circlesGroup = this.shadowRoot.querySelector(".circles");
+        this.paths = this.shadowRoot.querySelector(".paths");
+        this.current = "0";
+        this.animations = [];
+
+        const filterId = "goo-" + Math.random().toString(36).slice(2);
+        this.shadowRoot.querySelector(".goo").id = filterId;
+        this.circlesGroup.setAttribute("filter", `url(#${filterId})`);
+
+        const style = document.createElement("style");
+        style.textContent = `
+          :host { color: var(--ink); }
+          svg { width: 100%; height: 100%; display: block; overflow: visible; }
+          circle { fill: currentColor; }
+        `;
+        this.shadowRoot.prepend(style);
+
+        for (let i = 0; i < circleCount; i += 1) {
+          const circle = document.createElementNS(svgNS, "circle");
+          circle.setAttribute("r", "17");
+          circle.setAttribute("cx", "128");
+          circle.setAttribute("cy", "128");
+          this.circlesGroup.append(circle);
+        }
+      }
+
+      connectedCallback() {
+        this.morphTo(this.getAttribute("value") || "0", true);
+      }
+
+      static get observedAttributes() {
+        return ["value"];
+      }
+
+      attributeChangedCallback(name, oldValue, newValue) {
+        if (name === "value" && oldValue !== newValue && this.isConnected) {
+          this.morphTo(newValue);
+        }
+      }
+
+      morphTo(value, immediate = false) {
+        const path = this.paths.querySelector(`#path_${value}`);
+        if (!path) return;
+
+        this.current = value;
+        const length = path.getTotalLength();
+        const step = length / circleCount;
+        const circles = Array.from(this.circlesGroup.querySelectorAll("circle"));
+
+        this.animations.forEach(cancelAnimationFrame);
+        this.animations = [];
+
+        circles.forEach((circle, index) => {
+          const point = path.getPointAtLength(index * step);
+          if (immediate) {
+            circle.setAttribute("cx", point.x);
+            circle.setAttribute("cy", point.y);
+            return;
+          }
+
+          const fromX = Number(circle.getAttribute("cx"));
+          const fromY = Number(circle.getAttribute("cy"));
+          const delay = index * state.stagger;
+          const start = performance.now() + delay;
+
+          const tick = now => {
+            const elapsed = Math.max(0, now - start);
+            const t = Math.min(elapsed / state.duration, 1);
+            const eased = expoOut(t);
+            const x = fromX + (point.x - fromX) * eased;
+            const y = fromY + (point.y - fromY) * eased;
+
+            circle.setAttribute("cx", x.toFixed(2));
+            circle.setAttribute("cy", y.toFixed(2));
+
+            if (t < 1) {
+              this.animations[index] = requestAnimationFrame(tick);
+            }
+          };
+
+          this.animations[index] = requestAnimationFrame(tick);
+        });
+      }
+    }
+
+    customElements.define("morph-digit", MorphDigit);
+
+    function pad(value) {
+      return String(value).padStart(2, "0");
+    }
+
+    function formatTime(date) {
+      let hours = date.getHours();
+      if (state.format === 12) {
+        hours = hours % 12 || 12;
+      }
+
+      return `${pad(hours)}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+    }
+
+    function setPressed(button, pressed) {
+      button.setAttribute("aria-pressed", String(pressed));
+      button.classList.toggle("primary", pressed);
+    }
+
+    function renderTime(value) {
+      if (value === state.value) return;
+      state.value = value;
+      accessibleTime.textContent = value;
+
+      if (!clock.children.length) {
+        value.split("").forEach(char => {
+          if (char === ":") {
+            const colon = document.createElement("span");
+            colon.className = "colon";
+            clock.append(colon);
+          } else {
+            const digit = document.createElement("morph-digit");
+            digit.setAttribute("value", char);
+            clock.append(digit);
+          }
+        });
+        return;
+      }
+
+      let digitIndex = 0;
+      value.split("").forEach(char => {
+        if (char === ":") return;
+        const digit = clock.querySelectorAll("morph-digit")[digitIndex];
+        digit.setAttribute("value", char);
+        digitIndex += 1;
+      });
+    }
+
+    function tick() {
+      if (state.live) {
+        renderTime(formatTime(new Date()));
+      }
+    }
+
+    function setLive(live) {
+      state.live = live;
+      document.body.classList.toggle("paused", !live);
+      setPressed(liveButton, live);
+      setPressed(manualButton, !live);
+      if (live) {
+        tick();
+      } else {
+        renderTime(`${state.manualDigit}${state.manualDigit}:${state.manualDigit}${state.manualDigit}:${state.manualDigit}${state.manualDigit}`);
+      }
+    }
+
+    function setFormat(format) {
+      state.format = format;
+      setPressed(format24, format === 24);
+      setPressed(format12, format === 12);
+      tick();
+    }
+
+    function setManualDigit(digit) {
+      state.manualDigit = digit;
+      setLive(false);
+    }
+
+    for (let i = 0; i <= 9; i += 1) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = String(i);
+      button.addEventListener("click", () => setManualDigit(String(i)));
+      digitGrid.append(button);
+    }
+
+    liveButton.addEventListener("click", () => setLive(true));
+    manualButton.addEventListener("click", () => setLive(false));
+    format24.addEventListener("click", () => setFormat(24));
+    format12.addEventListener("click", () => setFormat(12));
+
+    durationInput.addEventListener("input", event => {
+      state.duration = Number(event.target.value);
+      durationValue.textContent = `${state.duration}ms`;
+    });
+
+    staggerInput.addEventListener("input", event => {
+      state.stagger = Number(event.target.value);
+      staggerValue.textContent = `${state.stagger}ms`;
+    });
+
+    document.querySelectorAll(".swatch").forEach(button => {
+      button.addEventListener("click", () => {
+        const colors = {
+          cream: "#f5f1e8",
+          green: "#74d3ae",
+          red: "#e87979",
+          blue: "#8bb8ff"
+        };
+        document.documentElement.style.setProperty("--ink", colors[button.dataset.theme]);
+      });
+    });
+
+    shuffleButton.addEventListener("click", () => {
+      setLive(false);
+      const shuffled = Array.from({ length: 6 }, () => Math.floor(Math.random() * 10));
+      renderTime(`${shuffled[0]}${shuffled[1]}:${shuffled[2]}${shuffled[3]}:${shuffled[4]}${shuffled[5]}`);
+    });
+
+    renderTime(formatTime(new Date()));
+    setInterval(tick, 250);
+  </script>
+</body>
+</html>
