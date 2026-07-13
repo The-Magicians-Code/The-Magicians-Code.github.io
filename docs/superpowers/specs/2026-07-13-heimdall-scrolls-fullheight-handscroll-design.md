@@ -85,9 +85,13 @@ pointer-capture drag with the `moved` flag guarding click-vs-drag.
   toggles (port from v8).
 - Focus restoration on close is modality-aware (added 2026-07-13 after user
   feedback): click and Enter/Space closes refocus the "Read the trial" trigger;
-  **Esc closes skip the refocus** — Esc's keyboard modality lights the trigger's
-  `:focus-visible` ring (gold outline + underline), which reads as a stuck
-  hover/selection after a mouse-driven Esc close.
+  **Esc closes skip the refocus AND blur the stage** — a real Esc keypress flips
+  the input-modality heuristic to keyboard, so any element still holding focus
+  lights its `:focus-visible` ring (first the trigger's gold underline, then,
+  once refocus was skipped, the stage's outline around the whole rolling-up
+  scroll). Verification gotcha: synthetic `KeyboardEvent` dispatch does NOT trip
+  the modality heuristic — Esc-related focus-ring checks must use real key input
+  (CDP `press_key`), or they false-pass.
 - `prefers-reduced-motion: reduce`: no spring/spin/fade transitions — states
   switch instantly; ambient painting drift already disabled by the existing rule.
 - No native scrollbars (`scrollbar-width: none` + WebKit rule, from v8).
