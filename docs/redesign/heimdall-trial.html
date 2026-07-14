@@ -194,6 +194,7 @@
      paper-grain gradients over it. Background stays put while content scrolls;
      nothing sits behind it, so no backdrop-filter is needed. */
   .panel--trial {
+    position: relative;
     overflow-y: auto; overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
     color: var(--ink);
@@ -215,20 +216,78 @@
     padding: clamp(2rem, 7vh, 5rem) clamp(1.4rem, 6vw, 4rem);
   }
 
-  /* The reading column: transparent (paper is on the panel), no card chrome. */
+  /* The reading column: transparent (paper is on the panel), no card chrome.
+     Symmetric (no padding-left) so .trial-center dead-centres it; the former
+     left gold rule is replaced by the gutter-pinned .chapter-rail below. */
   .dossier {
     position: relative;
     width: min(64ch, 100%);
-    padding-left: clamp(2.2rem, 5.5vw, 3.8rem);   /* room for the gold rule */
     color: var(--ink);
   }
 
-  /* the one bold structural element: a gold rule down the column's left edge */
-  .dossier::before {
-    content: ''; position: absolute; top: 0; bottom: 0;
-    left: clamp(0.4rem, 1.6vw, 1rem); width: 2px;
-    background: linear-gradient(180deg, rgba(156,123,46,0), var(--gold-ink) 12%, var(--gold-ink) 88%, rgba(156,123,46,0));
+  /* ============ Chapter rail — data-driven gutter scroll indicator ============ */
+  /* A vertical rail pinned in the LEFT gutter of the trial panel, independent of
+     the (now-centred) text column. Built dynamically from the sections present
+     (JS populates .rail-ticks), NOT hardcoded to three — a new .t-section adds a
+     tick for free. Doubles as a scroll-progress bar + a scrollspy for the active
+     chapter. */
+  /* zero-height sticky anchor: sticks to the top of the scrollport so its
+     absolutely-positioned .rail-inner stays fixed in view while the dossier
+     scrolls under it. NOT position:fixed — the panel lives inside a transformed
+     .track, and fixed would resolve against the viewport, breaking the slide. */
+  .chapter-rail { position: sticky; top: 0; height: 0; z-index: 3; }
+  .rail-inner {
+    position: absolute; top: 50svh; transform: translateY(-50%);
+    /* hug the centred column: 50% - min(32ch,50%) is the column's left edge,
+       -2.5rem sits the rail just outside it; the max(...) floor keeps it off the
+       viewport edge on narrower widths where the column already spans full width */
+    left: max(clamp(1rem, 4vw, 3rem), calc(50% - min(32ch, 50%) - 2.5rem));
+    height: min(52svh, 420px); width: max-content;
   }
+  /* faint unfilled rule */
+  .rail-track {
+    position: absolute; top: 0; bottom: 0; left: 0; width: 2px;
+    background: linear-gradient(180deg, rgba(156,123,46,0), rgba(156,123,46,0.28) 12%, rgba(156,123,46,0.28) 88%, rgba(156,123,46,0));
+  }
+  /* scroll-progress fill; JS sets --rail-progress (0..1) on .chapter-rail */
+  .rail-fill {
+    position: absolute; top: 0; left: 0; width: 2px;
+    height: calc(var(--rail-progress, 0) * 100%);
+    background: var(--gold-ink); transition: height 0.12s linear;
+  }
+  .rail-ticks { position: absolute; inset: 0; margin: 0; padding: 0; list-style: none; }
+  /* JS sets --tick-pos (0..100%) per tick from the section's index */
+  .rail-tick { position: absolute; left: 0; top: var(--tick-pos, 0%); transform: translateY(-50%); }
+  .rail-tick button {
+    position: relative;   /* anchor for the left-opening .tick-label */
+    display: inline-flex; align-items: center; gap: 0.55rem;
+    background: none; border: 0; padding: 0; margin-left: -4px;
+    cursor: pointer; color: var(--gold-ink); font-family: var(--serif);
+  }
+  .rail-tick .dot {
+    flex: none; width: 10px; height: 10px; border-radius: 50%;
+    background: var(--porcelain); border: 2px solid var(--gold-ink);
+    box-sizing: border-box;
+    transition: transform 0.3s var(--ease-out), background 0.3s var(--ease-out);
+  }
+  .rail-tick.is-active .dot { background: var(--gold-ink); transform: scale(1.15); }
+  /* label — hidden until the rail is hovered or the button is focused; opens to
+     the LEFT (into the gutter, right-anchored to the dot) so it never covers the
+     reading column */
+  .tick-label {
+    position: absolute; right: calc(100% + 0.6rem); top: 50%;
+    transform: translate(6px, -50%); opacity: 0; pointer-events: none;
+    white-space: nowrap; text-align: right;
+    font-size: 0.7rem; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--ink); background: var(--porcelain-soft);
+    padding: 0.2em 0.6em; border-radius: 3px; box-shadow: 0 1px 6px rgba(12,8,4,0.12);
+    transition: opacity 0.32s var(--ease-out), transform 0.32s var(--ease-out);
+  }
+  /* labels stay hidden until the rail is hovered or a tick is focused —
+     the active chapter is signalled by its filled dot, not a resting label */
+  .chapter-rail:hover .tick-label,
+  .rail-tick button:focus-visible .tick-label { opacity: 1; transform: translate(0, -50%); }
+  .rail-tick button:focus-visible { outline: 2px solid var(--gold-ink); outline-offset: 4px; border-radius: 2px; }
 
   /* --- reveal: per-section transitions with staggered delays, gated on
      .is-trial. Transitions (not keyframes-forwards) so an interrupted close
@@ -294,7 +353,7 @@
     color: #f4e8d2; font-size: clamp(1.4rem, 3.4vw, 2rem); letter-spacing: 0.12em;
   }
 
-  .t-section { margin: clamp(1.2rem, 3vh, 1.8rem) 0 0; }
+  .t-section { margin: clamp(1.2rem, 3vh, 1.8rem) 0 0; scroll-margin-top: clamp(2rem, 7vh, 4rem); }
   .t-section h2 {
     margin: 0 0 0.35rem; font-family: var(--serif); font-weight: 600;
     font-size: 0.74rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold-ink);
@@ -338,6 +397,12 @@
     .painting { object-position: 44% 42%; }
   }
 
+  /* mobile: gutter is too thin and hover labels are dead on touch — hide the
+     rail entirely; the centred text column stands on its own */
+  @media (max-width: 640px) {
+    .chapter-rail { display: none; }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .painting { animation: none; transform: scale(1.04); }
     .mark, .codename, .subtitle, .line, .more {
@@ -352,6 +417,9 @@
       transition: opacity 0.2s var(--ease-out) !important;
       transform: none !important; filter: none !important;
     }
+    /* rail: kill the progress-fill tween and tick label/dot tweens */
+    .rail-fill { transition: none; }
+    .tick-label, .rail-tick .dot { transition: none; }
   }
 </style>
 </head>
@@ -376,6 +444,12 @@
 
       <!-- Panel 2: the trial — full-bleed porcelain dossier -->
       <section class="panel panel--trial" id="trial">
+       <nav class="chapter-rail" aria-label="Chapters" hidden>
+         <div class="rail-inner">
+           <span class="rail-track" aria-hidden="true"><span class="rail-fill"></span></span>
+           <ul class="rail-ticks"></ul>
+         </div>
+       </nav>
        <div class="trial-center">
         <article class="dossier">
           <button class="back t-back" type="button" aria-label="Back to Heimdall overview">
@@ -494,6 +568,93 @@
       if (e.key === 'Escape')    { closeTrial(false); }
       else if (e.key === 'ArrowLeft' && open) { closeTrial(true); }
     });
+  })();
+
+  /* Chapter rail — separate IIFE so the open/close/focus logic above is
+     untouched. Builds ticks from whatever .t-section blocks exist, wires the
+     scroll-progress fill, and a scrollspy for the active chapter. */
+  (function () {
+    var panel = document.querySelector('.panel--trial');
+    var rail  = panel.querySelector('.chapter-rail');
+    var ticksHost = rail.querySelector('.rail-ticks');
+    var sections  = Array.prototype.slice.call(panel.querySelectorAll('.t-section'));
+
+    /* the rail only earns its keep with 2+ chapters — otherwise leave it hidden */
+    if (sections.length < 2) return;
+
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var n = sections.length;
+    var tickEls = [];   /* section index -> its <li.rail-tick> */
+
+    sections.forEach(function (sec, i) {
+      /* spread ticks evenly across the rail: first at 0%, last at 100% */
+      var pos = n > 1 ? (i / (n - 1)) * 100 : 50;
+      var h2  = sec.querySelector('h2');
+      var label = (h2 && h2.textContent || '').trim();
+
+      var li = document.createElement('li');
+      li.className = 'rail-tick';
+      li.style.setProperty('--tick-pos', pos + '%');
+
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.setAttribute('aria-label', 'Jump to ' + label);
+      var dot = document.createElement('span');
+      dot.className = 'dot'; dot.setAttribute('aria-hidden', 'true');
+      var lab = document.createElement('span');
+      lab.className = 'tick-label'; lab.textContent = label;
+      btn.appendChild(dot); btn.appendChild(lab);
+      li.appendChild(btn);
+      ticksHost.appendChild(li);
+      tickEls[i] = li;
+
+      btn.addEventListener('click', function () {
+        sec.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+      });
+    });
+
+    rail.hidden = false;
+
+    /* scrollspy state + active-tick paint */
+    var activeIndex = -1;
+    function setActive(i) {
+      if (i === activeIndex) return;
+      activeIndex = i;
+      tickEls.forEach(function (li, j) {
+        var on = j === i;
+        li.classList.toggle('is-active', on);
+        var btn = li.querySelector('button');
+        if (on) btn.setAttribute('aria-current', 'true');
+        else    btn.removeAttribute('aria-current');
+      });
+    }
+
+    var raf = 0;
+    function computeActive() {
+      raf = 0;
+      /* active = last section whose top has scrolled above a reference line at 35%
+         of the panel; clamps to the last section once scrolled to the bottom, so a
+         barely-overflowing dossier still lights its final chapter */
+      var pr = panel.getBoundingClientRect();
+      var refLine = pr.top + panel.clientHeight * 0.35;
+      var idx = 0;
+      for (var i = 0; i < sections.length; i++) {
+        if (sections[i].getBoundingClientRect().top <= refLine) idx = i;
+        else break;
+      }
+      if (panel.scrollTop + panel.clientHeight >= panel.scrollHeight - 2) idx = sections.length - 1;
+      setActive(idx);
+    }
+
+    function onScroll() {
+      var max = panel.scrollHeight - panel.clientHeight;
+      var p = max > 0 ? panel.scrollTop / max : 0;
+      rail.style.setProperty('--rail-progress', String(Math.max(0, Math.min(1, p))));
+      if (!raf) raf = requestAnimationFrame(computeActive);
+    }
+    panel.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    computeActive();
   })();
   </script>
 </body>
