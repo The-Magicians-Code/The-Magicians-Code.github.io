@@ -15,10 +15,14 @@ reference for that implementation. Nothing in `docs/` is built into `dist/`.
 | Part | File | Status |
 |------|------|--------|
 | Hero | [hero.html](hero.html) | **Settled** (2026-07-10) |
-| Projects (ink-drawn SVG scenes) | — | brainstormed, not prototyped |
+| Project 1 — Heimdall | [heimdall-trial.html](heimdall-trial.html) | **Settled** (2026-07-14) |
+| Projects 2–3 layout | — | open (trial-slide is the settled pattern; not yet templated) |
 | Stack section | — | open |
 | Contact | — | open (teacher's voice per spec §8) |
 | Footer + seal | — | open |
+
+The earlier "ink-drawn SVG scenes" idea for the projects section is superseded
+by the trial-slide treatment settled in `heimdall-trial.html`.
 
 ## Hero — decisions locked in
 
@@ -45,6 +49,61 @@ reference for that implementation. Nothing in `docs/` is built into `dist/`.
 - **Themes:** Xuan (paper + sakura-pink petals) / Lacquer (black + antique
   gold petals, maki-e). Reduced motion → still scene with petals pre-rested
   on the letters.
+
+## Project 1 (Heimdall) — decisions locked in
+
+The project-1 experience is a **full-viewport takeover**, not a bento card.
+`heimdall-trial.html` is the settled prototype (chosen 2026-07-14 over the
+handscroll variants — `heimdall-scrolls.html`, the v8 rollers, `heimdall.html`
+— which stay as historical explorations).
+
+- **Two-panel horizontal slide.** A `.world` viewport clips a 200vw `.track`.
+  Panel 1 is the watercolor header; panel 2 is the case study. Opening slides
+  the track `translateX(-100vw)` over **0.9s** on a shared ease; closing is the
+  symmetric reverse. Toggling `.is-trial` mid-slide reverses from the current
+  computed transform — the interruptibility contract; no timers or transitionend
+  teardown.
+- **Header panel:** the `junkships.png` watercolor fills its own panel
+  (`junkships-portrait.png` below 1:1 aspect), `object-position: 34% 50%`, a
+  very slow ambient `drift` breathing (no parallax), a radial focal scrim, then
+  the hero stack — the brush **見** seeing-mark, **Heimdall** codename, subtitle
+  “Vision pipeline for edge inference”, the line “A vessel learning to see the
+  sea it sails.”, and a **“Read the trial →”** trigger. Text resolves in with a
+  blur-fade on load (ported from the xuan-seal reveal).
+- **Trial panel ("The Trial"):** a full-bleed **porcelain** dossier (paper-grain
+  gradients, opaque — no backdrop-filter needed), a single bold **gold rule**
+  down the reading column's left edge, a colophon head (kicker + brush title +
+  vermillion **見試** seal), Problem / Approach / Results sections, and a footer
+  meta row (tech tags + repo link). Sections reveal on a **staggered blur-in**
+  gated on `.is-trial` (transitions, not keyframes, so an interrupted close
+  reverses cleanly).
+- **Brush face:** **Nanum Brush Script** — same CDN experiment as the hero,
+  shares the hero's vendoring task.
+- **A11y / focus gotchas already solved** (keep these on port): off-screen panel
+  is `inert`; `.world` uses `overflow: clip` (not `hidden`) so it can't become a
+  scroll container; `focus({ preventScroll: true })` everywhere (a plain focus
+  jumps `world.scrollLeft` and leaves a residual gap on interrupt); **Esc close
+  does not refocus the trigger** (a real keypress flips `:focus-visible` to
+  keyboard and would leave a stuck gold ring — same lesson as
+  `heimdall-scrolls.html`); click/Enter/ArrowLeft close still refocus.
+- **Reduced motion:** no slide, no drift, no hover nudges; the trial reveal keeps
+  only a brief opacity cross-in.
+
+## Still open for project 1
+
+- **Not yet templated.** The prototype is Heimdall-hardcoded (copy, painting,
+  seal glyphs). Generalizing it into a data-driven component fed by
+  `src/content/projects/` is deferred to the Astro assembly pass; the trial-slide
+  is the settled *pattern* for projects 2–3, not yet a reusable template.
+- **Repo link is a placeholder** (`href="#"`). At assembly, wire the real
+  `repoUrl` (and the `deepwikiUrl` "for the nerds" affordance) from the project's
+  frontmatter.
+- **Font vendoring** shared with the hero (Nanum Brush latin subset →
+  `public/fonts/`); the seal/mark also lean on `Kaiti SC`/`Songti SC` system CJK
+  faces — decide whether those need vendoring or a webfont fallback.
+- **Mobile composition + real-device Safari/iOS pass** (Netlify preview) still
+  pending — the slide, `overflow: clip`, and `-webkit-overflow-scrolling` paths
+  want a device check before assembly.
 
 ## Still open for the hero
 
