@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Heimdall — the trial (horizontal slide)</title>
+<!-- EXPERIMENT ONLY: brush face from Google Fonts CDN, matching hero.html's
+     A/B setup. The shipped site self-hosts; a winner gets vendored like Fraunces. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Brush+Script&display=swap">
+<style>
+  :root {
+    /* design-system tokens (shared with the redesign set) */
+    --porcelain:      #F5F1E7;
+    --porcelain-soft: rgba(245, 241, 231, 0.80);
+    --gold:           #E6C77E;
+    --vermillion:     #B33A2B;
+    --ease-out:       cubic-bezier(0.22, 1, 0.36, 1);
+    --brush:  'Nanum Brush Script', 'Songti SC', 'Iowan Old Style', Georgia, serif;
+    --serif:  'Iowan Old Style', Georgia, 'Times New Roman', 'Songti SC', serif;
+    /* gold reads light on the dark painting but washes out on porcelain — a
+       darker antique gold for the panel's labels / rule / seal frame */
+    --gold-ink: #9c7b2e;
+    --ink:      #2c2620;   /* dark reading ink on porcelain, from the scroll calligraphy */
+  }
+
+  * { box-sizing: border-box; }
+
+  /* Hide native scrollbars globally — gutter and bar. Scrolling still works;
+     the bar just isn't painted, so no native scrollbar slides in with the
+     trial tab or flickers on the right edge as the reveal shifts content
+     height (a source of the "glitchy" entry). */
+  * { scrollbar-width: none; -ms-overflow-style: none; }
+  *::-webkit-scrollbar { width: 0; height: 0; display: none; }
+
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: #b9a986;                 /* paper tone behind the image while it loads */
+    color: var(--porcelain);
+    font-family: var(--serif);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100svh;
+    overflow: hidden;
+  }
+
+  /* ============ Stage ============ */
+  /* .world is the fixed viewport window that clips the 200vw track.
+     overflow:clip (not hidden) so .world is never itself a scroll container —
+     `hidden` stays programmatically scrollable, and focus()/scrollIntoView on
+     the off-screen trial panel would nudge world.scrollLeft, leaving a growing
+     gap on the right after interrupted exits. `clip` makes scrollLeft immovable. */
+  .world { position: relative; width: 100vw; height: 100svh; overflow: clip; }
+
+  /* ============ Painting (rides inside the header panel) ============ */
+  /* The watercolor fills its own 100vw header panel and leaves with it on the
+     flat slide. Only the ambient `drift` breathing animates it; no parallax.
+     The header panel is overflow:hidden so the drift-scaled image (scale
+     1.06–1.10) is clipped to its own box and can't bleed into the trial panel. */
+  .painting {
+    position: absolute; inset: 0; z-index: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    object-position: 34% 50%;
+    /* very slow ambient breathing so the still watercolor feels alive */
+    animation: drift 46s var(--ease-out) infinite alternate;
+    will-change: transform;
+  }
+  @keyframes drift {
+    from { transform: scale(1.06) translate3d(-1.2%, 0.6%, 0); }
+    to   { transform: scale(1.10) translate3d(1.2%, -0.9%, 0); }
+  }
+
+  /* ============ Track — the 200vw horizontal rail ============ */
+  .track {
+    position: absolute; top: 0; left: 0; z-index: 2;
+    width: 200vw; height: 100%;
+    display: flex;
+    transform: translateX(0);
+    /* symmetric: identical duration + curve for enter and exit */
+    transition: transform 0.9s var(--ease-out);
+    will-change: transform;
+  }
+  .world.is-trial .track { transform: translateX(-100vw); }
+
+  .panel {
+    width: 100vw; height: 100svh; flex: none;
+    position: relative;
+  }
+
+  /* ============ Panel 1 — the header stack (fork source, verbatim look) ============ */
+  /* Holds the watercolor + focal scrim + hero stack. overflow:hidden clips the
+     drift-scaled painting to this 100vw box so it can't bleed into the trial. */
+  .panel--header { display: grid; place-items: center;
+    text-align: center; overflow: hidden;
+    padding: clamp(1.6rem, 5vh, 3.4rem) clamp(1.4rem, 6vw, 4rem);
+  }
+
+  /* Focal scrim — a soft radial pool of shade under the centered mark so the
+     porcelain ink reads over the busy middle, feathering out to the painting.
+     Second layer just seats the very edges. Sits over the painting, below the
+     hero stack. */
+  .panel--header::after {
+    content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+    background:
+      radial-gradient(58vmax 46vmax at 50% 48%, rgba(18,12,7,0.44) 0%, rgba(18,12,7,0.22) 38%, rgba(18,12,7,0) 68%),
+      linear-gradient(180deg, rgba(18,12,7,0.16) 0%, rgba(18,12,7,0) 26%, rgba(18,12,7,0) 74%, rgba(18,12,7,0.20) 100%);
+  }
+
+  /* the hero stack rides above the painting + scrim */
+  .stack { position: relative; z-index: 2;
+    display: flex; flex-direction: column; align-items: center; }
+
+  /* --- the seeing-mark: a painted ink glyph, the focal emblem --- */
+  .mark {
+    font-family: var(--brush);
+    font-weight: 400; line-height: 1;
+    font-size: clamp(4.6rem, 13vw, 10.5rem);
+    color: var(--porcelain);
+    text-shadow: 0 2px 30px rgba(12,8,4,0.5);
+    opacity: 0;
+    animation: resolve 1.5s var(--ease-out) 0.3s forwards;
+  }
+
+  /* --- project title, right below the mark --- */
+  .codename {
+    margin: clamp(-0.2rem, -0.4vw, 0) 0 0;
+    font-family: var(--brush);
+    font-weight: 400; font-style: normal;
+    font-size: clamp(3.4rem, 10vw, 8rem);
+    line-height: 0.9; letter-spacing: 0.01em;
+    color: var(--porcelain);
+    text-shadow: 0 2px 26px rgba(12,8,4,0.5);
+    opacity: 0;
+    animation: resolve 1.45s var(--ease-out) 0.72s forwards;
+  }
+
+  /* --- supporting text, continuing the stack --- */
+  .subtitle {
+    margin: clamp(0.9rem, 2.4vh, 1.5rem) 0 0;
+    font-size: 0.72rem; font-weight: 600;
+    letter-spacing: 0.34em; text-transform: uppercase; color: var(--gold);
+    text-shadow: 0 1px 12px rgba(12,8,4,0.6);
+    opacity: 0;
+    animation: resolve-soft 1.3s var(--ease-out) 1.12s forwards;
+  }
+  .line {
+    margin: clamp(0.6rem, 1.6vh, 1rem) auto 0; max-width: 34ch;
+    font-style: italic; font-size: clamp(1.05rem, 2vw, 1.4rem); line-height: 1.5;
+    color: var(--porcelain);
+    text-shadow: 0 1px 18px rgba(12,8,4,0.65);
+    opacity: 0;
+    animation: resolve-soft 1.35s var(--ease-out) 1.32s forwards;
+  }
+  .more {
+    display: inline-flex; align-items: center; gap: 0.5em;
+    margin-top: clamp(1.2rem, 3vh, 2rem);
+    font-family: var(--serif);
+    font-size: 0.82rem; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--porcelain); text-decoration: none; position: relative;
+    text-shadow: 0 1px 14px rgba(12,8,4,0.65);
+    opacity: 0;
+    animation: resolve-soft 1.35s var(--ease-out) 1.52s forwards;
+  }
+  .more .arr { transition: transform 0.35s var(--ease-out); }
+  .more::after {
+    content: ''; position: absolute; left: 0; bottom: -4px;
+    width: 100%; height: 1px; background: var(--gold);
+    transform: scaleX(0); transform-origin: center; transition: transform 0.35s var(--ease-out);
+  }
+  /* keyboard focus reveal — always available */
+  .more:focus-visible::after { transform: scaleX(1); }
+  .more:focus-visible .arr { transform: translateX(4px); }
+  .more:focus-visible { outline: 2px solid var(--gold); outline-offset: 4px; border-radius: 2px; }
+  /* hover motion gated so it can't stick on touch */
+  @media (hover: hover) and (pointer: fine) {
+    .more:hover::after { transform: scaleX(1); }
+    .more:hover .arr { transform: translateX(4px); }
+  }
+
+  /* The xuan-seal blur-resolve, ported to an on-load reveal:
+     blur 18px→0 + fade + a small rise & settle. Softer variant for the meta. */
+  @keyframes resolve {
+    from { opacity: 0; filter: blur(18px); transform: translateY(3.2vh) scale(0.985); }
+    to   { opacity: 1; filter: blur(0);    transform: translateY(0)    scale(1); }
+  }
+  @keyframes resolve-soft {
+    from { opacity: 0; filter: blur(12px); transform: translateY(2.2vh); }
+    to   { opacity: 1; filter: blur(0);    transform: translateY(0); }
+  }
+
+  /* ============ Panel 2 — the trial (full-bleed porcelain dossier) ============ */
+  /* The scroll container AND the full-bleed paper surface: opaque porcelain with
+     paper-grain gradients over it. Background stays put while content scrolls;
+     nothing sits behind it, so no backdrop-filter is needed. */
+  .panel--trial {
+    overflow-y: auto; overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    color: var(--ink);
+    background:
+      /* faint paper grain — same idiom as the scroll's .artwork wash */
+      repeating-linear-gradient(0deg, rgba(120,100,60,0.045) 0 1px, transparent 1px 7px),
+      radial-gradient(ellipse at 18% 82%, rgba(140,115,70,0.08), transparent 55%),
+      radial-gradient(ellipse at 86% 14%, rgba(140,115,70,0.06), transparent 50%),
+      var(--porcelain);
+  }
+
+  /* Inner centering wrapper: min-height:100% + flex-center inside the scroll
+     container centers a short column but lets a tall one scroll from the top
+     without clipping. (place-items:center directly on the scroller would clip
+     the top of overflowing content.) */
+  .trial-center {
+    min-height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    padding: clamp(2rem, 7vh, 5rem) clamp(1.4rem, 6vw, 4rem);
+  }
+
+  /* The reading column: transparent (paper is on the panel), no card chrome. */
+  .dossier {
+    position: relative;
+    width: min(64ch, 100%);
+    padding-left: clamp(2.2rem, 5.5vw, 3.8rem);   /* room for the gold rule */
+    color: var(--ink);
+  }
+
+  /* the one bold structural element: a gold rule down the column's left edge */
+  .dossier::before {
+    content: ''; position: absolute; top: 0; bottom: 0;
+    left: clamp(0.4rem, 1.6vw, 1rem); width: 2px;
+    background: linear-gradient(180deg, rgba(156,123,46,0), var(--gold-ink) 12%, var(--gold-ink) 88%, rgba(156,123,46,0));
+  }
+
+  /* --- reveal: per-section transitions with staggered delays, gated on
+     .is-trial. Transitions (not keyframes-forwards) so an interrupted close
+     reverses cleanly instead of snapping. --- */
+  .dossier > * {
+    opacity: 0; filter: blur(10px); transform: translateY(1.6vh);
+    transition: opacity 0.7s var(--ease-out), filter 0.7s var(--ease-out), transform 0.7s var(--ease-out);
+  }
+  .world.is-trial .panel--trial .dossier > * {
+    opacity: 1; filter: blur(0); transform: translateY(0);
+  }
+  .world.is-trial .panel--trial .t-back    { transition-delay: 0.10s; }
+  .world.is-trial .panel--trial .t-head    { transition-delay: 0.15s; }
+  .world.is-trial .panel--trial .t-problem { transition-delay: 0.28s; }
+  .world.is-trial .panel--trial .t-approach{ transition-delay: 0.40s; }
+  .world.is-trial .panel--trial .t-results { transition-delay: 0.52s; }
+  .world.is-trial .panel--trial .t-meta    { transition-delay: 0.64s; }
+
+  /* --- Back button: styled like .more, dark on porcelain --- */
+  .back {
+    display: inline-flex; align-items: center; gap: 0.5em;
+    margin: 0 0 clamp(1rem, 2.6vh, 1.6rem);
+    font-family: var(--serif); font-size: 0.78rem;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--gold-ink); background: none; border: 0; padding: 0;
+    cursor: pointer; position: relative;
+  }
+  .back .arr { transition: transform 0.35s var(--ease-out); }
+  .back::after {
+    content: ''; position: absolute; left: 0; bottom: -4px;
+    width: 100%; height: 1px; background: var(--gold-ink);
+    transform: scaleX(0); transform-origin: left; transition: transform 0.35s var(--ease-out);
+  }
+  .back:focus-visible::after { transform: scaleX(1); }
+  .back:focus-visible .arr { transform: translateX(-4px); }
+  .back:focus-visible { outline: 2px solid var(--gold-ink); outline-offset: 4px; border-radius: 2px; }
+  @media (hover: hover) and (pointer: fine) {
+    .back:hover::after { transform: scaleX(1); }
+    .back:hover .arr { transform: translateX(-4px); }
+  }
+
+  /* --- colophon head: kicker + brush title + vermillion seal --- */
+  .t-head { display: flex; align-items: flex-start; gap: clamp(0.8rem, 2vw, 1.4rem); }
+  .t-head .heading { flex: 1 1 auto; }
+  .kicker {
+    margin: 0 0 0.2rem; font-size: 0.72rem; font-weight: 600;
+    letter-spacing: 0.28em; text-transform: uppercase; color: var(--gold-ink);
+  }
+  .kicker .k-mark { font-family: var(--brush); font-size: 1.4em; letter-spacing: 0; margin-right: 0.35em; color: var(--ink); }
+  .trial-title {
+    margin: 0; font-family: var(--brush); font-weight: 400;
+    font-size: clamp(3rem, 8vw, 5.2rem); line-height: 0.9; color: var(--ink);
+  }
+  /* the seal block, ported from the scroll's .seal — vermillion, one accent */
+  .seal {
+    flex: none; width: clamp(3rem, 7vw, 4.2rem); height: clamp(3rem, 7vw, 4.2rem);
+    background: var(--vermillion); border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,.28); margin-top: 0.3rem;
+  }
+  .seal .glyph {
+    font-family: 'Kaiti SC','STKaiti','KaiTi',var(--brush); writing-mode: vertical-rl;
+    color: #f4e8d2; font-size: clamp(1.4rem, 3.4vw, 2rem); letter-spacing: 0.12em;
+  }
+
+  .t-section { margin: clamp(1.2rem, 3vh, 1.8rem) 0 0; }
+  .t-section h2 {
+    margin: 0 0 0.35rem; font-family: var(--serif); font-weight: 600;
+    font-size: 0.74rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold-ink);
+  }
+  .t-section p {
+    margin: 0; font-size: clamp(1rem, 1.5vw, 1.08rem); line-height: 1.62; color: var(--ink);
+  }
+
+  /* --- footer meta: tech tags + repo link --- */
+  .t-meta {
+    margin: clamp(1.4rem, 3.4vh, 2rem) 0 0;
+    padding-top: clamp(1rem, 2.4vh, 1.4rem);
+    border-top: 1px solid rgba(156,123,46,0.3);
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem 1.2rem;
+    justify-content: space-between;
+  }
+  .tags { display: flex; flex-wrap: wrap; gap: 0.4rem 0.55rem;
+    font-size: 0.74rem; letter-spacing: 0.06em; color: #5a5142; }
+  .tags .sep { color: var(--gold-ink); }
+  .repo {
+    display: inline-flex; align-items: center; gap: 0.45em;
+    font-family: var(--serif); font-size: 0.78rem;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--gold-ink); text-decoration: none; position: relative;
+  }
+  .repo .arr { transition: transform 0.35s var(--ease-out); }
+  .repo::after {
+    content: ''; position: absolute; left: 0; bottom: -4px;
+    width: 100%; height: 1px; background: var(--gold-ink);
+    transform: scaleX(0); transform-origin: left; transition: transform 0.35s var(--ease-out);
+  }
+  .repo:focus-visible::after { transform: scaleX(1); }
+  .repo:focus-visible .arr { transform: translateX(4px); }
+  .repo:focus-visible { outline: 2px solid var(--gold-ink); outline-offset: 4px; border-radius: 2px; }
+  @media (hover: hover) and (pointer: fine) {
+    .repo:hover::after { transform: scaleX(1); }
+    .repo:hover .arr { transform: translateX(4px); }
+  }
+
+  @media (max-aspect-ratio: 1/1) {
+    .painting { object-position: 44% 42%; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .painting { animation: none; transform: scale(1.04); }
+    .mark, .codename, .subtitle, .line, .more {
+      animation: none; opacity: 1; filter: none; transform: none;
+    }
+    /* no slide, no hover nudges */
+    .track, .more .arr, .more::after,
+    .back .arr, .back::after, .repo .arr, .repo::after { transition: none !important; }
+    /* trial reveal: drop the movement + blur, but keep a brief opacity fade
+       (a gentle cross-in, not an instant jump-cut) */
+    .dossier > * {
+      transition: opacity 0.2s var(--ease-out) !important;
+      transform: none !important; filter: none !important;
+    }
+  }
+</style>
+</head>
+<body>
+  <main class="world">
+    <div class="track">
+      <!-- Panel 1: the section header (fork source) — watercolor rides inside -->
+      <section class="panel panel--header">
+        <picture>
+          <source media="(max-aspect-ratio: 1/1)" srcset="junkships-portrait.png" />
+          <img class="painting" src="junkships.png"
+               alt="Watercolor of red-sailed junk ships gliding past misty mountains and a pagoda village at sunset" />
+        </picture>
+        <div class="stack">
+          <span class="mark" aria-hidden="true">見</span>
+          <h1 class="codename">Heimdall</h1>
+          <p class="subtitle">Vision pipeline for edge inference</p>
+          <p class="line">A vessel learning to see the sea it sails.</p>
+          <a class="more" id="read-trial" href="#trial" aria-expanded="false" aria-controls="trial">Read the trial <span class="arr">&rarr;</span></a>
+        </div>
+      </section>
+
+      <!-- Panel 2: the trial — full-bleed porcelain dossier -->
+      <section class="panel panel--trial" id="trial">
+       <div class="trial-center">
+        <article class="dossier">
+          <button class="back t-back" type="button" aria-label="Back to Heimdall overview">
+            <span class="arr">&larr;</span> Back
+          </button>
+
+          <header class="t-head">
+            <div class="heading">
+              <p class="kicker"><span class="k-mark" aria-hidden="true">見</span>Heimdall</p>
+              <h2 class="trial-title">The Trial</h2>
+            </div>
+            <div class="seal" aria-hidden="true"><span class="glyph">見試</span></div>
+          </header>
+
+          <div class="t-section t-problem">
+            <h2>Problem</h2>
+            <p>The camera lived on the boat, not in the cloud. A hull-mounted sensor
+            had to name what it saw — buoys, other vessels, the line where haze
+            meets water — from a single-board computer with no network, a strict
+            thermal ceiling, and a battery that resented every wasted watt.
+            Off-the-shelf runtimes leaned on a GPU the vessel would never carry.</p>
+          </div>
+
+          <div class="t-section t-approach">
+            <h2>Approach</h2>
+            <p>I built the inference path in Rust, compiling the model to an ONNX
+            graph and driving it through ONNX Runtime with a hand-tuned execution
+            provider. Frames arrive straight from the kernel over v4l2, skip the
+            usual copy through userspace, and feed a quantised network small enough
+            to hold in cache. A parallel WebAssembly build lets the same pipeline
+            run in a browser for field debugging on a phone at the dock.</p>
+          </div>
+
+          <div class="t-section t-results">
+            <h2>Results</h2>
+            <p>Steady detection at the sensor's native framerate on a passively
+            cooled board, well under the thermal budget, with headroom to spare for
+            the navigation stack sharing the chip. The WebAssembly twin reproduces
+            the edge output bit-for-bit, so a bug seen at sea can be reproduced on a
+            laptop without the boat. The vessel now sees the sea it sails.</p>
+          </div>
+
+          <footer class="t-meta">
+            <p class="tags">
+              Rust <span class="sep">·</span> ONNX Runtime <span class="sep">·</span>
+              WebAssembly <span class="sep">·</span> v4l2
+            </p>
+            <a class="repo" href="#" target="_blank" rel="noopener">Repository <span class="arr">&rarr;</span></a>
+          </footer>
+        </article>
+       </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+  (function () {
+    var world  = document.querySelector('.world');
+    var link   = document.getElementById('read-trial');
+    var header = document.querySelector('.panel--header');
+    var trial  = document.querySelector('.panel--trial');
+    var back   = document.querySelector('.back');
+
+    /* Initial state: the trial panel is off-screen and non-interactive. */
+    trial.inert = true;
+
+    /* Single boolean guards against *redundant same-direction* calls only.
+       It must NOT block an opposite-direction re-trigger — toggling .is-trial
+       again mid-slide is exactly how the CSS transition reverses from the
+       current computed transform, which is the whole interruptibility contract.
+       So openTrial no-ops only if already open; closeTrial only if already
+       closed. No timers, no transitionend teardown, no debounce lock. */
+    var open = false;
+
+    function openTrial() {
+      if (open) return;
+      open = true;
+      world.classList.add('is-trial');
+      link.setAttribute('aria-expanded', 'true');
+      header.inert = true;      /* dimmed header leaves tab order + a11y tree */
+      trial.inert  = false;
+      /* preventScroll is critical: the trial panel sits 100vw right in the
+         track's layout, so a plain focus() makes the browser scroll .world to
+         bring it into view (world.scrollLeft jumps ~1247). On interrupt that
+         scroll is left at a residual and never unwinds, shifting the header and
+         growing an empty gap on the right. preventScroll keeps scrollLeft at 0. */
+      back.focus({ preventScroll: true });
+    }
+
+    /* refocus === false (Esc): do NOT return focus to the trigger. A real Esc
+       keypress flips the focus-visible heuristic to keyboard, so refocusing
+       would leave a stuck gold ring on the trigger (same lesson as
+       heimdall-scrolls.html). Click / Enter / ArrowLeft close still refocus. */
+    function closeTrial(refocus) {
+      if (!open) return;
+      open = false;
+      world.classList.remove('is-trial');
+      link.setAttribute('aria-expanded', 'false');
+      trial.inert  = true;
+      header.inert = false;
+      if (refocus === false) {
+        /* drop focus from anything inside the trial panel before it goes inert,
+           so no stuck ring lingers on the roll-out */
+        if (trial.contains(document.activeElement) && document.activeElement.blur) {
+          document.activeElement.blur();
+        }
+      } else {
+        link.focus({ preventScroll: true });
+      }
+    }
+
+    link.addEventListener('click', function (e) { e.preventDefault(); openTrial(); });
+    back.addEventListener('click', function () { closeTrial(true); });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape')    { closeTrial(false); }
+      else if (e.key === 'ArrowLeft' && open) { closeTrial(true); }
+    });
+  })();
+  </script>
+</body>
+</html>
