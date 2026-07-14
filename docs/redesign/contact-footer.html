@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Contact &amp; footer — closing section</title>
+<style>
+  :root {
+    /* design-system tokens (shared with the redesign set). Text here is
+       porcelain over the dark sumi-e image, so no brush face is needed —
+       the serif body font carries the whole section. */
+    --porcelain:      #F5F1E7;
+    --porcelain-soft: rgba(245, 241, 231, 0.80);
+    --gold:           #E6C77E;
+    --vermillion:     #B33A2B;
+    --ease-out:       cubic-bezier(0.22, 1, 0.36, 1);
+    --serif:  'Iowan Old Style', Georgia, 'Times New Roman', 'Songti SC', serif;
+    --bg: #f5f1e8;   /* Xuan page bg, visible in the margin around the section */
+  }
+  /* Theme toggle swaps the PAGE background so the area around the image band
+     visibly changes. The band itself is image-based and does NOT re-tone with
+     the theme — that's expected (the sumi-e panorama is fixed art). */
+  html[data-theme="lacquer"] { --bg: #141210; }
+
+  * { box-sizing: border-box; }
+
+  /* Hidden native scrollbars, matching the sibling prototypes — cosmetic. */
+  * { scrollbar-width: none; -ms-overflow-style: none; }
+  *::-webkit-scrollbar { width: 0; height: 0; display: none; }
+
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--porcelain);
+    font-family: var(--serif);
+    -webkit-font-smoothing: antialiased;
+    /* transition the page tone on theme flip so the margin swap is a soft fade */
+    transition: background 0.5s ease;
+  }
+
+  /* ============ The closing section ============ */
+  /* NO overflow on .close — the drift-clip lives on .scene only. Putting
+     overflow:hidden here would crop the gold :focus-visible rings on the
+     links + toggle that sit at z1. Two grid rows: invite (1fr, centred) and
+     meta (auto, seated at the bottom). */
+  .close {
+    position: relative;
+    min-height: 88svh;
+    display: grid;
+    grid-template-rows: 1fr auto;
+    color: var(--porcelain);
+    font-family: var(--serif);
+  }
+
+  /* ============ Scene — the full-bleed backdrop ============ */
+  /* z0 image layer. overflow:hidden ONLY here so the drift-scaled art
+     (scale 1.06–1.10) is clipped to the section box and never bleeds past
+     it. The scrim rides inside .scene above the image; the invite + meta at
+     z1 sit above the scrim by z-index alone (scrim has no z of its own). */
+  .scene { position: absolute; inset: 0; z-index: 0; overflow: hidden; }
+
+  .art {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    /* Tuned for a desktop (~1280–1440-wide) viewport where cover crops the
+       image's wide sides: 40% pulls the frame left just enough to keep the
+       robed figure (lower-left) while still holding the red sun (upper-right).
+       Verified in-browser at 1440×820 — both stay in frame. */
+    object-position: 40% 50%;
+    /* very slow ambient breathing so the still ink panorama feels alive */
+    animation: drift 46s var(--ease-out) infinite alternate;
+    will-change: transform;
+  }
+  @keyframes drift {
+    from { transform: scale(1.06) translate3d(-1.2%, 0.6%, 0); }
+    to   { transform: scale(1.10) translate3d(1.2%, -0.9%, 0); }
+  }
+
+  /* ============ Scrim ============ */
+  /* The asset is mostly BRIGHT aged parchment (unlike the trial's darker
+     watercolor), so the trial's 0.44 focal scrim is far too weak for porcelain
+     text to clear WCAG AA. Two tuned layers:
+       1. a plateaued radial pool centred under the invite block — held at a
+          high floor across its core (0..52%) so the text sits on an even dark
+          field rather than a hot centre, feathering out to the art;
+       2. a bottom seating gradient so the meta row (colophon + toggle) reads
+          against the lower parchment.
+     Kept to the MINIMUM darkness where #F5F1E7 body/link text clears AA over
+     the composited image, and positioned (42% up) so the red sun does not sit
+     directly behind the heading. */
+  .scrim {
+    position: absolute; inset: 0; pointer-events: none;
+    background:
+      radial-gradient(70% 62% at 50% 42%,
+        rgba(12,8,4,0.78) 0 52%,
+        rgba(12,8,4,0.60) 72%,
+        rgba(12,8,4,0)   100%),
+      linear-gradient(180deg,
+        rgba(12,8,4,0)    55%,
+        rgba(12,8,4,0.74) 100%);
+  }
+
+  /* ============ Invite — the "teacher's voice" contact block ============ */
+  .invite {
+    position: relative; z-index: 1;
+    align-self: center;
+    text-align: center;
+    padding: clamp(2rem, 6vh, 4rem) clamp(1.4rem, 6vw, 4rem);
+    max-width: 46rem;
+    margin-inline: auto;
+  }
+
+  .close-heading {
+    font-size: clamp(1.6rem, 3.4vw, 2.6rem);
+    line-height: 1.28; font-weight: 500;
+    margin: 0;
+    text-shadow: 0 1px 20px rgba(12,8,4,0.5);
+  }
+  .close-line {
+    font-style: italic;
+    font-size: clamp(1.05rem, 2vw, 1.35rem);
+    margin: clamp(0.8rem, 2vh, 1.2rem) 0 0;
+    color: var(--porcelain);
+    text-shadow: 0 1px 16px rgba(12,8,4,0.55);
+  }
+
+  /* --- primary CTA: ported from the trial's .more (inline-flex, tracked
+     caps, gold underline via ::after scaleX, arrow nudge), sized a touch
+     larger and set in the serif rather than all-caps micro-label. --- */
+  .cta {
+    display: inline-flex; align-items: center; gap: 0.5em;
+    margin-top: clamp(1.4rem, 3vh, 2rem);
+    font-family: var(--serif);
+    font-size: clamp(1rem, 1.6vw, 1.15rem);
+    letter-spacing: 0.06em;
+    color: var(--porcelain); text-decoration: none; position: relative;
+    text-shadow: 0 1px 14px rgba(12,8,4,0.6);
+  }
+  .cta .arr { transition: transform 0.35s var(--ease-out); }
+  .cta::after {
+    content: ''; position: absolute; left: 0; bottom: -4px;
+    width: 100%; height: 1px; background: var(--gold);
+    transform: scaleX(0); transform-origin: center;
+    transition: transform 0.35s var(--ease-out);
+  }
+  .cta:focus-visible::after { transform: scaleX(1); }
+  .cta:focus-visible .arr { transform: translateX(4px); }
+
+  /* --- secondary meta-links row: small porcelain links, gold underline on
+     hover, gold separators. --- */
+  .links {
+    margin-top: clamp(0.9rem, 2vh, 1.2rem);
+    font-size: 0.92rem; letter-spacing: 0.02em;
+    color: var(--porcelain-soft);
+    text-shadow: 0 1px 12px rgba(12,8,4,0.55);
+  }
+  .links a {
+    color: var(--porcelain); text-decoration: none; position: relative;
+  }
+  .links a::after {
+    content: ''; position: absolute; left: 0; bottom: -3px;
+    width: 100%; height: 1px; background: var(--gold);
+    transform: scaleX(0); transform-origin: center;
+    transition: transform 0.3s var(--ease-out);
+  }
+  .links a:focus-visible::after { transform: scaleX(1); }
+  .links .sep { color: var(--gold); margin: 0 0.5em; }
+
+  /* --- shared keyboard focus ring: GOLD (clearly visible on the dark scrim;
+     vermillion would be low-contrast against the reddish sun region). --- */
+  .cta:focus-visible,
+  .links a:focus-visible,
+  .theme-toggle:focus-visible {
+    outline: 2px solid var(--gold); outline-offset: 4px; border-radius: 2px;
+  }
+
+  /* hover motion gated so it can't stick on touch */
+  @media (hover: hover) and (pointer: fine) {
+    .cta:hover::after { transform: scaleX(1); }
+    .cta:hover .arr { transform: translateX(4px); }
+    .links a:hover::after { transform: scaleX(1); }
+    .theme-toggle:hover { color: var(--porcelain); }
+    .theme-toggle:hover .tt-glyph { color: var(--gold); }
+  }
+
+  /* ============ Meta — colophon + theme toggle, seated at the bottom ======= */
+  .meta {
+    position: relative; z-index: 1;
+    align-self: end;
+    display: flex; flex-wrap: wrap;
+    gap: 0.6rem 1.2rem;
+    align-items: center; justify-content: space-between;
+    padding: clamp(1rem, 2.4vh, 1.4rem) clamp(1.4rem, 6vw, 4rem);
+    padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
+    font-size: 0.78rem;
+  }
+  .colophon {
+    margin: 0; color: var(--porcelain-soft);
+    letter-spacing: 0.04em;
+    text-shadow: 0 1px 10px rgba(12,8,4,0.55);
+  }
+  .colophon .sep { color: var(--gold); margin: 0 0.4em; }
+
+  .theme-toggle {
+    display: inline-flex; align-items: center; gap: 0.5em;
+    background: none; border: 0; padding: 0.2em 0.1em; margin: 0;
+    cursor: pointer;
+    font-family: var(--serif); font-size: 0.78rem;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--porcelain-soft);
+    text-shadow: 0 1px 10px rgba(12,8,4,0.55);
+    transition: color 0.3s var(--ease-out);
+  }
+  .theme-toggle .tt-glyph {
+    font-size: 1.05em; color: var(--gold);
+    transition: color 0.3s var(--ease-out);
+  }
+
+  /* ============ Reveal ============ */
+  /* Hidden state applies ONLY after JS arms it (adds .armed), so a no-JS
+     visitor keeps the invite fully visible. Once armed, each direct child of
+     .invite is blur-faded + nudged up, and .is-in (set by the observer) settles
+     them with a per-child stagger — same idiom as the trial's dossier reveal
+     but driven by a class the JS toggles rather than the slide state. */
+  .close.armed .invite > * {
+    opacity: 0; filter: blur(10px); transform: translateY(1.6vh);
+    transition: opacity 0.7s var(--ease-out), filter 0.7s var(--ease-out), transform 0.7s var(--ease-out);
+  }
+  .close.armed .invite.is-in > * {
+    opacity: 1; filter: blur(0); transform: translateY(0);
+  }
+  .close.armed .invite.is-in > .close-heading { transition-delay: 0.05s; }
+  .close.armed .invite.is-in > .close-line    { transition-delay: 0.18s; }
+  .close.armed .invite.is-in > .cta           { transition-delay: 0.32s; }
+  .close.armed .invite.is-in > .links         { transition-delay: 0.46s; }
+
+  /* ============ Responsive ============ */
+  /* Portrait / narrow: cover now crops the TOP+BOTTOM instead of the sides, so
+     shift the frame right to keep the red sun + hilltop pavilion in view; this
+     accepts losing the lone figure on the far left (documented tradeoff). */
+  @media (max-aspect-ratio: 3/4) {
+    .art { object-position: 78% 50%; }
+  }
+
+  /* ============ Reduced motion ============ */
+  @media (prefers-reduced-motion: reduce) {
+    .art { animation: none; transform: scale(1.04); }
+    /* content is simply present — no blur-fade, no crossfade at all */
+    .close.armed .invite > *,
+    .close.armed .invite.is-in > * {
+      opacity: 1 !important; filter: none !important;
+      transform: none !important; transition: none !important;
+    }
+    /* kill the link arrow + underline tweens */
+    .cta .arr, .cta::after,
+    .links a::after,
+    .theme-toggle, .theme-toggle .tt-glyph { transition: none !important; }
+    body { transition: none; }
+  }
+</style>
+</head>
+<body>
+  <section class="close" aria-label="Contact">
+    <div class="scene" aria-hidden="true">
+      <img class="art" src="footer-image.jpeg" alt="" />
+      <div class="scrim"></div>
+    </div>
+
+    <div class="invite">
+      <h2 class="close-heading" id="close-heading">If you have a thoughtful thing to put into the world, so do I.</h2>
+      <p class="close-line">Tell me what you're making. I'll help you make it real.</p>
+      <a class="cta" href="mailto:tanel.treuberg@gmail.com">tanel.treuberg@gmail.com <span class="arr">&rarr;</span></a>
+      <p class="links">
+        <a href="https://github.com/The-Magicians-Code/">GitHub</a>
+        <span class="sep">&middot;</span>
+        <a href="https://www.linkedin.com/in/taneltreuberg/">LinkedIn</a>
+        <span class="sep">&middot;</span>
+        <a href="/Tanel_Treuberg_Software_Engineer.pdf" target="_blank" rel="noopener">R&eacute;sum&eacute;</a>
+      </p>
+    </div>
+
+    <footer class="meta">
+      <p class="colophon">&copy; 2026 Tanel Treuberg <span class="sep">&middot;</span> Last updated July 2026</p>
+      <button class="theme-toggle" type="button" aria-pressed="false" aria-label="Dark (Lacquer) theme">
+        <span class="tt-glyph" aria-hidden="true">&#9790;</span> <span class="tt-label">Xuan / Lacquer</span>
+      </button>
+    </footer>
+  </section>
+
+  <script>
+  (function () {
+    var close  = document.querySelector('.close');
+    var invite = document.querySelector('.invite');
+
+    /* ---- Reveal: arm the hidden state only now that JS runs (no-JS keeps
+       the invite visible), then observe. reveal() is idempotent. ---- */
+    close.classList.add('armed');
+
+    var revealed = false;
+    function reveal() {
+      if (revealed) return;
+      revealed = true;
+      invite.classList.add('is-in');
+    }
+
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries, obs) {
+        for (var i = 0; i < entries.length; i++) {
+          if (entries[i].isIntersecting) { reveal(); obs.unobserve(invite); break; }
+        }
+      }, { threshold: 0.01, rootMargin: '0px 0px -10% 0px' });
+      io.observe(invite);
+
+      /* Manual check for the common case where the section is already in view
+         on load (the observer's first async callback can lag a frame). */
+      var r = invite.getBoundingClientRect();
+      if (r.top < innerHeight * 0.9 && r.bottom > innerHeight * 0.1) reveal();
+    } else {
+      reveal();   /* no IO support → just show it */
+    }
+
+    /* bfcache restore: re-assert the revealed state on pageshow */
+    window.addEventListener('pageshow', function () {
+      var r = invite.getBoundingClientRect();
+      if (r.top < innerHeight * 0.9 && r.bottom > innerHeight * 0.1) reveal();
+    });
+
+    /* Failsafe: content can never stay stuck hidden. */
+    setTimeout(reveal, 1500);
+
+    /* ---- Theme toggle: flip <html data-theme> between Xuan (none) and
+       Lacquer (dark). Only the PAGE margin re-tones; the image band is fixed
+       art. The visible label stays constant ("Xuan / Lacquer"); we do not
+       rewrite the accessible name per click, only aria-pressed. No persistence
+       in the prototype. ---- */
+    var toggle = document.querySelector('.theme-toggle');
+    toggle.addEventListener('click', function () {
+      var dark = document.documentElement.getAttribute('data-theme') === 'lacquer';
+      if (dark) {
+        document.documentElement.removeAttribute('data-theme');
+        toggle.setAttribute('aria-pressed', 'false');
+      } else {
+        document.documentElement.setAttribute('data-theme', 'lacquer');
+        toggle.setAttribute('aria-pressed', 'true');
+      }
+    });
+  })();
+  </script>
+</body>
+</html>

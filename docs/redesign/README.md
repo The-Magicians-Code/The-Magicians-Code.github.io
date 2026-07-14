@@ -18,8 +18,7 @@ reference for that implementation. Nothing in `docs/` is built into `dist/`.
 | Project 1 — Heimdall | [heimdall-trial.html](heimdall-trial.html) | **Settled** (2026-07-14) |
 | Projects 2–3 layout | — | open (trial-slide is the settled pattern; not yet templated) |
 | Stack section | — | open |
-| Contact | — | open (teacher's voice per spec §8) |
-| Footer + seal | — | open |
+| Contact + Footer (page close) | [contact-footer.html](contact-footer.html) | **Settled** (2026-07-14) |
 
 The earlier "ink-drawn SVG scenes" idea for the projects section is superseded
 by the trial-slide treatment settled in `heimdall-trial.html`.
@@ -110,8 +109,48 @@ handscroll variants — `heimdall-scrolls.html`, the v8 rollers, `heimdall.html`
 - Sumi-e branch (top-right, draw-in) — designed in the brainstorm, present in
   `docs/ideas/sakura-hero-mockup.html`, not yet merged into this part.
   Decide: branch + centered name, or petals-only liubai (current file).
-- Seal placement (spec §3 says hero bottom-right + footer).
+- Seal placement — **now a live open question**: the footer seal was dropped in
+  the page-close part (see below), so the seal currently appears nowhere. Decide
+  deliberately whether the hero still gets one (spec §3 had hero + footer).
 - Thesis line final wording.
 - Font vendoring: Nanum Brush latin subset → `public/fonts/`, and whether the
   hanzi numerals can share a face.
 - Mobile composition + real-device Safari/iOS pass (Netlify preview).
+
+## Contact + Footer (page close) — decisions locked in
+
+`contact-footer.html` closes the page as an expressive bookend to the hero.
+Full spec: [2026-07-14-contact-footer-close-design.md](../superpowers/specs/2026-07-14-contact-footer-close-design.md).
+
+- **Cinematic "contact over the image."** `footer-image.jpeg` (a sumi-e ink
+  panorama — lone figure, red sun, bridge) is a **full-bleed `cover` backdrop**
+  (`min-height: 88svh`) for the whole close; the invitation + channels overlay it
+  over a **tuned scrim** (stronger than the trial's — the asset is mostly bright
+  parchment; verified porcelain text clears WCAG AA, ~11:1, by sampling composited
+  pixels). Ambient `drift` on the image; clip lives on the image layer only.
+- **Teacher's voice copy:** heading *"If you have a thoughtful thing to put into
+  the world, so do I."* (kept per §8), line *"Tell me what you're making. I'll
+  help you make it real."*
+- **Channels:** email `mailto:` CTA + GitHub / LinkedIn (same-tab) / Résumé
+  (`/Tanel_Treuberg_Software_Engineer.pdf`, new tab).
+- **Footer meta:** `© 2026 Tanel Treuberg · Last updated July 2026` (a build
+  constant at assembly, never `Date.now()`) + the **Xuan/Lacquer theme toggle**
+  (`aria-pressed`, constant label; re-tones the page `--bg` margin — the image
+  band itself is fixed art).
+- **No petals, NO seal.** The image's red sun carries the vermillion accent; the
+  seal was dropped here (divergence from spec §3 — hero-seal is now the open
+  question above).
+- **Reveal:** page-bottom-safe IntersectionObserver — hidden state applied only
+  after JS inits (no-JS ⇒ visible), immediate in-view + `pageshow` checks + a
+  1.5s failsafe. Reduced-motion renders everything instantly (no drift, no fade).
+
+## Still open for the page close
+
+- **Portrait/mobile crop:** at 2.58:1 the figure + sun can't both stay framed on
+  a phone; portrait keeps the sun + pavilion (`object-position: 78% 50%` below
+  `max-aspect-ratio: 3/4`), losing the figure. A recomposed portrait asset (like
+  the trial's `junkships-portrait.png`) is deferred.
+- **`footer-image.jpeg` provenance/licensing** — an AI-style ink-wash asset;
+  confirm rights before it ships.
+- Theme toggle → real site-wide theming, and "last updated" → build constant, at
+  the Astro assembly pass.
