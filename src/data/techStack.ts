@@ -8,7 +8,7 @@
 // src/data/resume.ts (`skills`) — text-only, ATS-curated, no logos. The two
 // overlap but diverge on purpose (this grid is brand-mark-driven; the resume
 // includes logo-less items like TypeScript/NumPy/macOS). Shared items (Python,
-// Docker, Jenkins, GitLab CI/CD, Flask, PostgreSQL, Git, …) are synced by hand.
+// Docker, Jenkins, Flask, PostgreSQL, Git, …) are synced by hand.
 
 export interface TechItem {
   name: string;
@@ -40,9 +40,7 @@ export const techGroups: TechGroup[] = [
       { name: 'PyTorch', slug: 'pytorch', featured: true },
       { name: 'TensorFlow', slug: 'tensorflow' },
       { name: 'TensorRT', slug: 'nvidia' },
-      { name: 'ONNX', slug: 'onnx' },
       { name: 'OpenCV', slug: 'opencv' },
-      { name: 'GStreamer', slug: 'gstreamer' },
       { name: 'Nvidia Jetson', slug: 'nvidia' },
     ],
   },
@@ -62,10 +60,6 @@ export const techGroups: TechGroup[] = [
     items: [
       { name: 'Docker', slug: 'docker', featured: true },
       { name: 'Jenkins', slug: 'jenkins' },
-      { name: 'GitLab CI/CD', slug: 'gitlab' },
-      { name: 'Kubernetes', slug: 'kubernetes' },
-      { name: 'Grafana', slug: 'grafana' },
-      { name: 'ELK', slug: 'elasticsearch' },
       { name: 'AWS S3', slug: 'aws-amazon-simple-storage-service' },
     ],
   },
@@ -74,8 +68,6 @@ export const techGroups: TechGroup[] = [
     items: [
       { name: 'Git', slug: 'git', featured: true },
       { name: 'Postman', slug: 'postman' },
-      { name: 'Selenium', slug: 'selenium' },
-      { name: 'Scrapy', slug: 'scrapy' },
     ],
   },
 ];
