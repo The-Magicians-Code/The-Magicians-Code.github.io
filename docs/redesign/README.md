@@ -17,7 +17,7 @@ reference for that implementation. Nothing in `docs/` is built into `dist/`.
 | Hero | [hero.html](hero.html) | **Settled** (2026-07-10) |
 | Project 1 — Heimdall | [heimdall-trial.html](heimdall-trial.html) | **Settled** (2026-07-14) |
 | Projects 2–3 layout | — | open (trial-slide is the settled pattern; not yet templated) |
-| Stack section | — | open |
+| Stack section | [stack.html](stack.html) | **Settled** (2026-07-16) |
 | Contact + Footer (page close) | [contact-footer.html](contact-footer.html) | **Settled** (2026-07-14) |
 
 The earlier "ink-drawn SVG scenes" idea for the projects section is superseded
@@ -154,3 +154,25 @@ Full spec: [2026-07-14-contact-footer-close-design.md](../superpowers/specs/2026
   confirm rights before it ships.
 - Theme toggle → real site-wide theming, and "last updated" → build constant, at
   the Astro assembly pass.
+
+## Stack section — decisions locked in
+
+`stack.html` is the page's **quiet breather** — a spec-faithful retheme of the
+tech-stack section, not a functional redesign. Full spec:
+[2026-07-16-stack-section-design.md](../superpowers/specs/2026-07-16-stack-section-design.md).
+
+- **On paper** (Xuan/Lacquer via the hero token set), NOT an image-backed
+  porcelain section. A pale **三** hanzi ornament over the serif heading
+  *"Tools I actually reach for."* (the `actually` em in `--accent`).
+- **Grouped-pill layout kept**, letter-spaced serif category labels, **real
+  inline brand SVGs** (9 pills carry a light/dark knockout swap so mono marks
+  recolor with the theme), featured pills ringed in `--accent-soft`.
+- **Content curated to 19 tools** (from 27): dropped GStreamer, ONNX, GitLab
+  CI/CD, Kubernetes, Grafana, ELK, Selenium, Scrapy. The live `src/data/techStack.ts`
+  was **synced to match** (2026-07-16). Groups now 6/5/2/1/3/2; all 6 featured kept.
+- One page-safe scroll reveal (no-JS visible + failsafe), reduced-motion instant,
+  prototype-only Xuan⇄Lacquer preview toggle.
+
+Open for assembly: vendor the Source Han Serif SC 三 subset; drop the preview
+toggle for the footer-owned theming; resolve the redesign body serif
+(Iowan-stack prototypes vs Fraunces live).
