@@ -43,22 +43,14 @@ const LOGOS = {
   pytorch: { light: 'default' },
   tensorflow: { light: 'default' },
   nvidia: { light: 'light', dark: 'dark' }, // wordmark inverts per background; TensorRT + Jetson
-  onnx: { light: 'default' },
   opencv: { light: 'default' },
-  gstreamer: { light: 'default' },
   flask: { light: 'light', dark: 'dark' }, // default is white
   postgresql: { light: 'default', dark: 'mono' }, // black elephant → white knockout on dark
   docker: { light: 'default' },
   jenkins: { light: 'default' },
-  gitlab: { light: 'default' },
-  kubernetes: { light: 'default' },
-  grafana: { light: 'default' },
-  elasticsearch: { light: 'default', dark: 'mono' }, // dark teal → white knockout on dark
   'aws-amazon-simple-storage-service': { light: 'default' },
   git: { light: 'default' },
   postman: { light: 'default' },
-  selenium: { light: 'default' },
-  scrapy: { light: 'default' },
   sqlite: { light: 'default', dark: 'mono' }, // SQL — navy mark → white knockout on dark
   openapi: { light: 'default', dark: 'mono' }, // REST APIs — has dark-grey parts
 };
