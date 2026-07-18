@@ -1,0 +1,24 @@
+---
+// Scroll-lit manifesto: the paragraph is split into word spans at build time;
+// studio.ts lights them up progressively as the section crosses the viewport.
+// Words wrapped in *asterisks* get the italic amber accent.
+const manifesto =
+  'Most software ships. Ours *performs*. Strategy is the setup, design is the gesture, ' +
+  'engineering is the method behind the trick — rehearsed until the seams disappear ' +
+  'and all that is left is the *magic*.';
+
+const words = manifesto.split(' ').map((raw) => {
+  const accent = raw.startsWith('*');
+  const text = raw.replace(/\*/g, '');
+  return { text, accent };
+});
+---
+
+<section class="s-section s-wrap s-manifesto">
+  <div class="s-manifesto-glow" data-parallax="0.1" aria-hidden="true"></div>
+  <p class="s-manifesto-text" data-words>
+    {words.map((word) => (
+      <><span class={word.accent ? 'w w-acc' : 'w'}>{word.text}</span>{' '}</>
+    ))}
+  </p>
+</section>

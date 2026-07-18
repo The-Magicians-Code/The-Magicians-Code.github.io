@@ -1,0 +1,37 @@
+---
+// Cinematic opener: parallax aurora (generated asset) behind a parallax ghost
+// wordmark behind staggered display type. Line indices feed the entrance
+// stagger via --line; --py is written per-frame by studio.ts.
+import aurora from '../../assets/studio/aurora.svg';
+---
+
+<section class="s-hero" id="top">
+  <div class="s-hero-aurora" data-parallax="-0.18" aria-hidden="true">
+    <img src={aurora.src} alt="" width={aurora.width} height={aurora.height} loading="eager" decoding="async" />
+  </div>
+  <div class="s-hero-ghost" data-parallax="0.12" aria-hidden="true">ARCANA</div>
+
+  <div class="s-hero-inner">
+    <p class="s-eyebrow s-hero-eyebrow">Independent studio — est. MMXXIV</p>
+    <h1>
+      <span class="s-hero-line" style="--line: 0"><span>We build the</span></span>
+      <span class="s-hero-line" style="--line: 1"><span><em>improbable</em>,</span></span>
+      <span class="s-hero-line" style="--line: 2"><span>carefully.</span></span>
+    </h1>
+    <p class="s-hero-sub">
+      Arcana is a design, product &amp; engineering studio. We partner with founders and teams
+      to conjure brands, interfaces and systems that feel inevitable — rehearsed until the
+      seams disappear.
+    </p>
+    <div class="s-hero-meta">
+      <p class="s-label">Tallinn, EE</p>
+      <p class="s-label">Strategy → Design → Build</p>
+      <p class="s-label">Booking Q4 MMXXVI</p>
+    </div>
+  </div>
+
+  <div class="s-scroll-cue" aria-hidden="true">
+    <p class="s-label">Scroll</p>
+    <div class="s-scroll-line"></div>
+  </div>
+</section>
