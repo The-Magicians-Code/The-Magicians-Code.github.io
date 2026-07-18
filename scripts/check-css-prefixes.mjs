@@ -13,7 +13,7 @@
 //
 // It covers BOTH forms:
 //   • CSS declarations in .css / .astro <style>:   backdrop-filter: …;
-//   • runtime JS in .ts (e.g. liquid-glass.ts):     style.setProperty('backdrop-filter', …)
+//   • runtime JS in .ts:                          style.setProperty('backdrop-filter', …)
 //
 // Scoping is by brace nesting (the enclosing {…} block), not a line window, so
 // two unpaired declarations in *different* adjacent rules can't mask each other.
