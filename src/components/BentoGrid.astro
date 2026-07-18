@@ -2,6 +2,12 @@
 // BentoGrid — layout shell for BentoCards. Owns the asymmetric grid CSS,
 // the single shared backdrop, the lifecycle visual rules, and the script
 // import. See docs/superpowers/specs/2026-05-17-bento-projects-section-design.md.
+//
+// The cover-as-hero shrink-to-header treatment (shared with /projects/[slug])
+// lives in a global stylesheet — the modal hero nodes are built in JS, so they
+// can't take Astro-scoped hashes. See
+// docs/superpowers/specs/2026-07-07-cover-hero-shrink-to-header-design.md.
+import '../styles/cs-cover-hero.css';
 ---
 
 <section class="bento-section">
@@ -1050,29 +1056,20 @@
       rgba(0, 0, 0, 0.60) 100%
     );
   }
-  /* Cover fades into the paper surface as the box morphs; fades back in on
-     collapse. The overlay just fades. (Previously also animated filter:blur
-     for a "frosted melt", but animating blur on this oversized full-width
-     image forced WebKit to re-rasterize it every frame — a likely source of
-     the scattered open-time hitches. Opacity-only fade is composited/cheap.) */
+  /* No fade-to-white on open. The resting cover stays OPAQUE through the morph
+     and grows with the box (top/left/width/height), so the cover image
+     transforms continuously into the full-screen hero rather than cross-fading
+     through paper. The cloned .cs-hero (same image, matched crop — see
+     cs-cover-hero.css) reveals invisibly over it at settle and owns the scroll
+     collapse; on close the hero fades out to reveal this same cover, which then
+     shrinks back with the box. The transitions below are kept for the idle
+     resting state only — no lifecycle opacity rule drives them now. */
   :global(.bento-card.has-cover .cover-img) {
     transition: opacity 456ms var(--fade-ease);
   }
   :global(.bento-card.has-cover .cover-overlay) {
     transition: opacity 456ms var(--fade-ease);
   }
-  :global(.bento-card.has-cover.is-expanding .cover-img) {
-    opacity: 0;
-  }
-  :global(.bento-card.has-cover.is-expanding .cover-overlay) {
-    opacity: 0;
-  }
-  /* No is-collapsing return rule: the cover stays hidden through the whole
-     collapse (box shrinks as a plain white card while the content fades out).
-     Once the box lands, doCleanup strips the lifecycle classes and the cover
-     reverts to its resting state — fading back in via the base 456ms
-     transition above. That's the "fade to white box, then image back in"
-     two-beat. */
 
   /* ── ① Resting title overlay (white, centered). Blurs out on open
      (340ms); blurs back in via this base 420ms transition when the
@@ -1118,16 +1115,46 @@
   :global(.bento-card.has-cover .card-body) {
     text-align: center;
     align-items: center;
-    /* Top + bottom padding ≥ the progressive-blur bands (80px desktop) so the
-       eyebrow and the footer link clear them at the scroll extremes — see the
-       .is-expanded .card-body rule above. This has-cover rule has equal
-       specificity but wins on source order, so it must carry the same clearance. */
-    padding: 88px 48px 88px;
+    /* Cover-as-hero: NO top/side padding — the .cs-hero band + pinned bar go
+       edge-to-edge and top-flush (the sticky bar pins at top:0). The text
+       content keeps its gutters via width:--modal-w + align-items:center, not
+       via body padding. Bottom padding stays ≥ the bottom progressive-blur band
+       (80px desktop) so the "for the nerds" footer clears the frost. */
+    padding: 0 0 88px;
+    /* Prepending the tall hero above scrollTop 0 could shift the scroll via
+       scroll anchoring — pin the anchor off so the hero opens at progress 0. */
+    overflow-anchor: none;
   }
   @media (max-width: 540px) {
     :global(.bento-card.has-cover .card-body) {
-      padding: 68px 22px 68px; /* top + bottom ≥ 60px mobile blur band */
+      padding: 0 0 68px; /* bottom ≥ 60px mobile blur band */
     }
+  }
+  /* The pinned frosted header bar replaces the TOP progressive-blur strip for
+     cover cards (an active top strip would blur the tall hero image, and
+     scroll-driving its backdrop-filter radius re-rasterizes per frame on
+     WebKit). The BOTTOM strip stays fully active. */
+  :global(.bento-card.has-cover .card-blur-top) {
+    display: none;
+  }
+  /* The codename now lives in the cover hero (+ docks into the pinned bar), so
+     the modal's flow .card-title would duplicate it. Keep it in the a11y tree
+     (sr-only clip) rather than removing it — the hero/bar titles are
+     aria-hidden clones. The extra `.card-body` in the selector raises
+     specificity above the `.has-cover .card-title { width: --modal-w }` rule so
+     the 1px sizing actually wins (the clip hides it regardless, but don't rely
+     on that). */
+  :global(.bento-card.has-cover .card-body .card-title) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
   }
 
   /* ── Modal content items (eyebrow + title + pill + prose) ──
