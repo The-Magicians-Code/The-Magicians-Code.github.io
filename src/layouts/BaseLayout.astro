@@ -62,24 +62,28 @@ const personSchema = {
     <link rel="preload" href="/fonts/geist-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/geist-mono-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
 
-    {/* Hide the page until it's styled + settled, then fade in — kills the cold-load
-        flash of unstyled / not-yet-positioned content. Render-blocking inline so it
-        applies before any other CSS or paint; the themed <html> background still
-        shows (a calm colour, not blank). Revealed by the script below on
-        fonts.ready + 2 frames; the 2.5s CSS animation + 1.8s JS timeout are the
-        no-JS / failure safety nets so it can never stay hidden. */}
+    {/* Reveal gate — scoped to the bento CARDS only, not the whole page.
+        The rest of the document (hero, nav, headings, footer, project pages)
+        paints immediately, in place, with no opacity gate — so FCP comes from
+        the hero's true first paint. Only the bento cards are held back, because
+        their at-rest title position is JS-measured AFTER layout (the centered
+        title is a measured translateY; see syncTitleRestY in bento-expand.ts),
+        so painting them before that measurement would flash a top→center jump.
+        opacity (not display) keeps each card's layout box reserved → no CLS.
+        Revealed by the is-ready script below on fonts.ready + 2 frames; the 1s
+        animation / 1s JS timeout are the no-JS / failure safety nets so a card
+        can never stay hidden. One-shot animation (not a lingering transition)
+        so nothing interferes with the card's morph opacity rules. */}
     <style is:inline>
-      body { opacity: 0; animation: site-reveal 0.4s ease 2.5s forwards; }
-      html.is-ready body { opacity: 1; animation: none; transition: opacity 0.4s ease; }
-      @keyframes site-reveal { to { opacity: 1; } }
+      [data-bento-card] { opacity: 0; animation: bento-reveal 0.4s ease 1s forwards; }
+      html.is-ready [data-bento-card] { animation: bento-reveal 0.4s ease forwards; }
+      @keyframes bento-reveal { from { opacity: 0; } to { opacity: 1; } }
       @media (prefers-reduced-motion: reduce) {
-        /* Reduced motion: keep hide-until-ready (opacity gating isn't motion, so
-           it still prevents the FOUC) but never fade — reveal is an instant
-           opacity flip in both paths. The JS path flips via .is-ready with no
-           transition; the no-JS failsafe flips at the same 2.5s safety mark with
-           a ~0s animation (not a shortened fade). */
-        body { animation: site-reveal 0.01s linear 2.5s forwards; }
-        html.is-ready body { transition: none; }
+        /* Reduced motion: keep hide-until-measured (opacity gating isn't motion,
+           so it still prevents the title-jump FOUC) but never fade — reveal is
+           an instant opacity flip in both the JS and the 1s failsafe paths. */
+        [data-bento-card] { animation: bento-reveal 0.01s linear 1s forwards; }
+        html.is-ready [data-bento-card] { animation: bento-reveal 0.01s linear forwards; }
       }
     </style>
 
@@ -160,10 +164,12 @@ const personSchema = {
     </script>
 
     <script is:inline>
-      // Reveal the page (see the hide style above) once it's styled + the layout
-      // has settled: on document.fonts.ready (the font-swap reflow + bento-title
-      // positioning gate) plus two frames so the first parallax/layout pass has
-      // run. Hard 1.8s timeout so a slow/failed font load never blocks paint.
+      // Reveal the bento cards (see the scoped hide style above) once the
+      // bento-title positioning pass can have run: on document.fonts.ready
+      // (syncTitleRestY measures with the real serif metrics) plus two frames
+      // so that measurement has applied. The rest of the page is NOT gated and
+      // has already painted. Hard 1s timeout so a slow/failed font load never
+      // leaves the cards hidden.
       (function () {
         var revealed = false;
         function reveal() {
@@ -178,7 +184,7 @@ const personSchema = {
           if (document.fonts && document.fonts.ready) document.fonts.ready.then(settle, reveal);
           else settle();
         } catch (_) { reveal(); }
-        setTimeout(reveal, 1800);
+        setTimeout(reveal, 1000);
       })();
     </script>
 
