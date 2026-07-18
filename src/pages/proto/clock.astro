@@ -1,0 +1,57 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import MorphClock from '../../components/MorphClock.astro';
+---
+
+<BaseLayout
+  title="Morph clock — prototype"
+  description="Prototype of a morphing digital clock."
+  canonicalPath="/proto/clock"
+  robots="noindex, nofollow"
+>
+  <main class="proto">
+    <p class="kicker">SVG path sampling + gooey circles</p>
+    <h1>Morphing clock</h1>
+    <MorphClock />
+    <p class="note">
+      The digits are not text — each is 29 SVG circles tweened onto points sampled
+      along a hidden numeral path.
+    </p>
+  </main>
+</BaseLayout>
+
+<style>
+  .proto {
+    min-height: 80svh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+    padding: 80px 24px;
+    text-align: center;
+  }
+  .kicker {
+    margin: 0;
+    color: var(--ink-3);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  h1 {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  .note {
+    max-width: 52ch;
+    margin: 0;
+    color: var(--ink-dim);
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+</style>
