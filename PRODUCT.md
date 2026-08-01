@@ -16,7 +16,7 @@ All three are arriving at the same URL with the same content. The identity has t
 
 ## Product Purpose
 
-`themagicianscode.dev` is the public face of a solo developer / maker identity ("The Magicians' Code"). The site exists to:
+`themagicianscode.studio` is the public face of a solo developer / maker identity ("The Magicians' Code"). The site exists to:
 
 - Show *who built it* by being itself — the implementation is part of the portfolio. MorphNav is not a UI decoration; it's a piece of the argument that this person knows how to build interesting things, all the way down.
 - Frame the work — three named projects (organic-flow, strato-pi, yolo-dualdev) with detail pages each linking to a real artifact / repo.

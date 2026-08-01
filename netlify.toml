@@ -1,5 +1,5 @@
 # Netlify config — used for per-PR Deploy Previews and per-branch deploys.
-# Production stays on GitHub Pages (themagicianscode.dev) via
+# Production stays on GitHub Pages (themagicianscode.studio) via
 # .github/workflows/deploy.yml. Netlify never serves the custom domain (we
 # don't point DNS at it), so its build is only ever reached through the
 # *.netlify.app preview URLs.

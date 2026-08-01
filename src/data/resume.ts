@@ -60,8 +60,8 @@ export const resume: ResumeData = {
     { label: 'tanel.treuberg@gmail.com', href: 'mailto:tanel.treuberg@gmail.com' },
     {
       label: 'Portfolio',
-      href: 'https://themagicianscode.dev',
-      printLabel: 'themagicianscode.dev',
+      href: 'https://themagicianscode.studio',
+      printLabel: 'themagicianscode.studio',
     },
     {
       label: 'GitHub',

@@ -12,7 +12,7 @@ const PDF = path.join(ROOT, 'dist', 'Tanel_Treuberg_Software_Engineer.pdf');
 // Substrings that must be present, in this extraction order (reading order).
 const ORDERED = ['Tanel', 'EXPERIENCE', 'EDUCATION', 'SKILLS'];
 // Must be present (order-independent) — e.g. the portfolio link as selectable text.
-const PRESENT = ['themagicianscode.dev'];
+const PRESENT = ['themagicianscode.studio'];
 
 function fail(msg) {
   console.error(`✗ verify-resume-pdf: ${msg}`);
