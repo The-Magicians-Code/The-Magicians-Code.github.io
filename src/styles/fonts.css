@@ -15,13 +15,20 @@
  *
  * Each family is split across latin + latin-ext subsets via unicode-range so
  * the browser only fetches the subset it needs.
+ *
+ * font-display: the primary *latin* subsets are `optional` because they are
+ * <link rel="preload">ed (see BaseLayout) — so they're in cache by first paint
+ * and the browser uses the real web font immediately, with NO fallback→web
+ * swap reflow (the CLS that the body reveal-gate used to mask). The non-
+ * preloaded latin-ext subsets stay `swap`: they cover rare accented glyphs
+ * not on the critical path, where a late swap is acceptable.
  */
 
 /* ── Fraunces (serif, opsz + wght, roman) ───────────────────────────────── */
 @font-face {
   font-family: 'Fraunces';
   font-style: normal;
-  font-display: swap;
+  font-display: optional;
   font-weight: 100 900;
   src: url('/fonts/fraunces-latin-full-normal.woff2') format('woff2-variations');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
@@ -43,7 +50,7 @@
 @font-face {
   font-family: 'Fraunces';
   font-style: italic;
-  font-display: swap;
+  font-display: optional;
   font-weight: 100 900;
   src: url('/fonts/fraunces-latin-full-italic.woff2') format('woff2-variations');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
@@ -65,7 +72,7 @@
 @font-face {
   font-family: 'Geist';
   font-style: normal;
-  font-display: swap;
+  font-display: optional;
   font-weight: 100 900;
   src: url('/fonts/geist-latin-wght-normal.woff2') format('woff2-variations');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
@@ -87,7 +94,7 @@
 @font-face {
   font-family: 'Geist Mono';
   font-style: normal;
-  font-display: swap;
+  font-display: optional;
   font-weight: 100 900;
   src: url('/fonts/geist-mono-latin-wght-normal.woff2') format('woff2-variations');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
