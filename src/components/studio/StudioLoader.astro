@@ -1,0 +1,14 @@
+---
+// Entrance curtain. Pure-CSS timeline (rise at 0.1s, curtain lift at 1.45s,
+// visibility:hidden when done) — no JS required to dismiss, pointer-events
+// none throughout, and display:none entirely unless html.studio-motion is
+// set (reduced-motion / no-JS visitors never see it).
+const letters = 'ARCANA'.split('');
+---
+
+<div class="s-loader" aria-hidden="true">
+  <div class="s-loader-word">
+    {letters.map((ch, i) => <span style={`animation-delay: ${0.1 + i * 0.045}s`}>{ch}</span>)}
+  </div>
+  <p class="s-loader-tag s-label"><span>A studio of improbable things</span></p>
+</div>

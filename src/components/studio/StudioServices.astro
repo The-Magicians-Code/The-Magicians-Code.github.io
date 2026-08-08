@@ -1,0 +1,57 @@
+---
+const services = [
+  {
+    index: '01',
+    name: 'Strategy & Direction',
+    description:
+      'Positioning, naming, product narrative. We find the sharpest version of the idea before a single pixel moves.',
+    tags: ['Research', 'Positioning', 'Narrative'],
+  },
+  {
+    index: '02',
+    name: 'Brand & Interface',
+    description:
+      'Identities and interfaces with a point of view — typography-first, motion-aware, built to be remembered.',
+    tags: ['Identity', 'UI/UX', 'Design systems'],
+  },
+  {
+    index: '03',
+    name: 'Engineering',
+    description:
+      'Full-stack builds that hold up in production: fast, accessible, measured. The trick has to work every night.',
+    tags: ['TypeScript', 'Realtime', 'Infrastructure'],
+  },
+  {
+    index: '04',
+    name: 'Motion & Interaction',
+    description:
+      'Choreography for the web — scroll, cursor and state transitions tuned frame by frame until they feel inevitable.',
+    tags: ['Animation', 'Prototyping', 'Creative dev'],
+  },
+];
+---
+
+<section class="s-section s-wrap" id="services">
+  <div class="s-section-head" data-reveal>
+    <div>
+      <p class="s-eyebrow">Capabilities</p>
+      <h2>The <em>repertoire</em></h2>
+    </div>
+    <p class="s-section-count">( {String(services.length).padStart(2, '0')} )</p>
+  </div>
+
+  <div class="s-services-list" data-reveal-group>
+    {services.map((service) => (
+      <div class="s-service" data-reveal>
+        <p class="s-service-idx">{service.index}</p>
+        <div class="s-service-body">
+          <h3>{service.name}</h3>
+          <p>{service.description}</p>
+          <div class="s-service-tags">
+            {service.tags.map((tag) => <span>{tag}</span>)}
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+</section>

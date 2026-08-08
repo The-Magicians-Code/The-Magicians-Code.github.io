@@ -1,0 +1,23 @@
+---
+// Counters animate from 0 when scrolled into view (studio.ts, [data-counter]).
+// data-pad keeps leading zeros so the column never reflows mid-count.
+const stats = [
+  { value: 24, pad: 2, suffix: '+', label: 'Projects shipped' },
+  { value: 9, pad: 2, suffix: '', label: 'Industries' },
+  { value: 5, pad: 2, suffix: '', label: 'Years of practice' },
+  { value: 100, pad: 3, suffix: '', label: 'Lighthouse, typically' },
+];
+---
+
+<section class="s-section s-wrap">
+  <div class="s-stats" data-reveal-group>
+    {stats.map((stat) => (
+      <div class="s-stat" data-reveal>
+        <p class="s-stat-num">
+          <span data-counter={stat.value} data-pad={stat.pad}>{String(stat.value).padStart(stat.pad, '0')}</span>{stat.suffix && <sup>{stat.suffix}</sup>}
+        </p>
+        <p class="s-stat-label s-label">{stat.label}</p>
+      </div>
+    ))}
+  </div>
+</section>

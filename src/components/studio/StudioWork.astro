@@ -1,0 +1,84 @@
+---
+// Selected work. Covers are generated artworks (scripts/studio-assets) with a
+// scroll-parallax inner image (--py), a clip-path entrance, and a hover zoom.
+// Studies are concept pieces — display objects, not links.
+import signal from '../../assets/studio/cover-signal.svg';
+import meridian from '../../assets/studio/cover-meridian.svg';
+import helios from '../../assets/studio/cover-helios.svg';
+import lattice from '../../assets/studio/cover-lattice.svg';
+
+const work = [
+  {
+    index: '01',
+    title: 'Signal',
+    description:
+      'Realtime observability for machine-learning fleets — a control room that turns ten thousand metric streams into one legible picture.',
+    tags: ['Product', 'Engineering', 'Data viz'],
+    year: '2025',
+    cover: signal,
+  },
+  {
+    index: '02',
+    title: 'Meridian',
+    description:
+      'Identity and wayfinding for a maritime navigation company — cartographic precision, softened for human hands on cold decks.',
+    tags: ['Identity', 'Design', 'Brand'],
+    year: '2024',
+    cover: meridian,
+  },
+  {
+    index: '03',
+    title: 'Helios',
+    description:
+      'Launch site and product configurator for a solar hardware startup — an eclipse you can scroll, a panel array you can play.',
+    tags: ['Design', 'Engineering', '3D'],
+    year: '2025',
+    cover: helios,
+  },
+  {
+    index: '04',
+    title: 'Lattice',
+    description:
+      'Edge-compute console for autonomous fleets — a horizon of machines, rendered calm enough to supervise at 3 a.m.',
+    tags: ['Product', 'Engineering', 'Realtime'],
+    year: '2024',
+    cover: lattice,
+  },
+];
+---
+
+<section class="s-section s-wrap" id="work">
+  <div class="s-section-head" data-reveal>
+    <div>
+      <p class="s-eyebrow">Selected work</p>
+      <h2>Things we’ve <em>conjured</em></h2>
+    </div>
+    <p class="s-section-count">( {String(work.length).padStart(2, '0')} )</p>
+  </div>
+
+  <div class="s-work-list">
+    {work.map((item) => (
+      <article class="s-work-item" data-reveal>
+        <div class="s-work-cover">
+          <img
+            src={item.cover.src}
+            alt={`${item.title} — generated cover artwork`}
+            width={item.cover.width}
+            height={item.cover.height}
+            loading="lazy"
+            decoding="async"
+            data-parallax-img="0.06"
+          />
+        </div>
+        <div class="s-work-meta">
+          <p class="s-work-index">{item.index} ⁄ {item.year}</p>
+          <h3>{item.title}</h3>
+          <p>{item.description}</p>
+          <ul class="s-work-tags">
+            {item.tags.map((tag) => <li>{tag}</li>)}
+          </ul>
+        </div>
+      </article>
+    ))}
+  </div>
+</section>

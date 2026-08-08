@@ -1,0 +1,34 @@
+---
+// ARCANA — a cinematic studio one-pager, fully self-contained (see
+// StudioLayout). Section order is the narrative arc: arrive → disciplines →
+// proof (work) → offer (services) → scale (stats) → belief (manifesto) →
+// invitation (contact).
+import StudioLayout from '../../layouts/StudioLayout.astro';
+import StudioLoader from '../../components/studio/StudioLoader.astro';
+import StudioNav from '../../components/studio/StudioNav.astro';
+import StudioHero from '../../components/studio/StudioHero.astro';
+import StudioMarquee from '../../components/studio/StudioMarquee.astro';
+import StudioWork from '../../components/studio/StudioWork.astro';
+import StudioServices from '../../components/studio/StudioServices.astro';
+import StudioStats from '../../components/studio/StudioStats.astro';
+import StudioManifesto from '../../components/studio/StudioManifesto.astro';
+import StudioFooter from '../../components/studio/StudioFooter.astro';
+---
+
+<StudioLayout
+  title="Arcana — Design, Product & Engineering Studio"
+  description="Arcana is an independent design, product and engineering studio by The Magician's Code. We conjure brands, interfaces and systems that feel inevitable."
+>
+  <StudioLoader />
+  <StudioNav />
+  <main>
+    <StudioHero />
+    <StudioMarquee />
+    <StudioWork />
+    <StudioServices />
+    <StudioStats />
+    <StudioManifesto />
+  </main>
+  <StudioFooter />
+  <div class="s-grain" aria-hidden="true"></div>
+</StudioLayout>

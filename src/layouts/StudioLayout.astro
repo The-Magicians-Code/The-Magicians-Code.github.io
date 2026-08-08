@@ -1,0 +1,93 @@
+---
+// Self-contained layout for the /studio experience. Deliberately does NOT
+// import BaseLayout, global.css, Tailwind, MorphNav or the liquid-glass
+// runtime — the studio page is its own art-directed world with its own
+// tokens (studio.css) and motion engine (studio.ts). Fonts are shared with
+// the main site (same self-hosted woff2 files).
+import '../styles/fonts.css';
+import '../styles/studio.css';
+
+interface Props {
+  title: string;
+  description: string;
+  canonicalPath?: string;
+}
+
+const { title, description, canonicalPath = '/studio/' } = Astro.props;
+const siteUrl = Astro.site?.toString().replace(/\/$/, '') ?? 'https://themagicianscode.dev';
+const canonical = `${siteUrl}${canonicalPath}`;
+---
+
+<!DOCTYPE html>
+<html lang="en" class="studio">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+
+    {/* Above-the-fold fonts: Fraunces carries the hero display type, Geist
+        Mono the labels/meta rows. Same preload rationale as BaseLayout. */}
+    <link rel="preload" href="/fonts/fraunces-latin-full-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/fraunces-latin-full-italic.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/geist-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/geist-mono-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
+
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="author" content="Tanel Treuberg" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href={canonical} />
+
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:site_name" content="Arcana Studio" />
+    <meta property="og:locale" content="en_US" />
+
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <script is:inline>
+      // App-like mobile: suppress pinch-zoom gestures on iOS Safari (which
+      // ignores user-scalable). Same approach as BaseLayout.
+      (function () {
+        try {
+          var prevent = function (e) { e.preventDefault(); };
+          document.addEventListener('gesturestart', prevent, { passive: false });
+          document.addEventListener('gesturechange', prevent, { passive: false });
+          document.addEventListener('gestureend', prevent, { passive: false });
+        } catch (_) {}
+      })();
+    </script>
+
+    <script is:inline>
+      // Pre-paint motion gate: when the visitor prefers reduced motion (or JS
+      // dies) the entrance choreography must never hide content. studio.css
+      // keys every entrance state off html.studio-motion, added here only
+      // when animation is welcome. The loader curtain has its own pure-CSS
+      // self-destruct as the no-JS safety net.
+      (function () {
+        try {
+          if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            document.documentElement.classList.add('studio-motion');
+          }
+        } catch (_) {}
+      })();
+    </script>
+
+    <script>
+      import '../scripts/studio';
+    </script>
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>
