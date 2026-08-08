@@ -1,0 +1,159 @@
+---
+// Contact-section location card: faint static world map, pin chip, city label,
+// and the live local time rendered with MorphClock (timezone-fixed so every
+// visitor sees Warsaw time). Spec:
+// docs/superpowers/specs/2026-06-01-location-card-design.md
+//
+// The world map (public/world-map.svg) is Wikimedia's BlankMap-World.svg
+// (public domain, no attribution required), geometry-simplified with mapshaper
+// and optimized with svgo (~24 KB). It's used as a CSS mask over a token-colored
+// layer, so it tints with the theme and stays a cached external asset.
+import { Icon } from 'astro-icon/components';
+import MorphClock from './MorphClock.astro';
+
+interface Props {
+  city?: string;
+  country?: string;
+  timeZone?: string;
+  tagline?: string;
+}
+const {
+  city = 'Warsaw',
+  country = 'Poland',
+  timeZone = 'Europe/Warsaw',
+  tagline = 'Building from Warsaw.',
+} = Astro.props;
+---
+
+<figure class="loc-card">
+  <!-- Faint world map: public-domain SVG used as a CSS mask so it tints with
+       the theme (see <style>). Decorative. -->
+  <div class="loc-map" aria-hidden="true"></div>
+
+  <div class="loc-top">
+    <span class="loc-pin" aria-hidden="true">
+      <Icon name="lucide:map-pin" class="w-5 h-5" />
+    </span>
+    <div class="loc-where">
+      <span class="loc-eyebrow">Location</span>
+      <span class="loc-city">{city}, {country}</span>
+    </div>
+  </div>
+
+  <figcaption class="loc-bottom">
+    <div class="loc-time">
+      <MorphClock seconds timeZone={timeZone} label={`${city} time`} />
+      <span class="loc-tz" data-loc-offset aria-hidden="true"></span>
+    </div>
+    <p class="loc-tagline">{tagline}</p>
+  </figcaption>
+</figure>
+
+<script>
+  // Fill the visible offset (e.g. "GMT+2") client-side so it's DST-correct and
+  // never a stale build-time value. Shares the clock's offset helper.
+  import { formatTzOffset } from '../scripts/morph-clock.ts';
+  const el = document.querySelector<HTMLElement>('[data-loc-offset]');
+  const card = el?.closest<HTMLElement>('.loc-card');
+  const tz = card?.querySelector<HTMLElement>('[data-morph-clock]')?.dataset.timezone;
+  if (el && tz) el.textContent = formatTzOffset(tz);
+</script>
+
+<style>
+  .loc-card {
+    position: relative;
+    overflow: hidden;
+    margin: 0;
+    border: 1px solid var(--rule);
+    border-radius: 20px;
+    background: var(--paper);
+    box-shadow: var(--glass-shadow);
+    padding: clamp(20px, 3vw, 28px);
+    min-height: 220px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 36px;
+    isolation: isolate;
+  }
+
+  /* Token-tinted map: a solid --ink layer revealed through the map silhouette
+     mask. Tints with the theme; the SVG stays an external cached asset. */
+  .loc-map {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: var(--ink);
+    opacity: 0.06;
+    -webkit-mask: url('/world-map.svg') no-repeat center / cover;
+    mask: url('/world-map.svg') no-repeat center / cover;
+  }
+  :global(html.dark) .loc-map {
+    opacity: 0.1;
+  }
+
+  .loc-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .loc-pin {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 13px;
+    background: color-mix(in oklab, var(--paper) 70%, var(--ink) 8%);
+    border: 1px solid var(--rule);
+    color: var(--ink-dim);
+    flex-shrink: 0;
+  }
+  .loc-where {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+    gap: 3px;
+  }
+  .loc-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .loc-city {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--ink);
+  }
+
+  .loc-bottom {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .loc-time {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+  /* MorphClock is JS-built, so size it via :global within the card. */
+  .loc-time :global(.morph-clock) {
+    width: clamp(168px, 44vw, 232px);
+  }
+  .loc-tz {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--ink-3);
+  }
+  .loc-tagline {
+    margin: 0;
+    color: var(--ink-dim);
+    font-size: 0.95rem;
+  }
+</style>

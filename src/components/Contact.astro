@@ -1,5 +1,6 @@
 ---
 import { Icon } from 'astro-icon/components';
+import LocationCard from './LocationCard.astro';
 ---
 
 <section id="contact">
@@ -34,6 +35,9 @@ import { Icon } from 'astro-icon/components';
       <span>GitHub</span>
     </a>
   </div>
+  <div class="contact-location reveal-up">
+    <LocationCard />
+  </div>
 </section>
 
 <style>
@@ -59,4 +63,8 @@ import { Icon } from 'astro-icon/components';
     transition: color 0.2s ease;
   }
   .contact-link:hover { color: var(--accent); }
+  .contact-location {
+    margin-top: 40px;
+    max-width: 460px;
+  }
 </style>

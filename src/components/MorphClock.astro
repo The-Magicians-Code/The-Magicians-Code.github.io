@@ -1,0 +1,109 @@
+---
+// Morphing digital clock — digits are SVG circles tweened along numeral paths.
+// Logic + the <morph-digit> custom element live in src/scripts/morph-clock.ts.
+// Themed by site tokens: digits use --clock-ink (default var(--accent)).
+interface Props {
+  format?: 12 | 24;
+  seconds?: boolean;
+  duration?: number; // morph tween length, ms
+  stagger?: number; // per-circle delay, ms
+  color?: string; // overrides --clock-ink
+  timeZone?: string; // IANA zone; shows that zone's time to every visitor
+  label?: string; // appended to the accessible time, e.g. "Warsaw time"
+}
+const {
+  format = 24,
+  seconds = true,
+  duration = 640,
+  stagger = 12,
+  color,
+  timeZone,
+  label,
+} = Astro.props;
+---
+
+<div
+  class="morph-clock"
+  data-morph-clock
+  data-format={String(format)}
+  data-seconds={String(seconds)}
+  data-duration={String(duration)}
+  data-stagger={String(stagger)}
+  data-timezone={timeZone}
+  data-label={label}
+  style={color ? `--clock-ink:${color}` : undefined}
+>
+  <div class="morph-clock-digits" data-morph-digits aria-hidden="true"></div>
+  <span class="morph-sr" data-morph-time></span>
+</div>
+
+<style>
+  .morph-clock {
+    --clock-ink: var(--accent);
+    color: var(--clock-ink);
+    width: 100%;
+    max-width: 720px;
+  }
+  .morph-clock-digits {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    /* nudge left so the overlapping digits read as optically centered */
+    transform: translateX(-2.2%);
+  }
+  /* Custom element is in light DOM, so target it from scoped styles via :global. */
+  .morph-clock-digits :global(morph-digit) {
+    flex: 0 0 16.2%;
+    margin-left: -5.9%;
+    aspect-ratio: 1;
+  }
+  /* Don't overlap the first digit of each pair into the preceding colon —
+     otherwise the colon's right gap collapses and its dots read as right-
+     aligned instead of centered in the gap. */
+  .morph-clock-digits :global(morph-digit:first-child),
+  .morph-clock-digits :global(.morph-colon + morph-digit) {
+    margin-left: 0;
+  }
+  /* Colons are created in JS, so they don't carry Astro's scope attribute;
+     match them via :global under the scoped digits container. */
+  .morph-clock-digits :global(.morph-colon) {
+    flex: 0 0 4.2%;
+    position: relative;
+    aspect-ratio: 0.42 / 1;
+    margin: 0 0.8%;
+  }
+  .morph-clock-digits :global(.morph-colon)::before,
+  .morph-clock-digits :global(.morph-colon)::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    width: 38%;
+    aspect-ratio: 1;
+    border-radius: 999px;
+    background: currentColor;
+    transform: translateX(-50%);
+  }
+  .morph-clock-digits :global(.morph-colon)::before {
+    top: 24%;
+  }
+  .morph-clock-digits :global(.morph-colon)::after {
+    bottom: 24%;
+  }
+
+  .morph-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+</style>
+
+<script>
+  import '../scripts/morph-clock.ts';
+</script>
