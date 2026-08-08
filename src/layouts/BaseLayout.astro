@@ -1,7 +1,6 @@
 ---
 import '../styles/fonts.css';
 import '../styles/global.css';
-import '../styles/liquid-glass.css';
 
 import SiteFooter from '../components/SiteFooter.astro';
 
@@ -141,25 +140,6 @@ const personSchema = {
     </script>
 
     <script is:inline>
-      // Detect engines that don't render url(#filter) inside backdrop-filter
-      // (Safari, Firefox). CSS @supports gives a false-positive on Safari
-      // because its parser accepts the syntax without rendering. Setting a
-      // class pre-paint lets the liquid-glass surface (the musicplayer
-      // #player-pill) swap to the mobile-icon frosted-glass fallback without
-      // FOUC.
-      (function () {
-        try {
-          var ua = navigator.userAgent;
-          var isWebkitNotChromium = /AppleWebKit/.test(ua) && !/Chrome|Chromium|Edg/.test(ua);
-          var isFirefox = /Firefox/.test(ua);
-          if (isWebkitNotChromium || isFirefox) {
-            document.documentElement.classList.add('lg-no-svg-backdrop');
-          }
-        } catch (_) {}
-      })();
-    </script>
-
-    <script is:inline>
       // Reveal the page (see the hide style above) once it's styled + the layout
       // has settled: on document.fonts.ready (the font-swap reflow + bento-title
       // positioning gate) plus two frames so the first parallax/layout pass has
@@ -188,13 +168,9 @@ const personSchema = {
         swaps would leak them. See the NO-TEARDOWN note atop
         src/scripts/smooth-scroll.ts and wire astro:before-swap cleanup. */}
     <script>
-      // Mounted first so Lenis drives window scroll before the scroll-coupled
-      // consumers (liquid-glass) read it.
+      // Mounted first so Lenis drives window scroll before any scroll-coupled
+      // consumers read it.
       import '../scripts/smooth-scroll';
-    </script>
-
-    <script>
-      import '../scripts/liquid-glass';
     </script>
 
     <script>

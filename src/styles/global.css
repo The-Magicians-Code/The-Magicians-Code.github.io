@@ -16,8 +16,8 @@
 
 /* ===== Design tokens =====
    Editorial direction: warm paper bg, terracotta accent, glass surfaces.
-   Token names read across the site and the liquid-glass module (--ink,
-   --ink-dim, --glass-*) are intentionally preserved; only their values change
+   Token names read across the site (--ink, --ink-dim, --glass-*) are
+   intentionally preserved; only their values change
    so those surfaces inherit the new look without source edits. */
 :root {
   --bg: #f6f3ed;

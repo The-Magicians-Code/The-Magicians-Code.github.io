@@ -36,32 +36,9 @@ Precedent: the bento card morph-jump ("expands right, then jumps to center", Saf
 - **Self-hosted fonts** ([src/styles/fonts.css](src/styles/fonts.css), woff2 in `public/fonts/`; no Google Fonts CDN) remain — they serve the live **website** only; the PDF does not use them.
 - The PDF is disallowed in [public/robots.txt](public/robots.txt) (GitHub Pages can't set `X-Robots-Tag` on the static PDF).
 
-## Liquid Glass Module
+## Liquid Glass (extracted)
 
-> **Not a nav.** The site has **no navigation bar** — the former MorphNav (and before it, the `Nav.astro` / `#nav-pill` Liquid Glass nav) has been removed entirely; `MorphNav.astro` and `nav-test.astro` no longer exist. This module still ships and is the most non-obvious system in the repo, but it now only renders on the demo surface carrying `class="liquid-glass"`: [src/pages/musicplayer.astro](src/pages/musicplayer.astro) (`#player-pill`).
-
-The effect is a custom CSS+SVG+Canvas pipeline (Snell's-law refraction + specular highlight) that runs on Chromium and gracefully falls back on Safari/Firefox.
-
-**Three layers, one signal:**
-
-| Layer | File | Role |
-|------|------|------|
-| Pre-paint UA sniff | [src/layouts/BaseLayout.astro](src/layouts/BaseLayout.astro) (`<script is:inline>`) | Sets `html.lg-no-svg-backdrop` on Safari/Firefox before any styled HTML paints |
-| Runtime | [src/scripts/liquid-glass.ts](src/scripts/liquid-glass.ts) | Discovers `.liquid-glass` elements on `DOMContentLoaded`, builds per-instance SVG `<filter>` chains, rasterizes displacement + specular PNGs via Canvas, sets `backdrop-filter` inline. Skips entirely if the html class is present. |
-| Stylesheet | [src/styles/liquid-glass.css](src/styles/liquid-glass.css) + the per-surface `html.lg-no-svg-backdrop` rules in the consuming page (e.g. the `#player-pill` block in [src/pages/musicplayer.astro](src/pages/musicplayer.astro)) | Default `:root` token values, `.glass`-equivalent fallback rule, and the Safari/Firefox swap to mobile-icon-style frosted glass. (The former nav-pill fallback block in `global.css` was removed with the nav.) |
-
-**Public API for new consumers:**
-
-- Add `class="liquid-glass"` to any element. Eight CSS custom properties tune the effect: `--lg-thickness`, `--lg-bezel`, `--lg-ior`, `--lg-uniform-shift`, `--lg-blur`, `--lg-saturate`, `--lg-svg-saturate`, `--lg-spec-alpha`. They cascade via `getComputedStyle`, so set on a parent and descendants inherit.
-- `data-lg-mobile` opts an element into the effect below the 641px breakpoint (default is desktop-only).
-- `data-lg-tuner` mounts a dynamically-imported dev panel ([src/scripts/liquid-glass-tuner.ts](src/scripts/liquid-glass-tuner.ts)) targeting that element. One module tuner per page; subsequent ones are warned and ignored.
-- Imperative: `window.__lg.refresh(el)` re-rasterizes after CSS-var changes. The runtime publishes this synchronously at script-eval time; consumers can guard with `window.__lg?.refresh?.(el)`.
-
-**Why CSS @supports isn't enough:** Safari's parser accepts `url()` in `backdrop-filter` syntactically but doesn't render SVG filters that way. `@supports not ((backdrop-filter: url(#x)) or ...)` returns false on Safari → the rule never fires. The UA sniff in BaseLayout is the reliable signal; both the CSS fallback and the runtime gate read it.
-
-**Design context:** [docs/superpowers/specs/2026-05-08-liquid-glass-module-design.md](docs/superpowers/specs/2026-05-08-liquid-glass-module-design.md) captures the architectural decisions, the codex-rescue review findings that shaped the spec (the original `var(--lg-filter, none)` chain was invalid CSS that would have dropped the whole declaration), explicit non-goals (no dynamic-mount support, no per-element filter cleanup on DOM removal), and acceptance criteria. Read this before refactoring the module.
-
-**Tuning:** put `data-lg-tuner` (above) on a demo consumer to summon the module's sliders panel ([liquid-glass-tuner.ts](src/scripts/liquid-glass-tuner.ts)). The former `Nav.astro` nav-specific tuner (which wrote the eight vars to `#nav-pill` plus two nav-only knobs `glassBg`/`progBlur`) was removed along with the Liquid Glass nav; no nav exists anymore.
+The Liquid Glass module (CSS+SVG+Canvas Snell's-law refraction runtime, dev tuner, stylesheet) and its `musicplayer` showcase page were **extracted on 2026-07-08** to the standalone repo [musicplayer](https://github.com/The-Magicians-Code/musicplayer) (named after the showcase; being published by the user), along with the module's design spec and implementation plan from `docs/superpowers/`. Nothing on this site consumes the module anymore — the former nav pill was already gone, and the `lg-no-svg-backdrop` UA sniff was removed from `BaseLayout.astro` with it. Full module docs live in the new repo's README/CLAUDE.md.
 
 ## Content Collections
 
@@ -72,6 +49,6 @@ The effect is a custom CSS+SVG+Canvas pipeline (Snell's-law refraction + specula
 
 ## Project Process Conventions
 
-The `docs/superpowers/` folder retains the design specs and implementation plans for substantive features (the Astro migration and liquid-glass module). They are not built into `dist/` and do not affect the deployed site, but they are the "why" trail behind recent merges. Keep them current when revising the systems they describe — a stale spec is worse than no spec.
+The `docs/superpowers/` folder retains the design specs and implementation plans for substantive features (e.g. the Astro migration; the liquid-glass docs moved out with the module's extraction). They are not built into `dist/` and do not affect the deployed site, but they are the "why" trail behind recent merges. Keep them current when revising the systems they describe — a stale spec is worse than no spec.
 
 The user's global CLAUDE.md establishes a pre-implementation Codex review convention for any work introducing new logic or new integrations: hand the plan to `codex:codex-rescue` before touching code, apply feedback you agree with, then implement. Skip only for one-line config flips, comment-only fixes, typo fixes, doc updates, or pinpointed mechanical bugfixes.
