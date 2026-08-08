@@ -1,0 +1,222 @@
+---
+// Standalone "Magicians Code" cinematic prototype, scaffolded into Astro so it
+// builds into dist/ and shows up on the Netlify deploy preview. It is fully
+// self-contained (own <html>/<head>), shares nothing with the rest of the site,
+// and is intentionally not linked from anywhere. Static assets live verbatim in
+// public/assets/; CSS + JS are kept byte-for-byte via is:inline.
+---
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The Magicians Code — Design &amp; Engineering Studio</title>
+  <meta name="description" content="The Magicians Code is the independent studio of Tanel Treuberg — crafting cinematic interfaces, machine-learning systems and data platforms where the engineering disappears and only the magic shows.">
+  <meta property="og:title" content="The Magicians Code — Design &amp; Engineering Studio">
+  <meta property="og:description" content="Cinematic interfaces. Data-driven systems. Engineering that disappears.">
+  <meta property="og:type" content="website">
+  <meta name="theme-color" content="#0b0b10">
+  <link rel="icon" type="image/svg+xml" href="/assets/img/mark.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;700;800&family=Space+Grotesk:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/css/main.css">
+  <noscript>
+    <style is:inline>
+      .loader, .cursor, .cursor-tag { display: none; }
+      .reveal { opacity: 1; transform: none; }
+      .manifesto__text .w { opacity: 1; }
+    </style>
+  </noscript>
+</head>
+<body>
+
+  <!-- Preloader -->
+  <div class="loader" id="loader" aria-hidden="true">
+    <div class="loader__inner">
+      <img class="loader__mark" src="/assets/img/mark.svg" alt="">
+      <span class="loader__count" id="loaderCount">00</span>
+      <span class="loader__word">conjuring</span>
+    </div>
+    <div class="loader__curtain"></div>
+  </div>
+
+  <!-- Grain overlay -->
+  <div class="grain" aria-hidden="true"></div>
+
+  <!-- Scroll progress -->
+  <div class="progress" aria-hidden="true"><span id="progressBar"></span></div>
+
+  <!-- Custom cursor -->
+  <div class="cursor" id="cursor" aria-hidden="true"></div>
+  <div class="cursor-tag" id="cursorTag" aria-hidden="true">view</div>
+
+  <header class="nav" id="nav">
+    <a class="nav__logo" href="#top" data-magnetic>
+      <img src="/assets/img/mark.svg" alt="" class="nav__mark">
+      <span>The&nbsp;Magicians&nbsp;Code</span>
+    </a>
+    <nav class="nav__links" aria-label="Primary">
+      <a href="#work" data-magnetic>Work</a>
+      <a href="#studio" data-magnetic>Studio</a>
+      <a href="#craft" data-magnetic>Craft</a>
+      <a href="#contact" data-magnetic>Contact</a>
+    </nav>
+    <button class="nav__burger" id="burger" aria-label="Open menu" aria-expanded="false" aria-controls="menu">
+      <span></span><span></span>
+    </button>
+  </header>
+
+  <!-- Mobile menu -->
+  <div class="menu" id="menu" aria-hidden="true" inert>
+    <nav class="menu__links" aria-label="Menu">
+      <a href="#work"><em>01</em>Work</a>
+      <a href="#studio"><em>02</em>Studio</a>
+      <a href="#craft"><em>03</em>Craft</a>
+      <a href="#contact"><em>04</em>Contact</a>
+    </nav>
+    <p class="menu__foot">tanel.treuberg@gmail.com</p>
+  </div>
+
+  <main id="top">
+
+    <!-- ============================== HERO ============================== -->
+    <section class="hero" id="hero">
+      <canvas class="hero__aurora" id="aurora" aria-hidden="true"></canvas>
+      <img class="hero__contours" src="/assets/img/contours.svg" alt="" data-depth="0.12" data-rotate aria-hidden="true">
+
+      <div class="hero__inner">
+        <p class="hero__eyebrow reveal">Independent design &times; engineering studio</p>
+        <h1 class="hero__title" aria-label="The Magicians Code">
+          <span class="hero__line" data-depth="0.030"><span data-split>THE</span></span>
+          <span class="hero__line hero__line--outline" data-depth="0.055"><span data-split>MAGICIANS</span></span>
+          <span class="hero__line" data-depth="0.080"><span data-split>CODE</span></span>
+        </h1>
+        <div class="hero__meta">
+          <p class="reveal" data-delay="500">Cinematic interfaces.<br>Data-driven systems.<br>Engineering that disappears.</p>
+          <a class="hero__cta reveal" data-delay="650" href="#work" data-magnetic data-cursor="view">
+            Selected work <span class="hero__cta-arrow">&darr;</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="hero__foot">
+        <span class="reveal" data-delay="800">Tanel Treuberg &mdash; est. studio of one</span>
+        <span class="hero__scrollcue reveal" data-delay="800" aria-hidden="true">scroll<i></i></span>
+        <span class="reveal" data-delay="800">59.43&deg;N&nbsp;&nbsp;24.75&deg;E</span>
+      </div>
+    </section>
+
+    <!-- =========================== MANIFESTO ============================ -->
+    <section class="manifesto" id="studio">
+      <p class="manifesto__label mono reveal">01 &mdash; The Pledge</p>
+      <p class="manifesto__text" id="manifesto">
+        Every great trick has three acts. The pledge &mdash; we study something
+        ordinary: a dataset, a workflow, a blank screen. The turn &mdash; we design
+        until the ordinary becomes extraordinary. The prestige &mdash; we engineer
+        it so well that nobody asks how. They only ask for more.
+      </p>
+      <div class="manifesto__cols">
+        <div class="reveal"><h3>Seen, not heard</h3><p>Interfaces should feel inevitable. We obsess over motion, rhythm and type so the software gets out of the way of the story.</p></div>
+        <div class="reveal" data-delay="120"><h3>Measured, not guessed</h3><p>Behind every flourish is an instrumented pipeline. Models, metrics and telemetry keep the magic honest.</p></div>
+        <div class="reveal" data-delay="240"><h3>Shipped, not staged</h3><p>A prototype is a promise. We carry the work all the way to production &mdash; containers, clusters and all.</p></div>
+      </div>
+    </section>
+
+    <!-- ============================== WORK =============================== -->
+    <section class="work" id="work">
+      <header class="work__head">
+        <p class="mono reveal">02 &mdash; The Turn</p>
+        <h2 class="section-title reveal" data-delay="80">Selected<br><em>Works</em></h2>
+      </header>
+
+      <ul class="work__list">
+        <li class="project reveal" data-cursor="view">
+          <a class="project__card" href="https://github.com/The-Magicians-Code" target="_blank" rel="noopener">
+            <figure class="project__media"><img src="/assets/img/art-flow.svg" alt="Generative flow-field artwork for Deep Current" data-parallax loading="lazy"></figure>
+            <div class="project__info">
+              <span class="project__num mono">N&deg;01</span>
+              <h3 class="project__title">Deep Current</h3>
+              <p class="project__desc">Real-time computer-vision pipeline for maritime traffic — detection, tracking and onnx-accelerated inference at the edge.</p>
+              <p class="project__tags mono">PyTorch &middot; OpenCV &middot; ONNX &middot; GStreamer</p>
+            </div>
+          </a>
+        </li>
+        <li class="project reveal" data-cursor="view">
+          <a class="project__card" href="https://github.com/The-Magicians-Code" target="_blank" rel="noopener">
+            <figure class="project__media"><img src="/assets/img/art-grid.svg" alt="Warped measurement grid artwork for Signal and Noise" data-parallax loading="lazy"></figure>
+            <div class="project__info">
+              <span class="project__num mono">N&deg;02</span>
+              <h3 class="project__title">Signal &amp; Noise</h3>
+              <p class="project__desc">Observability platform turning terabytes of telemetry into dashboards people actually read before the pager rings.</p>
+              <p class="project__tags mono">Elasticsearch &middot; Grafana &middot; Kubernetes &middot; PostgreSQL</p>
+            </div>
+          </a>
+        </li>
+        <li class="project reveal" data-cursor="view">
+          <a class="project__card" href="https://github.com/The-Magicians-Code" target="_blank" rel="noopener">
+            <figure class="project__media"><img src="/assets/img/art-orbits.svg" alt="Orbital instrument artwork for Aurora Index" data-parallax loading="lazy"></figure>
+            <div class="project__info">
+              <span class="project__num mono">N&deg;03</span>
+              <h3 class="project__title">Aurora Index</h3>
+              <p class="project__desc">A search experience that feels like asking a friend — scraping, ranking and serving answers in the blink of a query.</p>
+              <p class="project__tags mono">Python &middot; Scrapy &middot; Flask &middot; AWS&nbsp;S3</p>
+            </div>
+          </a>
+        </li>
+        <li class="project reveal" data-cursor="view">
+          <a class="project__card" href="https://github.com/The-Magicians-Code" target="_blank" rel="noopener">
+            <figure class="project__media"><img src="/assets/img/art-constellation.svg" alt="Constellation graph artwork for Counterspell" data-parallax loading="lazy"></figure>
+            <div class="project__info">
+              <span class="project__num mono">N&deg;04</span>
+              <h3 class="project__title">Counterspell</h3>
+              <p class="project__desc">A motion-first design system — tokens, components and interaction grammar shared across web and Swift-native surfaces.</p>
+              <p class="project__tags mono">Design&nbsp;Systems &middot; JavaScript &middot; Swift &middot; Motion</p>
+            </div>
+          </a>
+        </li>
+      </ul>
+    </section>
+
+    <!-- ============================= CRAFT =============================== -->
+    <section class="craft" id="craft">
+      <p class="mono reveal">03 &mdash; The Prestige</p>
+      <h2 class="section-title reveal" data-delay="80">Craft</h2>
+      <ul class="craft__list">
+        <li class="craft__row reveal"><span class="mono">A</span><h3>Creative Direction</h3><p>Concept, narrative, art direction</p></li>
+        <li class="craft__row reveal"><span class="mono">B</span><h3>Interface Design</h3><p>Web experiences, motion, typography</p></li>
+        <li class="craft__row reveal"><span class="mono">C</span><h3>Full-stack Engineering</h3><p>APIs, platforms, native &amp; web apps</p></li>
+        <li class="craft__row reveal"><span class="mono">D</span><h3>Machine Learning</h3><p>Computer vision, inference at the edge</p></li>
+        <li class="craft__row reveal"><span class="mono">E</span><h3>Data Platforms</h3><p>Search, pipelines, observability</p></li>
+      </ul>
+
+      <div class="marquee" aria-hidden="true">
+        <div class="marquee__track">
+          <span>Python &#10022; PyTorch &#10022; TensorFlow &#10022; OpenCV &#10022; ONNX &#10022; Docker &#10022; Kubernetes &#10022; PostgreSQL &#10022; Elasticsearch &#10022; Grafana &#10022; JavaScript &#10022; Swift &#10022; Flask &#10022; GStreamer &#10022; AWS&nbsp;S3 &#10022;&nbsp;</span><span>Python &#10022; PyTorch &#10022; TensorFlow &#10022; OpenCV &#10022; ONNX &#10022; Docker &#10022; Kubernetes &#10022; PostgreSQL &#10022; Elasticsearch &#10022; Grafana &#10022; JavaScript &#10022; Swift &#10022; Flask &#10022; GStreamer &#10022; AWS&nbsp;S3 &#10022;&nbsp;</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================ CONTACT ============================== -->
+    <section class="contact" id="contact">
+      <img class="contact__contours" src="/assets/img/contours.svg" alt="" data-depth="0.08" data-rotate aria-hidden="true">
+      <p class="mono reveal">04 &mdash; Encore</p>
+      <h2 class="contact__title reveal" data-delay="80">Let&rsquo;s make something<br>that feels <em>impossible</em>.</h2>
+      <a class="contact__cta" href="mailto:tanel.treuberg@gmail.com" data-magnetic data-cursor="say hi">
+        tanel.treuberg@gmail.com
+      </a>
+      <footer class="footer">
+        <span>&copy; <span id="year">2026</span> The Magicians Code</span>
+        <nav class="footer__links" aria-label="Social">
+          <a href="https://github.com/The-Magicians-Code" target="_blank" rel="noopener" data-magnetic>GitHub</a>
+          <a href="https://linkedin.com/in/taneltreuberg" target="_blank" rel="noopener" data-magnetic>LinkedIn</a>
+        </nav>
+        <a href="#top" class="footer__top" data-magnetic>Back to top &uarr;</a>
+      </footer>
+    </section>
+
+  </main>
+
+  <script is:inline src="/assets/js/main.js" defer></script>
+</body>
+</html>
