@@ -44,6 +44,12 @@ interface OpenState {
      through the morph so it animates (instead of snapping to 0 on mobile under
      the lift's transition:none), and is restored to this on collapse. */
   restRadius: string;
+  /* Cover-as-hero (has-cover only): the cloned tall hero band + the slim
+     sticky header bar, prepended into .card-body on open and removed on
+     cleanup. coverBar is null for plain cards, when the collapse is off
+     (Firefox/reduced-motion), or before the hero mounts. */
+  coverHero: HTMLElement | null;
+  coverBar: HTMLElement | null;
 }
 
 function makeBlurStrip(position: 'top' | 'bottom'): HTMLElement {
@@ -63,6 +69,15 @@ const COVER_MORPH_DELAY = 180; // ms; matches the choreography overlap
 // box collapses. This is how long the box waits before collapsing — must match
 // --content-close-dur in CSS (the content fade-out duration).
 const CONTENT_CLOSE_DUR = 280;
+
+// Native CSS scroll-driven animations gate (Chrome + Safari 26.4+). Firefox
+// stable keeps them behind a flag, so the cover hero degrades to a static hero
+// there — CSS @supports owns the visual fallback; this flag only decides
+// whether to build the (otherwise inert) sticky header bar node.
+const supportsScrollTimeline =
+  typeof CSS !== 'undefined' &&
+  typeof CSS.supports === 'function' &&
+  CSS.supports('animation-timeline', 'scroll()');
 
 const prefersReducedMotion = (): boolean =>
   window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -141,6 +156,61 @@ function makeCloseIcon(): SVGSVGElement {
     svg.appendChild(el);
   }
   return svg;
+}
+
+// ── Cover-as-hero builders (has-cover only) ──────────────────────────────
+// Clone the resting cover into a tall hero band that shares .card-body's
+// scroll flow, so it can scroll away while a slim sticky bar pins. The clone
+// reuses the already-decoded <picture> (no second fetch), re-classed off
+// .cover-img so the resting cover rules don't apply. The collapse itself is
+// pure CSS (native scroll timeline); nothing here wires scroll listeners.
+function buildCoverHero(card: HTMLElement): HTMLElement | null {
+  const coverImg = card.querySelector<HTMLElement>('.cover-img');
+  if (!coverImg) return null;
+  const titleHtml = card.querySelector<HTMLElement>('.card-title')?.innerHTML ?? '';
+
+  const hero = document.createElement('div');
+  hero.className = 'cs-hero';
+  hero.setAttribute('aria-hidden', 'true');
+
+  // Clone the <picture> so the avif/webp <source>s come along (fall back to a
+  // bare <img>). Re-class the image so the resting .cover-img rules (oversized
+  // parallax crop) don't apply, and drop lazy-loading — it's on-screen at open.
+  const pic = coverImg.closest('picture') ?? coverImg;
+  const picClone = pic.cloneNode(true) as HTMLElement;
+  const img = picClone.tagName === 'IMG' ? picClone : picClone.querySelector('img');
+  if (img) {
+    img.classList.remove('cover-img');
+    img.classList.add('cs-hero-img');
+    img.removeAttribute('loading');
+  }
+  hero.appendChild(picClone);
+
+  const overlay = document.createElement('div');
+  overlay.className = 'cs-hero-overlay';
+  hero.appendChild(overlay);
+
+  const title = document.createElement('div');
+  title.className = 'cs-hero-title';
+  title.innerHTML = titleHtml;
+  hero.appendChild(title);
+
+  return hero;
+}
+
+// The slim pinned header bar: the codename docks here (onto the close-button
+// line) as the hero scrolls away. aria-hidden — the accessible codename lives
+// in the (sr-only) .card-title and the card's aria-label.
+function buildHeaderBar(card: HTMLElement): HTMLElement {
+  const titleHtml = card.querySelector<HTMLElement>('.card-title')?.innerHTML ?? '';
+  const bar = document.createElement('div');
+  bar.className = 'cs-headerbar';
+  bar.setAttribute('aria-hidden', 'true');
+  const title = document.createElement('div');
+  title.className = 'cs-bar-title';
+  title.innerHTML = titleHtml;
+  bar.appendChild(title);
+  return bar;
 }
 
 // ── Open ─────────────────────────────────────────────────────────────────
@@ -324,6 +394,8 @@ function doOpen(card: HTMLElement): void {
     openedAt: performance.now(),
     morphDur,
     restRadius: cs.borderTopLeftRadius,
+    coverHero: null,
+    coverBar: null,
   };
 
   // Build the modal content: clone the hidden body source into the visible
@@ -338,6 +410,25 @@ function doOpen(card: HTMLElement): void {
     const body = card.querySelector<HTMLElement>('.card-body');
     const source = card.querySelector<HTMLElement>('.bento-card-body');
     if (!body || !source) return;
+
+    // Cover-as-hero: build the tall hero band (cloned cover) + the slim sticky
+    // header bar and PREPEND them so they share .card-body's scroll flow. Done
+    // before the scrollTop reset below so scroll-anchoring can't nudge the
+    // start position off 0 (the timeline's 0% frame == the reveal state). The
+    // hero is always built (it is also the static fallback); the bar only when
+    // the scroll-driven collapse is active (no dead DOM otherwise).
+    if (hasCover && openState && !openState.coverHero) {
+      const hero = buildCoverHero(card);
+      if (hero) {
+        body.prepend(hero);
+        openState.coverHero = hero;
+        if (supportsScrollTimeline && !reduce) {
+          const bar = buildHeaderBar(card);
+          hero.after(bar);
+          openState.coverBar = bar;
+        }
+      }
+    }
 
     const wrap = document.createElement('div');
     // Cover cards reveal each item via the .is-content-in stagger (below), not
@@ -470,7 +561,7 @@ function closeCaseStudy(): void {
   if (!openState || openState.closing) return;
   openState.closing = true;
   const state = openState;
-  const { card, placeholder, closeBtn, backdrop, blurTop, blurBottom, originalInline, appendedBodyWrap, pillToggle, stickyHeader, detachScrollCollapse } = state;
+  const { card, placeholder, closeBtn, backdrop, blurTop, blurBottom, originalInline, appendedBodyWrap, pillToggle, stickyHeader, detachScrollCollapse, coverHero, coverBar } = state;
   detachScrollCollapse?.();
 
   // Blur BEFORE the morph so the UA focus outline doesn't trace the shrink.
@@ -560,6 +651,10 @@ function closeCaseStudy(): void {
     closeBtn?.remove();
     blurTop?.remove();
     blurBottom?.remove();
+    // Remove the cloned cover hero + sticky bar so a re-open rebuilds fresh
+    // (matches the clone-per-open idiom above).
+    coverHero?.remove();
+    coverBar?.remove();
 
     // 2) Apply guarded style (originalInline + transition:none) so the
     //    inline-style swap doesn't animate. THEN remove placeholder.
